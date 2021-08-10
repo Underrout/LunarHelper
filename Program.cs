@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -136,17 +137,40 @@ namespace SMWPatcher
             return true;
         }
 
+        static private void SuspendLunarMonitor()
+        {
+            string markerFileName = ".suspend_lunar_monitor";
+            string pathString = Path.Combine(Config.WorkingDirectory, markerFileName);
+
+            using (File.Create(pathString)) { }
+        }
+
+        static private void ResumeLunarMonitor()
+        {
+            Thread.Sleep(100);
+
+            string markerFileName = ".suspend_lunar_monitor";
+            string pathString = Path.Combine(Config.WorkingDirectory, markerFileName);
+
+            if (File.Exists(pathString))
+                File.Delete(pathString);
+        }
+
         static private bool Build()
         {
+            SuspendLunarMonitor();
+
             // Lunar Magic required
             if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
             {
                 Log("No path to Lunar Magic provided!", ConsoleColor.Red);
+                ResumeLunarMonitor();
                 return false;
             }
             else if (!File.Exists(Config.LunarMagicPath))
             {
                 Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
+                ResumeLunarMonitor();
                 return false;
             }
 
@@ -167,6 +191,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Initial Patch Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -201,6 +226,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("GPS Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -231,6 +257,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Pixi Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -261,6 +288,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -301,6 +329,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("UberASM Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -340,6 +369,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("AddMusicK Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -360,6 +390,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Import Graphics Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -391,6 +422,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Map16 Import Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -414,6 +446,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Title Moves Import Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -437,6 +470,7 @@ namespace SMWPatcher
                 else
                 {
                     Log("Shared Palette Import Failure!", ConsoleColor.Red);
+                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -473,6 +507,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Global Data Patch Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -490,6 +525,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Overworld Import Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -507,6 +543,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Global EX Animation Import Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -524,6 +561,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Title Screen Import Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -541,6 +579,7 @@ namespace SMWPatcher
                     else
                     {
                         Log("Credits Import Failure!", ConsoleColor.Red);
+                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -554,7 +593,10 @@ namespace SMWPatcher
 
             // import levels
             if (!ImportLevels(false))
+            {
+                ResumeLunarMonitor();
                 return false;
+            }
 
             // output final ROM
             File.Copy(Config.TempPath, Config.OutputPath, true);
@@ -572,6 +614,7 @@ namespace SMWPatcher
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
             Console.WriteLine();
 
+            ResumeLunarMonitor();
             return true;
         }
 
