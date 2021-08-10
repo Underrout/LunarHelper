@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -744,45 +745,8 @@ namespace SMWPatcher
                 }
             }
 
-            // save levels
-            if (!ExportLevels())
-                return false;
-
             Console.WriteLine();
             return true;
-        }
-
-        static private bool ExportLevels()
-        {
-            Log("Exporting All Levels...", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.LevelsPath))
-                Log("No path for Levels provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.LunarMagicPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
-            else if (!File.Exists(Config.OutputPath))
-                Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ExportMultLevels \"{Config.OutputPath}\" \"{Config.LevelsPath}{Path.DirectorySeparatorChar}level\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                {
-                    Log("Levels Export Success!", ConsoleColor.Green);
-                    return true;
-                }
-                else
-                {
-                    Log("Levels Export Failure!", ConsoleColor.Red);
-                }
-            }
-
-            return false;
         }
 
         static private bool ImportLevels(bool reinsert)
