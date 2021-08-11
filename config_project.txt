@@ -26,7 +26,7 @@ addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
 uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 
 -- content
-levels = Levels
+-- NOTE: Unlike the standard Lunar Helper version this one doesn't export levels, so we do not need to specify a level directory path here
 shared_palette = Other/shared.pal
 map16 = Other/all.map16
 
