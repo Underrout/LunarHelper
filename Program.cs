@@ -22,8 +22,8 @@ namespace SMWPatcher
             while (running)
             {
                 Log("Welcome to Lunar Helper ^_^", ConsoleColor.Cyan);
-                Log("S - Save, B - Build, R - Run");
-                Log("T - Test (Save -> Build -> Run)");
+                Log("B - Build, R - Run");
+                Log("T - Test (Build -> Run)");
                 Log("E - Edit (in Lunar Magic)");
                 Log("P - Package, H - Help, ESC - Exit");
                 Console.WriteLine();
@@ -39,7 +39,7 @@ namespace SMWPatcher
                         break;
 
                     case ConsoleKey.T:
-                        if (Init() && Save() && Build())
+                        if (Init() && Build())
                             Test();
                         break;
 
@@ -51,11 +51,6 @@ namespace SMWPatcher
                     case ConsoleKey.E:
                         if (Init())
                             Edit();
-                        break;
-
-                    case ConsoleKey.S:
-                        if (Init())
-                            Save();
                         break;
 
                     case ConsoleKey.P:
@@ -137,40 +132,17 @@ namespace SMWPatcher
             return true;
         }
 
-        static private void SuspendLunarMonitor()
-        {
-            string markerFileName = ".suspend_lunar_monitor";
-            string pathString = Path.Combine(Config.WorkingDirectory, markerFileName);
-
-            using (File.Create(pathString)) { }
-        }
-
-        static private void ResumeLunarMonitor()
-        {
-            Thread.Sleep(100);
-
-            string markerFileName = ".suspend_lunar_monitor";
-            string pathString = Path.Combine(Config.WorkingDirectory, markerFileName);
-
-            if (File.Exists(pathString))
-                File.Delete(pathString);
-        }
-
         static private bool Build()
         {
-            SuspendLunarMonitor();
-
             // Lunar Magic required
             if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
             {
                 Log("No path to Lunar Magic provided!", ConsoleColor.Red);
-                ResumeLunarMonitor();
                 return false;
             }
             else if (!File.Exists(Config.LunarMagicPath))
             {
                 Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
-                ResumeLunarMonitor();
                 return false;
             }
 
@@ -191,7 +163,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Initial Patch Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -226,7 +197,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("GPS Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -257,7 +227,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Pixi Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -288,7 +257,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -329,7 +297,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("UberASM Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -369,7 +336,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("AddMusicK Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -390,7 +356,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Import Graphics Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -422,7 +387,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Map16 Import Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -446,7 +410,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Title Moves Import Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -470,7 +433,6 @@ namespace SMWPatcher
                 else
                 {
                     Log("Shared Palette Import Failure!", ConsoleColor.Red);
-                    ResumeLunarMonitor();
                     return false;
                 }
 
@@ -507,7 +469,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Global Data Patch Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -525,7 +486,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Overworld Import Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -543,7 +503,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Global EX Animation Import Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -561,7 +520,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Title Screen Import Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -579,7 +537,6 @@ namespace SMWPatcher
                     else
                     {
                         Log("Credits Import Failure!", ConsoleColor.Red);
-                        ResumeLunarMonitor();
                         return false;
                     }
                 }
@@ -594,7 +551,6 @@ namespace SMWPatcher
             // import levels
             if (!ImportLevels(false))
             {
-                ResumeLunarMonitor();
                 return false;
             }
 
@@ -614,7 +570,6 @@ namespace SMWPatcher
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
             Console.WriteLine();
 
-            ResumeLunarMonitor();
             return true;
         }
 
@@ -673,122 +628,6 @@ namespace SMWPatcher
             Log("Test routine complete!", ConsoleColor.Magenta);
             Console.WriteLine();
 
-            return true;
-        }
-
-        static private bool Save()
-        {
-            if (!File.Exists(Config.OutputPath))
-            {
-                Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
-                return false;
-            }
-
-            // save global data
-            Log("Saving Global Data BPS...", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.GlobalDataPath))
-                Log("No path for GlobalData BPS provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.CleanPath))
-                Log("No path for Clean ROM provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.CleanPath))
-                Log("Clean ROM does not exist!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.FlipsPath))
-                Log("No path to Flips provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.FlipsPath))
-                Log("Flips not found at the provided path!", ConsoleColor.Red);
-            else
-            {
-                if (File.Exists(Config.GlobalDataPath))
-                    File.Delete(Config.GlobalDataPath);
-
-                var fullCleanPath = Path.GetFullPath(Config.CleanPath);
-                var fullOutputPath = Path.GetFullPath(Config.OutputPath);
-                var fullPackagePath = Path.GetFullPath(Config.GlobalDataPath);
-                if (CreatePatch(fullCleanPath, fullOutputPath, fullPackagePath))
-                    Log("Global Data Patch Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Global Data Patch Failure!", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // export map16
-            Log("Exporting Map16...", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.Map16Path))
-                Log("No path for Map16 provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.LunarMagicPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ExportAllMap16 \"{Config.OutputPath}\" \"{Config.Map16Path}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Map16 Export Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Map16 Export Failure!", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // export shared palette
-            Log("Exporting Shared Palette...", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.SharedPalettePath))
-                Log("No path for Shared Palette provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.LunarMagicPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ExportSharedPalette \"{Config.OutputPath}\" \"{Config.SharedPalettePath}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Shared Palette Export Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Shared Palette Export Failure!", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // export title moves
-            Log("Exporting Title Moves...", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.TitleMovesPath))
-                Log("No path for Title Moves provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(Config.LunarMagicPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ExportTitleMoves \"{Config.OutputPath}\" \"{Config.TitleMovesPath}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Title Moves Export Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Title Moves Export Failure!", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            Console.WriteLine();
             return true;
         }
 
@@ -889,8 +728,6 @@ namespace SMWPatcher
         static private void Help()
         {
             Log("Function list:", ConsoleColor.Magenta);
-            Log("S - Save", ConsoleColor.Yellow);
-            Log("-Exports the global data (overworld, ex global animations, credits, and title screen) to a BPS patch.\n-Export all levels.\nThe ROM must already be built first.\n");
 
             Log("B - Build", ConsoleColor.Yellow);
             Log("Creates your ROM from scratch, using your provided clean SMW ROM as a base and inserting all the configured patches, graphics, levels, etc.\n");
@@ -899,7 +736,7 @@ namespace SMWPatcher
             Log("Loads the previously-built ROM into the configured emulator for testing. The ROM must already be built first.\n");
 
             Log("T - Test (Save -> Build -> Run)", ConsoleColor.Yellow);
-            Log("Executes the above three commands in sequence. Useful to quickly save all your changes and then see them in action.\n");
+            Log("Executes the above two commands in sequence.\n");
 
             Log("E - Edit (in Lunar Magic)", ConsoleColor.Yellow);
             Log("Opens the previously-built ROM in Lunar Magic. The ROM must already be built first.\n");
