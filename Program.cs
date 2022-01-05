@@ -735,7 +735,7 @@ namespace SMWPatcher
             Log("R - Run", ConsoleColor.Yellow);
             Log("Loads the previously-built ROM into the configured emulator for testing. The ROM must already be built first.\n");
 
-            Log("T - Test (Save -> Build -> Run)", ConsoleColor.Yellow);
+            Log("T - Test (Build -> Run)", ConsoleColor.Yellow);
             Log("Executes the above two commands in sequence.\n");
 
             Log("E - Edit (in Lunar Magic)", ConsoleColor.Yellow);
