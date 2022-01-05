@@ -1,22 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <DebugType>embedded</DebugType>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="config_project.txt" />
-    <None Remove="config_user.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="config_user.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="config_project.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 
 </Project>

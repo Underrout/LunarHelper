@@ -88,7 +88,7 @@ namespace SMWPatcher
 
         static private bool Init()
         {
-            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
 
             // load config
             Config = Config.Load();
