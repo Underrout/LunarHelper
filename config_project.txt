@@ -37,7 +37,7 @@ title_moves = Other/smwtitledemo.zst
 -- and Lunar Monitor will automatically export them as you save your changes
 global_data = Other/global_data.bps
 
--- test_level is a MWL file that will only be inserted if you run the "T - Test" option in Lunar Helper
--- It will be inserted as the level number specified by test_leve_dest
-test_level = Other/test_level.mwl
+-- test_level is a 3-digit hex value specifying the level number of a level that will be copied to the 3-digit level number
+-- specified by test_level_dest *only* when Lunar Helper's "T - Test" option is run
+test_level = 0A7
 test_level_dest = 105
