@@ -709,6 +709,25 @@ namespace SMWPatcher
                     Log("Map16 Export Failure!", ConsoleColor.Red);
                     return false;
                 }
+
+                if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
+                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
+                                $"--from-map16 \"{Config.Map16Path}\" \"{Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path))}\"");
+                    var proc = Process.Start(process);
+                    proc.WaitForExit();
+
+                    if (proc.ExitCode == 0)
+                        Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
+                    else
+                    {
+                        Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
+                        return false;
+                    }
+                }
             }
 
             // export shared palette
