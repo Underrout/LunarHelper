@@ -22,6 +22,8 @@ namespace SMWPatcher
         public string LunarMagicPath;
         public string FlipsPath;
 
+        public string HumanReadableMap16CLI;
+
         public string InitialPatch;
         public string LevelsPath;
         public string Map16Path;
@@ -75,6 +77,7 @@ namespace SMWPatcher
             vars.TryGetValue("addmusick_path", out config.AddMusicKPath);
             vars.TryGetValue("lm_path", out config.LunarMagicPath);
             vars.TryGetValue("flips_path", out config.FlipsPath);
+            vars.TryGetValue("human_readable_map16_cli_path", out config.HumanReadableMap16CLI);
             vars.TryGetValue("levels", out config.LevelsPath);
             vars.TryGetValue("map16", out config.Map16Path);
             vars.TryGetValue("shared_palette", out config.SharedPalettePath);
