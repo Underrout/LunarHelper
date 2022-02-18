@@ -322,7 +322,7 @@ namespace SMWPatcher
                 var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
                 Console.ForegroundColor = ConsoleColor.Yellow;
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.AddMusicKPath, $"\"{rom}\"");
+                ProcessStartInfo psi = new ProcessStartInfo(Config.AddMusicKPath, $" -noblock \"{rom}\"");
                 psi.RedirectStandardInput = true;
                 psi.WorkingDirectory = dir;
 
