@@ -222,8 +222,7 @@ namespace SMWPatcher
                 psi.RedirectStandardInput = true;
 
                 var p = Process.Start(psi);
-                while (!p.HasExited)
-                    p.StandardInput.Write('a');
+                p.WaitForExit();
 
                 if (p.ExitCode == 0)
                     Log("Pixi Success!", ConsoleColor.Green);
@@ -331,8 +330,7 @@ namespace SMWPatcher
                 psi.WorkingDirectory = dir;
 
                 var p = Process.Start(psi);
-                while (!p.HasExited)
-                    p.StandardInput.Write('a');
+                p.WaitForExit();
 
                 if (p.ExitCode == 0)
                     Log("AddMusicK Success!", ConsoleColor.Green);
@@ -379,6 +377,25 @@ namespace SMWPatcher
                 Log("No path to Map16 provided, no map16 will be imported.", ConsoleColor.Red);
             else
             {
+                if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
+                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
+                                $"--to-map16 \"{Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path))}\" \"{Config.Map16Path}\"");
+                    var proc = Process.Start(process);
+                    proc.WaitForExit();
+
+                    if (proc.ExitCode == 0)
+                        Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
+                    else
+                    {
+                        Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
+                        return false;
+                    }
+                }
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
                             $"-ImportAllMap16 \"{Config.TempPath}\" \"{Config.Map16Path}\"");
