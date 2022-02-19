@@ -208,31 +208,9 @@ namespace SMWPatcher
 
             // run PIXI
             Log("PIXI", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.PixiPath))
-                Log("No path to Pixi provided, no sprites will be inserted.", ConsoleColor.Red);
-            else if (!File.Exists(Config.PixiPath))
-                Log("Pixi not found at provided path, no sprites will be inserted.", ConsoleColor.Red);
-            else
+            if (!ApplyPixi())
             {
-                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.PixiPath));
-                var list = Path.Combine(dir, "list.txt");
-                Console.ForegroundColor = ConsoleColor.Yellow;
-
-                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"-l \"{list}\" \"{Config.TempPath}\"");
-                psi.RedirectStandardInput = true;
-
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Pixi Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Pixi Failure!", ConsoleColor.Red);
-                    return false;
-                }
-
-                Console.WriteLine();
+                return false;
             }
 
             // asar patches
@@ -572,6 +550,17 @@ namespace SMWPatcher
             if (!ImportLevels(false))
                 return false;
 
+            FileVersionInfo lunarMagicInfo = FileVersionInfo.GetVersionInfo(Config.LunarMagicPath);
+
+            if (lunarMagicInfo.FileMajorPart >= 3 && lunarMagicInfo.FileMinorPart >= 31)
+            {
+                Log("PIXI (Second pass for Lunar Magic version >= 3.31)", ConsoleColor.Cyan);
+                if (!ApplyPixi())
+                {
+                    return false;
+                }
+            }
+
             // output final ROM
             File.Copy(Config.TempPath, Config.OutputPath, true);
 
@@ -819,6 +808,36 @@ namespace SMWPatcher
             }
 
             return false;
+        }
+        static private bool ApplyPixi()
+        {
+            if (string.IsNullOrWhiteSpace(Config.PixiPath))
+                Log("No path to Pixi provided, no sprites will be inserted.", ConsoleColor.Red);
+            else if (!File.Exists(Config.PixiPath))
+                Log("Pixi not found at provided path, no sprites will be inserted.", ConsoleColor.Red);
+            else
+            {
+                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.PixiPath));
+                var list = Path.Combine(dir, "list.txt");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+
+                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"-l \"{list}\" \"{Config.TempPath}\"");
+                psi.RedirectStandardInput = true;
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Pixi Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Pixi Failure!", ConsoleColor.Red);
+                    return false;
+                }
+
+                Console.WriteLine();
+            }
+            return true;
         }
 
         static private bool ImportLevels(bool reinsert)
