@@ -79,7 +79,7 @@ namespace SMWPatcher
             vars.TryGetValue("lm_path", out config.LunarMagicPath);
             vars.TryGetValue("flips_path", out config.FlipsPath);
             vars.TryGetValue("human_readable_map16_cli_path", out config.HumanReadableMap16CLI);
-            vars.TryGetValue("human_readble_map16_directory_path", out config.HumanReadableMap16Directory);
+            vars.TryGetValue("human_readable_map16_directory_path", out config.HumanReadableMap16Directory);
             vars.TryGetValue("levels", out config.LevelsPath);
             vars.TryGetValue("map16", out config.Map16Path);
             vars.TryGetValue("shared_palette", out config.SharedPalettePath);
