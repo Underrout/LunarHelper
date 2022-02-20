@@ -359,9 +359,15 @@ namespace SMWPatcher
                     Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
                 else
                 {
+                    string humanReadableDirectory;
+                    if (!string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
+                        humanReadableDirectory = Config.HumanReadableMap16Directory;
+                    else
+                        humanReadableDirectory = Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path));
+
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
-                                $"--to-map16 \"{Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path))}\" \"{Config.Map16Path}\"");
+                                $"--to-map16 \"{humanReadableDirectory}\" \"{Config.Map16Path}\"");
                     var proc = Process.Start(process);
                     proc.WaitForExit();
 
@@ -703,9 +709,15 @@ namespace SMWPatcher
                     Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
                 else
                 {
+                    string humanReadableDirectory;
+                    if (!string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
+                        humanReadableDirectory = Config.HumanReadableMap16Directory;
+                    else
+                        humanReadableDirectory = Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path));
+
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
-                                $"--from-map16 \"{Config.Map16Path}\" \"{Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path))}\"");
+                                $"--from-map16 \"{Config.Map16Path}\" \"{humanReadableDirectory}\"");
                     var proc = Process.Start(process);
                     proc.WaitForExit();
 
