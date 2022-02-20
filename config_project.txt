@@ -25,6 +25,10 @@ pixi_path = Tools/pixi_v1.32/pixi.exe
 addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
 uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 
+-- Optional config variables if you want to use a human readble text-based map16 format
+-- human_readable_map16_cli_path = Tools/human-readable-map16-cli.exe
+-- human_readable_map16_directory_path = Other/all_map16
+
 -- content
 levels = Levels
 shared_palette = Other/shared.pal
