@@ -10,6 +10,7 @@ namespace LunarHelper
     class Report
     {
         public DateTimeOffset build_time { get; set; }
+        public string rom_hash { get; set; }
         public Dictionary<string, string>? levels { get; set; }
         public Dictionary<string, string>? patches { get; set; }
         public string? graphics { get; set; }
@@ -27,7 +28,7 @@ namespace LunarHelper
 
         public static string HashFile(string? path)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 return null;
 
             using (var md5 = MD5.Create())
@@ -47,7 +48,7 @@ namespace LunarHelper
         // Author of answer: Dunc (https://stackoverflow.com/users/188926/dunc)
         public static string HashFolder(string? path)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
                 return null;
 
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)

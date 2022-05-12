@@ -91,7 +91,7 @@ namespace SMWPatcher
             string jsonString = JsonSerializer.Serialize(report, options);
             Directory.CreateDirectory(".lunar_helper");
             File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
-            File.WriteAllText(".lunar_helper\\build_report", jsonString);
+            File.WriteAllText(".lunar_helper\\build_report.json", jsonString);
         }
 
         static private Report GetBuildReport()
@@ -100,7 +100,7 @@ namespace SMWPatcher
 
             report.build_time = DateTime.Now;
 
-            report.levels = WriteLevelReport();
+            report.levels = GetLevelReport();
             report.graphics = Report.HashFolder("Graphics");
             report.exgraphics = Report.HashFolder("ExGraphics");
             report.shared_palettes = Report.HashFile(Config.SharedPalettePath);
@@ -126,7 +126,7 @@ namespace SMWPatcher
                 }
             }
 
-            report.patches = WritePatchesReport();
+            report.patches = GetPatchReport();
 
             report.pixi_folders = Report.HashFolder(Path.GetDirectoryName(Config.PixiPath));
             report.gps_folders = Report.HashFolder(Path.GetDirectoryName(Config.GPSPath));
@@ -135,23 +135,35 @@ namespace SMWPatcher
 
             report.shared_folders = Report.HashFolder(Config.SharedFolder);
 
+            report.rom_hash = Report.HashFile(Config.OutputPath);
+
             return report;
         }
 
-        static private Dictionary<string, string> WritePatchesReport()
+        static public Dictionary<string, string> GetPatchReport()
         {
+            if (Config.Patches == null)
+            {
+                return null;
+            }
+
             var dict = new Dictionary<string, string>();
 
             foreach (var patch in Config.Patches)
             {
-                dict.Add(patch.Replace("\\", "/"), Report.HashFile(patch));
+                dict.Add(patch, Report.HashFile(patch));
             }
 
             return dict;
         }
 
-        static private Dictionary<string, string> WriteLevelReport()
+        static public Dictionary<string, string> GetLevelReport()
         {
+            if (Config.LevelsPath == null)
+            {
+                return null;
+            }
+
             var dict = new Dictionary<string, string>();
 
             foreach (string level in Directory.GetFiles(Config.LevelsPath, "*.mwl", SearchOption.TopDirectoryOnly))
@@ -658,6 +670,8 @@ namespace SMWPatcher
                     File.Move(file, $"{to}{Path.GetExtension(file)}", true);
             }
 
+            WriteReport();
+
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
             Console.WriteLine();
 
@@ -899,19 +913,19 @@ namespace SMWPatcher
                 return false;
         }
 
-        static private void Error(string error)
+        static public void Error(string error)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"ERROR: {error}\n");
         }
 
-        static private void Log(string msg, ConsoleColor color = ConsoleColor.White)
+        static public void Log(string msg, ConsoleColor color = ConsoleColor.White)
         {
             Console.ForegroundColor = color;
             Console.WriteLine($"{msg}");
         }
 
-        static private void Lognl(string msg, ConsoleColor color = ConsoleColor.White)
+        static public void Lognl(string msg, ConsoleColor color = ConsoleColor.White)
         {
             Console.ForegroundColor = color;
             Console.Write($"{msg}");

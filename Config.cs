@@ -137,7 +137,7 @@ namespace SMWPatcher
                         if (str.Trim() == "]")
                             break;
                         else
-                            list.Add(str.Trim());
+                            list.Add(str.Trim().Replace("\\", "/"));
 
                         i++;
                     }
