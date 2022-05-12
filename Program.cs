@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Xml.Serialization;
+using System.Text.Json;
+
+using LunarHelper;
 
 namespace SMWPatcher
 {
@@ -81,6 +82,84 @@ namespace SMWPatcher
                 while (Console.KeyAvailable)
                     Console.ReadKey(true);
             }
+        }
+
+        static private void WriteReport()
+        {
+            var report = GetBuildReport();
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string jsonString = JsonSerializer.Serialize(report, options);
+            Directory.CreateDirectory(".lunar_helper");
+            File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
+            File.WriteAllText(".lunar_helper\\build_report", jsonString);
+        }
+
+        static private Report GetBuildReport()
+        {
+            var report = new Report();
+
+            report.build_time = DateTime.Now;
+
+            report.levels = WriteLevelReport();
+            report.graphics = Report.HashFolder("Graphics");
+            report.exgraphics = Report.HashFolder("ExGraphics");
+            report.shared_palettes = Report.HashFile(Config.SharedPalettePath);
+            report.init_bps = Report.HashFile(Config.InitialPatch);
+            report.global_data = Report.HashFile(Config.GlobalDataPath);
+            report.title_moves = Report.HashFile(Config.TitleMovesPath);
+
+            if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
+            {
+                report.map16 = Report.HashFile(Config.Map16Path);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
+                {
+                    report.map16 = Report.HashFolder(Path.Combine(
+                        Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path)
+                    ));
+                }
+                else
+                {
+                    report.map16 = Report.HashFolder(Config.HumanReadableMap16Directory);
+                }
+            }
+
+            report.patches = WritePatchesReport();
+
+            report.pixi_folders = Report.HashFolder(Path.GetDirectoryName(Config.PixiPath));
+            report.gps_folders = Report.HashFolder(Path.GetDirectoryName(Config.GPSPath));
+            report.uberasm_folders = Report.HashFolder(Path.GetDirectoryName(Config.UberASMPath));
+            report.addmusick_folders = Report.HashFolder(Path.GetDirectoryName(Config.AddMusicKPath));
+
+            report.shared_folders = Report.HashFolder(Config.SharedFolder);
+
+            return report;
+        }
+
+        static private Dictionary<string, string> WritePatchesReport()
+        {
+            var dict = new Dictionary<string, string>();
+
+            foreach (var patch in Config.Patches)
+            {
+                dict.Add(patch.Replace("\\", "/"), Report.HashFile(patch));
+            }
+
+            return dict;
+        }
+
+        static private Dictionary<string, string> WriteLevelReport()
+        {
+            var dict = new Dictionary<string, string>();
+
+            foreach (string level in Directory.GetFiles(Config.LevelsPath, "*.mwl", SearchOption.TopDirectoryOnly))
+            {
+                dict.Add(level.Replace("\\", "/"), Report.HashFile(level));
+            }
+
+            return dict;
         }
 
         static private bool Init()

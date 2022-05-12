@@ -32,6 +32,8 @@ namespace SMWPatcher
         public string GlobalDataPath;
         public string TitleMovesPath;
 
+        public string SharedFolder;
+
         public List<string> Patches = new List<string>();
 
         public string TestLevel;
@@ -86,6 +88,7 @@ namespace SMWPatcher
             vars.TryGetValue("global_data", out config.GlobalDataPath);
             vars.TryGetValue("title_moves", out config.TitleMovesPath);
             vars.TryGetValue("initial_patch", out config.InitialPatch);
+            vars.TryGetValue("shared_folder", out config.SharedFolder);
             lists.TryGetValue("patches", out config.Patches);
 
             vars.TryGetValue("test_level", out config.TestLevel);
