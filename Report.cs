@@ -25,6 +25,10 @@ namespace LunarHelper
         public string? uberasm_folders { get; set; }
         public string? addmusick_folders { get; set; }
         public string? shared_folders { get; set; }
+        public string? flips { get; set; }
+        public string? lunar_magic { get; set; }
+        public string? asar { get; set; }
+        public string? human_readable_map16 { get; set; }
 
         public static string HashFile(string? path)
         {

@@ -137,6 +137,11 @@ namespace SMWPatcher
 
             report.rom_hash = Report.HashFile(Config.OutputPath);
 
+            report.asar = Report.HashFile(Config.AsarPath);
+            report.flips = Report.HashFile(Config.FlipsPath);
+            report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
+            report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
+
             return report;
         }
 
