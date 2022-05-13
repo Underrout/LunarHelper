@@ -194,7 +194,7 @@ namespace SMWPatcher
                     {
                         Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
 
-                        ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"\"{patch}\" \"{Config.TempPath}\"");
+                        ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
 
                         var p = Process.Start(psi);
                         p.WaitForExit();
@@ -355,7 +355,14 @@ namespace SMWPatcher
                 }
             }
 
-            if (plan.levels_to_insert.Count != 0)
+            if (plan.insert_all_levels)
+            {
+                if (!ImportLevels(false))
+                {
+                    return false;
+                }
+            }
+            else if (plan.levels_to_insert.Count != 0)
             {
                 Log("Levels", ConsoleColor.Cyan);
 
@@ -369,12 +376,12 @@ namespace SMWPatcher
 
                     if (p.ExitCode != 0)
                     {
-                        Log($"Levels Import Failure on '{levelPath}'!", ConsoleColor.Red);
+                        Log($"Level import failure on '{levelPath}'!", ConsoleColor.Red);
                         return false;
                     }
                 }
-
                 Log("Levels Import Success!", ConsoleColor.Green);
+                Console.WriteLine();
             }
 
             if (plan.apply_pixi && plan.may_need_two_pixi_passes)
@@ -467,6 +474,12 @@ namespace SMWPatcher
             report.flips = Report.HashFile(Config.FlipsPath);
             report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
+
+            report.asar_options = Config.AsarOptions;
+            report.pixi_options = Config.PixiOptions;
+            report.gps_options = Config.GPSOptions;
+            report.addmusick_options = Config.AddmusicKOptions;
+            report.lunar_magic_level_import_flags = Config.LunarMagicLevelImportFlags;
 
             return report;
         }
@@ -623,7 +636,7 @@ namespace SMWPatcher
                 {
                     Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
 
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"\"{patch}\" \"{Config.TempPath}\"");
+                    ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
 
                     var p = Process.Start(psi);
                     p.WaitForExit();

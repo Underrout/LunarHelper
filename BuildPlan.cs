@@ -26,6 +26,7 @@ namespace LunarHelper
         public bool insert_title_moves { get; set; } = false;
         public IList<string> patches_to_apply { get; set; } = new List<string>();
         public IList<string> levels_to_insert { get; set; } = new List<string>();
+        public bool insert_all_levels { get; set; } = false;
 
         public static BuildPlan PlanBuild(Config config)
         {
@@ -131,17 +132,17 @@ namespace LunarHelper
             }
             else
             {
-                if (Report.HashFolder(Path.GetDirectoryName(config.GPSPath)) != report.gps_folders)
+                if (Report.HashFolder(Path.GetDirectoryName(config.GPSPath)) != report.gps_folders || report.gps_options != config.GPSOptions)
                 {
-                    Program.Log("Change in GPS folder detected, will reapply GPS...", ConsoleColor.Yellow);
+                    Program.Log("Change in GPS detected, will reapply GPS...", ConsoleColor.Yellow);
                     Console.WriteLine();
                     plan.apply_gps = true;
                     plan.uptodate = false;
                 }
 
-                if (Report.HashFolder(Path.GetDirectoryName(config.PixiPath)) != report.pixi_folders)
+                if (Report.HashFolder(Path.GetDirectoryName(config.PixiPath)) != report.pixi_folders || report.pixi_options != config.PixiOptions)
                 {
-                    Program.Log("Change in PIXI folder detected, will reapply PIXI...", ConsoleColor.Yellow);
+                    Program.Log("Change in PIXI detected, will reapply PIXI...", ConsoleColor.Yellow);
                     Console.WriteLine();
                     plan.apply_pixi = true;
                     plan.uptodate = false;
@@ -155,22 +156,32 @@ namespace LunarHelper
 
                 // check which patches to apply
 
-                foreach (var (patch, hash) in newPatches)
+                if (report.asar_options == config.AsarOptions)
                 {
-                    if (!oldPatches.ContainsKey(patch))
+                    foreach (var (patch, hash) in newPatches)
                     {
-                        Program.Log($"New patch '{patch}' detected, will be inserted...", ConsoleColor.Yellow);
-                        Console.WriteLine();
-                        plan.patches_to_apply.Add(patch);
-                        plan.uptodate = false;
+                        if (!oldPatches.ContainsKey(patch))
+                        {
+                            Program.Log($"New patch '{patch}' detected, will be inserted...", ConsoleColor.Yellow);
+                            Console.WriteLine();
+                            plan.patches_to_apply.Add(patch);
+                            plan.uptodate = false;
+                        }
+                        else if (oldPatches[patch] != hash)
+                        {
+                            Program.Log($"Change in patch '{patch}' detected, will be reinserted...", ConsoleColor.Yellow);
+                            Console.WriteLine();
+                            plan.patches_to_apply.Add(patch);
+                            plan.uptodate = false;
+                        }
                     }
-                    else if (oldPatches[patch] != hash)
-                    {
-                        Program.Log($"Change in patch '{patch}' detected, will be reinserted...", ConsoleColor.Yellow);
-                        Console.WriteLine();
-                        plan.patches_to_apply.Add(patch);
-                        plan.uptodate = false;
-                    }
+                }
+                else
+                {
+                    Program.Log("Change in asar options detected, reapplying all patches...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    plan.patches_to_apply = new List<string>(newPatches.Keys);
+                    plan.uptodate = false;
                 }
 
                 if (Report.HashFolder(Path.GetDirectoryName(config.UberASMPath)) != report.uberasm_folders)
@@ -181,9 +192,9 @@ namespace LunarHelper
                     plan.uptodate = false;
                 }
 
-                if (Report.HashFolder(Path.GetDirectoryName(config.AddMusicKPath)) != report.addmusick_folders)
+                if (Report.HashFolder(Path.GetDirectoryName(config.AddMusicKPath)) != report.addmusick_folders || report.addmusick_options != config.AddmusicKOptions)
                 {
-                    Program.Log("Change in AddMusicK folder detected, will reapply AddMusicK...", ConsoleColor.Yellow);
+                    Program.Log("Change in AddMusicK detected, will reapply AddMusicK...", ConsoleColor.Yellow);
                     Console.WriteLine();
                     plan.apply_addmusick = true;
                     plan.uptodate = false;
@@ -275,22 +286,32 @@ namespace LunarHelper
 
             // check which levels to insert
 
-            foreach (var (level, hash) in newLevels)
+            if (report.lunar_magic_level_import_flags == config.LunarMagicLevelImportFlags)
             {
-                if (!oldLevels.ContainsKey(level))
+                foreach (var (level, hash) in newLevels)
                 {
-                    Program.Log($"New level '{level}' detected, will be inserted...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.levels_to_insert.Add(level);
-                    plan.uptodate = false;
+                    if (!oldLevels.ContainsKey(level))
+                    {
+                        Program.Log($"New level '{level}' detected, will be inserted...", ConsoleColor.Yellow);
+                        Console.WriteLine();
+                        plan.levels_to_insert.Add(level);
+                        plan.uptodate = false;
+                    }
+                    else if (oldLevels[level] != hash)
+                    {
+                        Program.Log($"Changed level '{level}' detected, will be reinserted...", ConsoleColor.Yellow);
+                        Console.WriteLine();
+                        plan.levels_to_insert.Add(level);
+                        plan.uptodate = false;
+                    }
                 }
-                else if (oldLevels[level] != hash)
-                {
-                    Program.Log($"Changed level '{level}' detected, will be reinserted...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.levels_to_insert.Add(level);
-                    plan.uptodate = false;
-                }
+            }
+            else
+            {
+                Program.Log("Change in Lunar Magic level import flags detected, reinserting all levels...", ConsoleColor.Yellow);
+                Console.WriteLine();
+                plan.insert_all_levels = true;
+                plan.uptodate = false;
             }
 
             // log whether already up to date
