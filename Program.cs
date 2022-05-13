@@ -776,7 +776,7 @@ namespace SMWPatcher
 
         static public Dictionary<string, string> GetLevelReport()
         {
-            if (Config.LevelsPath == null)
+            if (Config.LevelsPath == null || !Directory.Exists(Config.LevelsPath))
             {
                 return null;
             }

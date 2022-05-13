@@ -93,7 +93,8 @@ namespace LunarHelper
             if (report.levels != null)
             {
                 var oldLevelPaths = new HashSet<string>(report.levels.Keys);
-                var newLevelPaths = config.LevelsPath == null ? null : new HashSet<string>(Directory.GetFiles(config.LevelsPath, "*.mwl", SearchOption.TopDirectoryOnly).Select(levelPath => levelPath.Replace("\\", "/")));
+                var newLevelPaths = (config.LevelsPath == null || !Directory.Exists(config.LevelsPath)) ? null : 
+                    new HashSet<string>(Directory.GetFiles(config.LevelsPath, "*.mwl", SearchOption.TopDirectoryOnly).Select(levelPath => levelPath.Replace("\\", "/")));
 
                 if (newLevelPaths == null || !oldLevelPaths.IsSubsetOf(newLevelPaths))
                 {
