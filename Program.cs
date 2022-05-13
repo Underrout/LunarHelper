@@ -1043,14 +1043,6 @@ namespace SMWPatcher
                     return false;
                 }
 
-                // rename MSC file so music track names work in LM
-                var msc_at = $"{Path.GetFileNameWithoutExtension(Config.TempPath)}.msc";
-                var msc_to = $"{Path.GetFileNameWithoutExtension(Config.OutputPath)}.msc";
-                if (File.Exists(msc_to))
-                    File.Delete(msc_to);
-                if (File.Exists(msc_at))
-                    File.Move(msc_at, msc_to);
-
                 Console.WriteLine();
             }
 
