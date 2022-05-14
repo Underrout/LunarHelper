@@ -119,16 +119,17 @@ namespace LunarHelper
             Console.WriteLine();
             Program.Log("Attempting to reuse previously built ROM...", ConsoleColor.Cyan);
 
-            // check if tools need to be reapplied
+            // check if tools/patches need to be reapplied
 
             if (Report.HashFolder(config.SharedFolder) != report.shared_folders)
             {
-                Program.Log("Change in shared folder detected, will reapply all tools...", ConsoleColor.Yellow);
+                Program.Log("Change in shared folder detected, will reapply all tools and patches...", ConsoleColor.Yellow);
                 plan.apply_addmusick = true;
                 plan.apply_gps = true;
                 plan.apply_pixi = true;
                 plan.apply_uberasm = true;
                 plan.uptodate = false;
+                plan.patches_to_apply = new List<string>(newPatches.Keys);
             }
             else
             {
