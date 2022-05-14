@@ -9,6 +9,7 @@ namespace LunarHelper
 {
     class Report
     {
+        private const int report_format_version = 1;
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
         public Dictionary<string, string> levels { get; set; }
