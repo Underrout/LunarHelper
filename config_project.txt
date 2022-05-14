@@ -29,6 +29,15 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 -- human_readable_map16_cli_path = Tools/human-readable-map16-cli.exe
 -- human_readable_map16_directory_path = Other/all_map16
 
+-- Optional config variables if you want to pass command line options to tools
+-- pixi_options = -d
+-- gps_options = -d
+-- addmusick_options = -v
+-- lm_level_import_flags = 0
+
+-- Optional config variable for a folder containing resources shared between multiple tools/patches
+-- shared_folder = Shared
+
 -- content
 levels = Levels
 shared_palette = Other/shared.pal

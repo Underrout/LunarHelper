@@ -71,6 +71,12 @@ except H or ESC at this point, since we have not yet configured the tool!
 If you press H you will see what all of the other menu options do. I will thus not 
 discuss them here, since they should be pretty self-explanatory.
 
+Note that Lunar Helper may at times generate and updated a hidden ".lunar_helper" 
+folder in the same folder as your output ROM. This folder contains various internal 
+information the tool uses, so please leave it alone if possible. If you're using git, 
+you should add this folder to your .gitignore, because it's generally not releavant 
+for version control.
+
 Once you've made sure the tool has launched correctly, go ahead and close it 
 for now.
 
@@ -90,14 +96,11 @@ split the configuration into different files as we please can be useful if you a
 working on a team project and want to separate individual user settings from the 
 project's settings!
 
-Generally I would recommend sticking with separating the configuration into two 
-files just like the provided config files.
-
 Note that all paths you specify inside configuration files are relative to a "dir" 
 path which by default is specified inside config_user.txt. You should change this 
-path to the absolute path to your project folder on your PC before following the 
-rest of this configuration guide. For example, if my hack were in a folder called 
-"hack" and I'd stored it in my documents folder I would change 
+path to the absolute or relative path to the root of your project folder on your 
+PC before following the rest of this configuration guide. For example, if my hack 
+were in a folder called "hack" and I'd stored it in my documents folder I would change 
 
     dir = C:/Users/user/Documents/my_hack 
 
@@ -300,6 +303,34 @@ I would just write
 since that is the name of the folder.
 
 
+# command line options
+
+You can pass command line options for PIXI, GPS, AddmusicK and Lunar Magic 
+that will be used during the build process, if you need additional functionality 
+from these tools. 
+
+To specify these, you can use the "pixi_options", "gps_options", "addmusick_options" 
+and "lm_level_import_flags" config variables respectively. 
+
+The text you specify is inserted into the command issued to the respective tool 
+verbatim, so for example in order to pass the "-d" flag to PIXI to enable debug output, 
+I would write
+
+    pixi_options = -d
+
+If I wanted to pass the -d and -O2 flags to GPS I would write
+
+    gps_options = -d -O2
+
+For the "lm_level_import_flags" variable, note that this is just a single number 
+that determines which flags are enabled during the level import, see Lunar Magic's 
+help file for further details on this.
+
+To not auto-set the screen amount when levels are imported, I would write
+
+    lm_level_import_flags = 0
+
+
 # shared_palette
 
 This variable specifies where you would like Lunar Helper to retrieve your 
@@ -377,6 +408,25 @@ If I wanted Lunar Helper to retrieve this directory from
 I would write
 
     human_readable_map16_directory_path = other/all_map16
+
+
+# shared_folder
+
+This variable can be used to optionally specify the location of a folder that contains 
+code and/or data that is included into various different resources within the project. 
+
+Think among the lines of a shared macro library or .bin files that are used in multiple 
+patches. 
+
+This variable is only useful if you're using this tool's Quick Build function. In this 
+case, any change within this folder will trigger all tools and patches to be re-inserted 
+when you run a Quick Build. This is done to ensure that all tools and patches that may 
+use resources from this shared folder are updated in the ROM when you change the shared 
+resource.
+
+If you don't have any resources that are shared like this or you don't use the Quick 
+Build function, you don't have to worry about this variable at all and can leave it 
+unspecified.
 
 
 # title_moves

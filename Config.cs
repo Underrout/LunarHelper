@@ -15,11 +15,22 @@ namespace SMWPatcher
         public string PackagePath;
 
         public string AsarPath;
+        public string AsarOptions;
+
         public string UberASMPath;
+
         public string GPSPath;
+        public string GPSOptions;
+
         public string PixiPath;
+        public string PixiOptions;
+
         public string AddMusicKPath;
+        public string AddmusicKOptions;
+
         public string LunarMagicPath;
+        public string LunarMagicLevelImportFlags;
+
         public string FlipsPath;
 
         public string HumanReadableMap16CLI;
@@ -31,6 +42,8 @@ namespace SMWPatcher
         public string SharedPalettePath;
         public string GlobalDataPath;
         public string TitleMovesPath;
+
+        public string SharedFolder;
 
         public List<string> Patches = new List<string>();
 
@@ -72,11 +85,16 @@ namespace SMWPatcher
             vars.TryGetValue("clean", out config.CleanPath);
             vars.TryGetValue("package", out config.PackagePath);
             vars.TryGetValue("asar_path", out config.AsarPath);
+            vars.TryGetValue("asar_options", out config.AsarOptions);
             vars.TryGetValue("uberasm_path", out config.UberASMPath);
             vars.TryGetValue("gps_path", out config.GPSPath);
+            vars.TryGetValue("gps_options", out config.GPSOptions);
             vars.TryGetValue("pixi_path", out config.PixiPath);
+            vars.TryGetValue("pixi_options", out config.PixiOptions);
             vars.TryGetValue("addmusick_path", out config.AddMusicKPath);
+            vars.TryGetValue("addmusick_options", out config.AddmusicKOptions);
             vars.TryGetValue("lm_path", out config.LunarMagicPath);
+            vars.TryGetValue("lm_level_import_flags", out config.LunarMagicLevelImportFlags);
             vars.TryGetValue("flips_path", out config.FlipsPath);
             vars.TryGetValue("human_readable_map16_cli_path", out config.HumanReadableMap16CLI);
             vars.TryGetValue("human_readable_map16_directory_path", out config.HumanReadableMap16Directory);
@@ -86,6 +104,7 @@ namespace SMWPatcher
             vars.TryGetValue("global_data", out config.GlobalDataPath);
             vars.TryGetValue("title_moves", out config.TitleMovesPath);
             vars.TryGetValue("initial_patch", out config.InitialPatch);
+            vars.TryGetValue("shared_folder", out config.SharedFolder);
             lists.TryGetValue("patches", out config.Patches);
 
             vars.TryGetValue("test_level", out config.TestLevel);
@@ -134,7 +153,7 @@ namespace SMWPatcher
                         if (str.Trim() == "]")
                             break;
                         else
-                            list.Add(str.Trim());
+                            list.Add(str.Trim().Replace("\\", "/"));
 
                         i++;
                     }
