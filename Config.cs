@@ -18,6 +18,7 @@ namespace SMWPatcher
         public string AsarOptions;
 
         public string UberASMPath;
+        public string UberASMOptions;
 
         public string GPSPath;
         public string GPSOptions;
@@ -90,6 +91,7 @@ namespace SMWPatcher
             vars.TryGetValue("asar_path", out config.AsarPath);
             vars.TryGetValue("asar_options", out config.AsarOptions);
             vars.TryGetValue("uberasm_path", out config.UberASMPath);
+            vars.TryGetValue("uberasm_options", out config.UberASMOptions);
             vars.TryGetValue("gps_path", out config.GPSPath);
             vars.TryGetValue("gps_options", out config.GPSOptions);
             vars.TryGetValue("pixi_path", out config.PixiPath);

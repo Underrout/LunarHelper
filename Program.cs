@@ -479,6 +479,7 @@ namespace SMWPatcher
             report.pixi_options = Config.PixiOptions;
             report.gps_options = Config.GPSOptions;
             report.addmusick_options = Config.AddmusicKOptions;
+            report.uberasm_options = Config.UberASMOptions;
             report.lunar_magic_level_import_flags = Config.LunarMagicLevelImportFlags;
 
             return report;
@@ -1163,7 +1164,7 @@ namespace SMWPatcher
                 var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
                 Console.ForegroundColor = ConsoleColor.Yellow;
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.UberASMPath, $"list.txt \"{rom}\"");
+                ProcessStartInfo psi = new ProcessStartInfo(Config.UberASMPath, $"{Config.UberASMOptions ?? "list.txt"} \"{rom}\"");
                 psi.RedirectStandardInput = true;
                 psi.WorkingDirectory = dir;
 

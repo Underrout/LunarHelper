@@ -185,7 +185,7 @@ namespace LunarHelper
                     plan.uptodate = false;
                 }
 
-                if (Report.HashFolder(Path.GetDirectoryName(config.UberASMPath)) != report.uberasm_folders)
+                if (Report.HashFolder(Path.GetDirectoryName(config.UberASMPath)) != report.uberasm_folders || report.uberasm_options != config.UberASMOptions)
                 {
                     Program.Log("Change in UberASMTool folder detected, will reapply UberASMTool...", ConsoleColor.Yellow);
                     Console.WriteLine();

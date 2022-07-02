@@ -26,6 +26,7 @@ namespace LunarHelper
         public string pixi_folders { get; set; }
         public string pixi_options { get; set; }
         public string uberasm_folders { get; set; }
+        public string uberasm_options { get; set; }
         public string addmusick_folders { get; set; }
         public string addmusick_options { get; set; }
         public string shared_folders { get; set; }
