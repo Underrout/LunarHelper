@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Text;
 
 using LunarHelper;
 
@@ -12,6 +13,8 @@ namespace SMWPatcher
     class Program
     {
         static public Config Config { get; private set; }
+
+        static private string uberasm_success_string = "Codes inserted successfully.";
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process RetroArchProcess;
@@ -1166,12 +1169,22 @@ namespace SMWPatcher
 
                 ProcessStartInfo psi = new ProcessStartInfo(Config.UberASMPath, $"{Config.UberASMOptions ?? "list.txt"} \"{rom}\"");
                 psi.RedirectStandardInput = true;
+                psi.RedirectStandardOutput = true;
                 psi.WorkingDirectory = dir;
 
+                StringBuilder uberasm_output = new StringBuilder();
+
                 var p = Process.Start(psi);
+                p.OutputDataReceived += (sender, args) => { 
+                    uberasm_output.AppendLine(args.Data); 
+                    Log(args.Data, ConsoleColor.Yellow); 
+                };
+                p.BeginOutputReadLine();
                 p.WaitForExit();
 
-                if (p.ExitCode == 0)
+                string output = uberasm_output.ToString();
+
+                if (output.Contains(uberasm_success_string))
                     Log("UberASM Success!", ConsoleColor.Green);
                 else
                 {
