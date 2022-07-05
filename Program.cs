@@ -900,10 +900,7 @@ namespace LunarHelper
 
         static private void FinalizeOutputROM()
         {
-            // output final ROM
-            File.Copy(Config.TempPath, Config.OutputPath, true);
-
-            // copy other generated files
+            // rename temp rom and generated files to final build output
             {
                 var path = Path.GetDirectoryName(Path.GetFullPath(Config.TempPath));
                 var to = Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath));
