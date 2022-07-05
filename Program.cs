@@ -903,10 +903,11 @@ namespace LunarHelper
             // rename temp rom and generated files to final build output
             {
                 var path = Path.GetDirectoryName(Path.GetFullPath(Config.TempPath));
+                var temp_name = Path.GetFileNameWithoutExtension(Config.TempPath);
                 var to = Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath));
                 to = Path.Combine(to, Path.GetFileNameWithoutExtension(Config.OutputPath));
 
-                foreach (var file in Directory.EnumerateFiles(path, "temp*"))
+                foreach (var file in Directory.EnumerateFiles(path, temp_name + "*"))
                     File.Move(file, $"{to}{Path.GetExtension(file)}", true);
             }
         }
