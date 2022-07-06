@@ -7,9 +7,12 @@ using System.Text.Json;
 using System.Text;
 
 using LunarHelper;
+using System.Linq;
 
 namespace SMWPatcher
 {
+    using JsonVertex = DependencyGraphConverter.JsonVertex;
+
     class Program
     {
         static public Config Config { get; private set; }
@@ -19,6 +22,9 @@ namespace SMWPatcher
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process RetroArchProcess;
         static private Process LunarMagicProcess;
+
+        static private DependencyGraph dependency_graph;
+        static private DependencyGraphConverter dependency_graph_converter;
 
         private enum Result
         {
@@ -47,15 +53,19 @@ namespace SMWPatcher
                 {
                     case ConsoleKey.Q:
                         if (Init())
+                        {
                             if (!QuickBuild())
                             {
                                 Log("Your ROM has not been altered!", ConsoleColor.Cyan);
                             }
+                        }
                         break;
 
                     case ConsoleKey.B:
                         if (Init())
+                        {
                             Build();
+                        }
                         break;
 
                     case ConsoleKey.T:
@@ -105,8 +115,11 @@ namespace SMWPatcher
 
         static private bool QuickBuild()
         {
-            BuildPlan plan = BuildPlan.PlanBuild(Config);
+            dependency_graph = new DependencyGraph(Config);
+            dependency_graph_converter = new DependencyGraphConverter(dependency_graph);
 
+            BuildPlan plan = BuildPlan.PlanBuild(Config, dependency_graph);
+            
             if (plan.uptodate)
             {
                 return true;
@@ -436,6 +449,8 @@ namespace SMWPatcher
 
             report.build_time = DateTime.Now;
 
+            report.dependencies = dependency_graph_converter.GetDependencies().ToList();
+
             report.levels = GetLevelReport();
             report.graphics = Report.HashFolder("Graphics");
             report.exgraphics = Report.HashFolder("ExGraphics");
@@ -467,7 +482,8 @@ namespace SMWPatcher
             report.pixi_folders = Report.HashFolder(Path.GetDirectoryName(Config.PixiPath));
             report.gps_folders = Report.HashFolder(Path.GetDirectoryName(Config.GPSPath));
             report.uberasm_folders = Report.HashFolder(Path.GetDirectoryName(Config.UberASMPath));
-            report.addmusick_folders = Report.HashFolder(Path.GetDirectoryName(Config.AddMusicKPath));
+
+            report.addmusick_roots = dependency_graph_converter.GetAmkRoots().ToList();
 
             report.shared_folders = Report.HashFolder(Config.SharedFolder);
 
@@ -488,18 +504,21 @@ namespace SMWPatcher
             return report;
         }
 
-        static public Dictionary<string, string> GetPatchReport()
+        static public Dictionary<string, JsonVertex> GetPatchReport()
         {
             if (Config.Patches == null)
             {
                 return null;
             }
 
-            var dict = new Dictionary<string, string>();
+            var dict = new Dictionary<string, JsonVertex>();
+
+            List<DependencyGraphConverter.JsonVertex> patch_list = dependency_graph_converter.GetPatchRoots().ToList();
 
             foreach (var patch in Config.Patches)
             {
-                dict[patch] = Report.HashFile(patch);
+                // TODO make this not rehash the file to find the corresponding vertex, that's needlessly wasteful
+                dict[patch] = patch_list.Find(v => v.hash == Report.HashFile(patch));
             }
 
             return dict;
@@ -584,6 +603,9 @@ namespace SMWPatcher
                 Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
                 return false;
             }
+
+            dependency_graph = new DependencyGraph(Config);
+            dependency_graph_converter = new DependencyGraphConverter(dependency_graph);
 
             // delete existing temp ROM
             if (File.Exists(Config.TempPath))

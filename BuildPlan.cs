@@ -5,8 +5,6 @@ using System.IO;
 using System.Text.Json;
 using System.Linq;
 
-using SMWPatcher;
-
 namespace LunarHelper
 {
     class BuildPlan
@@ -28,7 +26,7 @@ namespace LunarHelper
         public IList<string> levels_to_insert { get; set; } = new List<string>();
         public bool insert_all_levels { get; set; } = false;
 
-        public static BuildPlan PlanBuild(Config config)
+        public static BuildPlan PlanBuild(Config config, DependencyGraph dependency_graph)
         {
             var plan = new BuildPlan();
 
@@ -70,8 +68,8 @@ namespace LunarHelper
                 return plan;
             }
 
-            Dictionary<string, string> oldPatches = report.patches;
-            Dictionary<string, string> newPatches = Program.GetPatchReport();
+            Dictionary<string, DependencyGraphConverter.Vertex> oldPatches = report.patches;
+            Dictionary<string, DependencyGraphConverter.Vertex> newPatches = Program.GetPatchReport();
 
             if (report.patches != null)
             {
@@ -168,13 +166,14 @@ namespace LunarHelper
                             plan.patches_to_apply.Add(patch);
                             plan.uptodate = false;
                         }
-                        else if (oldPatches[patch] != hash)
+                        // TODO uncomment this again
+                        /*else if (oldPatches[patch] != hash)
                         {
                             Program.Log($"Change in patch '{patch}' detected, will be reinserted...", ConsoleColor.Yellow);
                             Console.WriteLine();
                             plan.patches_to_apply.Add(patch);
                             plan.uptodate = false;
-                        }
+                        }*/
                     }
                 }
                 else
@@ -193,13 +192,14 @@ namespace LunarHelper
                     plan.uptodate = false;
                 }
 
-                if (Report.HashFolder(Path.GetDirectoryName(config.AddMusicKPath)) != report.addmusick_folders || report.addmusick_options != config.AddmusicKOptions)
+                // TODO uncomment this again
+                /*if (Report.HashFolder(Path.GetDirectoryName(config.AddMusicKPath)) != report.addmusick_folders || report.addmusick_options != config.AddmusicKOptions)
                 {
                     Program.Log("Change in AddMusicK detected, will reapply AddMusicK...", ConsoleColor.Yellow);
                     Console.WriteLine();
                     plan.apply_addmusick = true;
                     plan.uptodate = false;
-                }
+                }*/
             }
 
             // check resources

@@ -9,87 +9,151 @@ using System.IO;
 using QuickGraph.Algorithms;
 using QuickGraph;
 
-using SMWPatcher;
-
 namespace LunarHelper
 {
-    class DependencyGraph
+    class CriticalDependencyMissingException : Exception
     {
-        private class Vertex
+        public CriticalDependencyMissingException()
         {
-            public string absolute_file_path;
-            public string hash;
 
-            public Vertex(string absolute_file_path)
-            {
-                this.absolute_file_path = absolute_file_path;
-                hash = Report.HashFile(absolute_file_path);
-            }
         }
 
-        private AdjacencyGraph<Vertex, SEdge<Vertex>> dependency_graph;
-        private Dictionary<string, Vertex> file_vertex_dict = new Dictionary<string, Vertex>();
-
-        private HashSet<Vertex> pixi_sources;
-        private HashSet<Vertex> uberasm_sources;
-        private HashSet<Vertex> gps_sources;
-        private HashSet<Vertex> amk_sources;
-        private HashSet<Vertex> patch_sources;
-
-        public DependencyGraph(ICollection<string> pixi_sources, ICollection<string> uberasm_sources, ICollection<string> gps_sources,
-            ICollection<string> amk_sources, ICollection<string> patch_list_sources, ICollection<string> patch_folder_sources)
+        public CriticalDependencyMissingException(string file_path) : 
+            base($"Required dependency \"{file_path}\" is missing, cannot build")
         {
-            dependency_graph = new AdjacencyGraph<Vertex, SEdge<Vertex>>();
+
+        }
+
+        public CriticalDependencyMissingException(string message, string file_path) :
+            base(String.Format(message, file_path))
+        {
+
+        }
+    }
+
+    class DependencyGraph
+    {
+        public BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>> dependency_graph;
+        private DependencyResolver resolver;
+
+        // private HashSet<Vertex> pixi_sources;
+        // private HashSet<Vertex> uberasm_sources;
+        // private HashSet<Vertex> gps_sources;
+        public ToolRootVertex amk_root { get; } = null;
+        public HashSet<PatchRootVertex> patch_roots = new HashSet<PatchRootVertex>();
+
+        // public DependencyGraph(ICollection<string> pixi_sources, ICollection<string> uberasm_sources, ICollection<string> gps_sources,
+        //      ICollection<string> amk_sources, ICollection<string> patch_sources)
+        public DependencyGraph(Config config)
+        {
+            dependency_graph = new BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>>();
+            resolver = new DependencyResolver(this, config);
 
             // this.pixi_sources = CreateSourceSet(pixi_sources);
             // this.uberasm_sources = CreateSourceSet(uberasm_sources);
             // this.gps_sources = CreateSourceSet(gps_sources);
-            // this.amk_sources = CreateSourceSet(amk_sources);
-            this.patch_sources = CreateSourceSet(patch_list_sources);
 
-
-        }
-
-        private void AddPatchListVertexDependencies(Vertex vertex)
-        {
-            HashSet<Vertex> visited = new HashSet<Vertex>();
-
-            foreach (var dependency in DependencyResolver.GetAsarFileDependencies(vertex.absolute_file_path))
+            if (resolver.CanResolveAmk())
             {
-                visited.Add(vertex);
-                Vertex dependency_vertex = GetOrCreateVertex(dependency.absolute_dependency_path);
-                dependency_graph.AddEdge(new SEdge<Vertex>(vertex, dependency_vertex));
-                if (!visited.Contains(dependency_vertex) && !dependency.is_deadend)
+                amk_root = CreateToolRootVertex(ToolRootVertex.Tool.Amk);
+                resolver.ResolveToolRootDependencies(amk_root);
+            }
+
+            if (resolver.CanResolvePatches())
+            {
+                CreatePatchRoots(config);
+
+                foreach (var root in patch_roots)
                 {
-                    AddPatchListVertexDependencies(dependency_vertex);
+                    resolver.ResolveDependencies(root);
                 }
             }
         }
 
-        private HashSet<Vertex> CreateSourceSet(ICollection<string> sources)
+        private void CreatePatchRoots(Config config)
         {
-            HashSet<Vertex> source_set = new HashSet<Vertex>();
-            foreach (string source in sources)
+            foreach (string user_specified_patch_path in config.Patches)
             {
-                source_set.Add(GetOrCreateVertex(source));
+                PatchRootVertex patch_root = new PatchRootVertex(user_specified_patch_path);
+
+                if (patch_root is not FileVertex)
+                {
+                    throw new CriticalDependencyMissingException(
+                        "User-specified patch \"{0}\" was not found", user_specified_patch_path);
+                }
+
+                patch_roots.Add(patch_root);
+                dependency_graph.AddVertex(patch_root);
             }
-            return source_set;
         }
 
-        private Vertex GetOrCreateVertex(string absolute_file_path)
+        // will add a tagged edge between two vertices, even if another edge between them already exists
+        public void AddEdge(Vertex source, Vertex target, string tag)
         {
-            Vertex existing_vertex;
-            file_vertex_dict.TryGetValue(absolute_file_path, out existing_vertex);
+            dependency_graph.AddEdge(new STaggedEdge<Vertex, string>(source, target, tag));
+        }
 
-            if (existing_vertex != null)
+        // will add a tagged edge between two vertices, but only if no edge exists between them yet
+        // returns true if an edge was added and false if one was already found
+        public bool TryAddUniqueEdge(Vertex source, Vertex target, string tag)
+        {
+            if (dependency_graph.OutEdges(source).Any(e => e.Target == target))
             {
-                return existing_vertex;
+                return false;
             }
-            
-            Vertex vertex = new Vertex(absolute_file_path);
+
+            dependency_graph.AddEdge(new STaggedEdge<Vertex, string>(source, target, tag));
+
+            return true;
+        }
+
+        public ArbitraryFileVertex CreateArbitraryFileVertex()
+        {
+            ArbitraryFileVertex vertex = new ArbitraryFileVertex();
             dependency_graph.AddVertex(vertex);
-            file_vertex_dict.Add(vertex.absolute_file_path, vertex);
+
             return vertex;
+        }
+
+        private ToolRootVertex CreateToolRootVertex(ToolRootVertex.Tool for_tool)
+        {
+            ToolRootVertex vertex = new ToolRootVertex(for_tool);
+            dependency_graph.AddVertex(vertex);
+            return vertex;
+        }
+
+        // retrieves or creates a FileVertex for the provided file path
+        //
+        // if is_generated is set, whether an underlying file exists or not won't be 
+        // checked and a GeneratedFileVertex will be returned, otherwise, if the 
+        // underlying file exists, a HashFileVertex will be returned, if no such file
+        // exists, a MissingFileVertex will be returned instead
+        public Vertex GetOrCreateVertex(string file_path, bool is_generated = false)
+        {
+            FileVertex maybe_vertex = dependency_graph.Vertices
+                .Where(v => v is FileVertex)
+                .Cast<FileVertex>()
+                .SingleOrDefault(v => Util.PathsEqual(v.normalized_file_path, file_path));
+
+            if (maybe_vertex != null)
+            {
+                return maybe_vertex;
+            }
+
+            Vertex new_vertex;
+
+            try
+            {
+                new_vertex = is_generated ? new GeneratedFileVertex(file_path) : new HashFileVertex(file_path);
+            }
+            catch (NoUnderlyingFileException)
+            {
+                new_vertex = new MissingFileVertex(file_path);
+            }
+
+            dependency_graph.AddVertex(new_vertex);
+
+            return new_vertex;
         }
     }
 }
