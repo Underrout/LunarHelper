@@ -15,6 +15,8 @@ namespace LunarHelper.Resolvers
     {
         private readonly AsarResolver asar_resolver;
 
+        private HashSet<Vertex> seen = new HashSet<Vertex>();
+
         public enum RootDependencyType
         {
             Asar,
@@ -77,7 +79,7 @@ namespace LunarHelper.Resolvers
         {
             this.graph = graph;
             amk_directory = Util.NormalizePath(Path.GetDirectoryName(amk_exe_path));
-            asar_resolver = new AsarResolver(graph, Util.NormalizePath(
+            asar_resolver = new AsarResolver(graph, seen, Util.NormalizePath(
                 Path.Combine(amk_directory, amk_asar_exe_name)));
 
             var full_song_sample_list_ignore_path = Util.NormalizePath(
@@ -94,6 +96,7 @@ namespace LunarHelper.Resolvers
 
                 Vertex dependency = graph.GetOrCreateVertex(Path.Combine(amk_directory, relative_path));
                 graph.TryAddUniqueEdge(vertex, dependency, tag);
+                seen.Add(dependency);
 
                 if (dependency is HashFileVertex)
                 {
@@ -148,6 +151,10 @@ namespace LunarHelper.Resolvers
                 {
                     ResolveSongDependencies((HashFileVertex)song_vertex);
                 }
+                else
+                {
+                    seen.Add(song_vertex);
+                }
             }
         }
 
@@ -171,6 +178,7 @@ namespace LunarHelper.Resolvers
 
                     Vertex sample_vertex = graph.GetOrCreateVertex(sample_path);
                     graph.AddEdge(vertex, sample_vertex, tag);
+                    seen.Add(sample_vertex);
 
                     // not calling resolve on sample vertex here since it's a binary file
                 }
@@ -259,6 +267,7 @@ namespace LunarHelper.Resolvers
                             sample_id++;
                         }
 
+                        seen.Add(sample_vertex);
                         // not resolving sample vertex since it's binary
                     }
                 }

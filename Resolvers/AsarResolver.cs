@@ -24,15 +24,17 @@ namespace LunarHelper.Resolvers
         );
 
         private readonly DependencyGraph graph;
+        private HashSet<Vertex> seen;
         private readonly IEnumerable<string> additional_include_directories = new List<string>();
         public readonly string stddefines_file;
 
         // normalized generated file path, tag for generated file
         private List<(string, string)> generated_files = new List<(string, string)>();
 
-        public AsarResolver(DependencyGraph graph, string asar_exe_path = null, string asar_options = null)
+        public AsarResolver(DependencyGraph graph, HashSet<Vertex> seen, string asar_exe_path = null, string asar_options = null)
         {
             this.graph = graph;
+            this.seen = seen;
 
             if (asar_exe_path != null)
             {
@@ -70,6 +72,13 @@ namespace LunarHelper.Resolvers
 
         public void ResolveDependencies(HashFileVertex vertex)
         {
+            if (seen.Contains(vertex))
+            {
+                return;
+            }
+
+            seen.Add(vertex);
+
             int dependency_id = 0;
 
             using (StreamReader sr = new StreamReader(vertex.normalized_file_path))
@@ -126,6 +135,10 @@ namespace LunarHelper.Resolvers
             if (!is_binary_dependency && dependency is HashFileVertex)
             {
                 ResolveDependencies((HashFileVertex)dependency);
+            }
+            else
+            {
+                seen.Add(dependency);
             }
         }
 

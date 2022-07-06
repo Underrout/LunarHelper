@@ -15,6 +15,7 @@ namespace LunarHelper.Resolvers
 
     class PixiResolver : IToolRootResolve
     {
+        private HashSet<Vertex> seen = new HashSet<Vertex>();
         private readonly DependencyGraph graph;
         private readonly AsarResolver asar_resolver;
         private readonly string pixi_directory;
@@ -148,7 +149,7 @@ namespace LunarHelper.Resolvers
 
         private AsarResolver CreateAsarResolver()
         {
-            AsarResolver resolver = new AsarResolver(graph);
+            AsarResolver resolver = new AsarResolver(graph, seen);
 
             foreach ((string generated_file_path, string tag) in asm_directory_generated_files)
             {

@@ -11,10 +11,11 @@ namespace LunarHelper.Resolvers
     class PatchResolver : IResolve<PatchRootVertex>
     {
         private AsarResolver asar_resolver;
+        private HashSet<Vertex> seen = new HashSet<Vertex>();
 
         public PatchResolver(DependencyGraph graph, string asar_exe_path, string asar_options)
         {
-            asar_resolver = new AsarResolver(graph, asar_exe_path, asar_options);
+            asar_resolver = new AsarResolver(graph, seen, asar_exe_path, asar_options);
         }
 
         public void ResolveDependencies(PatchRootVertex vertex)
