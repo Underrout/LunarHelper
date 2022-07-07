@@ -153,12 +153,12 @@ namespace LunarHelper.Resolvers
             DetermineDirectoryPaths(pixi_options, output_path);
 
             asar_resolver = CreateAsarResolver();
-            root_dependencies = DetermineRootDependencies();
+            root_dependencies = DetermineRootDependencies(pixi_exe_path);
         }
 
-        private RootDependencyList DetermineRootDependencies()
+        private RootDependencyList DetermineRootDependencies(string pixi_exe_path)
         {
-            RootDependencyList dependencies = new RootDependencyList();
+            RootDependencyList dependencies = new RootDependencyList { (pixi_exe_path, "exe", RootDependencyType.Binary) };
 
             foreach ((string relative_path, string tag, RootDependencyType type) in static_root_dependencies)
             {
@@ -238,13 +238,11 @@ namespace LunarHelper.Resolvers
                             break;
 
                         case RootDependencyType.Binary:
+                            seen.Add(dependency);
                             break;
 
                         case RootDependencyType.SpriteList:
                             ResolveSpriteList(dependency_file);
-                            break;
-
-                        default:
                             break;
                     }
                 }

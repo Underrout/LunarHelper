@@ -17,6 +17,8 @@ namespace LunarHelper.Resolvers
 
         private HashSet<Vertex> seen = new HashSet<Vertex>();
 
+        private Vertex exe_vertex;
+
         public enum RootDependencyType
         {
             Asar,
@@ -86,6 +88,8 @@ namespace LunarHelper.Resolvers
                 Path.Combine(amk_directory, amk_song_sample_list_ignore.Item1));
 
             asar_resolver.NameGeneratedFile(full_song_sample_list_ignore_path, amk_song_sample_list_ignore.Item2);
+
+            exe_vertex = graph.GetOrCreateVertex(amk_exe_path);
         }
 
         public void ResolveToolRootDependencies(ToolRootVertex vertex)
@@ -120,6 +124,7 @@ namespace LunarHelper.Resolvers
                             break;
 
                         case RootDependencyType.Binary:
+                            seen.Add(dependency);
                             break;
 
                         default:
@@ -127,6 +132,9 @@ namespace LunarHelper.Resolvers
                     }
                 }
             }
+
+            graph.TryAddUniqueEdge(vertex, exe_vertex, "exe");
+
         }
 
         private void ResolveSongListDependencies(HashFileVertex vertex)
