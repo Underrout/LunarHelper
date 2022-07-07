@@ -17,6 +17,7 @@ namespace LunarHelper
         private readonly PatchResolver patch_resolver;
         private readonly AmkResolver amk_resolver;
         private readonly PixiResolver pixi_resolver;
+        private readonly GpsResolver gps_resolver;
 
         public DependencyResolver(DependencyGraph graph, Config config)
         {
@@ -35,6 +36,11 @@ namespace LunarHelper
                 pixi_resolver = new PixiResolver(graph, Util.NormalizePath(config.PixiPath), 
                     config.PixiOptions, Util.NormalizePath(config.OutputPath));
             }
+
+            if (!string.IsNullOrWhiteSpace(config.GPSPath))
+            {
+                gps_resolver = new GpsResolver(graph, Util.NormalizePath(config.GPSPath), config.GPSOptions);
+            }
         }
 
         public bool CanResolvePatches()
@@ -50,6 +56,11 @@ namespace LunarHelper
         public bool CanResolvePixi()
         {
             return pixi_resolver != null;
+        }
+
+        public bool CanResolveGps()
+        {
+            return gps_resolver != null;
         }
 
         public void ResolveDependencies(PatchRootVertex vertex)
@@ -70,7 +81,8 @@ namespace LunarHelper
                     break;
 
                 case ToolRootVertex.Tool.Gps:
-                    throw new NotImplementedException();
+                    gps_resolver.ResolveToolRootDependencies(vertex);
+                    break;
 
                 case ToolRootVertex.Tool.UberAsm:
                     throw new NotImplementedException();

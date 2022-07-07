@@ -38,7 +38,7 @@ namespace LunarHelper
 
         public ToolRootVertex pixi_root { get; } = null;
         // private HashSet<Vertex> uberasm_sources;
-        // private HashSet<Vertex> gps_sources;
+        public ToolRootVertex gps_root { get; } = null;
         public ToolRootVertex amk_root { get; } = null;
         public HashSet<PatchRootVertex> patch_roots = new HashSet<PatchRootVertex>();
 
@@ -63,6 +63,12 @@ namespace LunarHelper
             {
                 pixi_root = CreateToolRootVertex(ToolRootVertex.Tool.Pixi);
                 resolver.ResolveToolRootDependencies(pixi_root);
+            }
+
+            if (resolver.CanResolveGps())
+            {
+                gps_root = CreateToolRootVertex(ToolRootVertex.Tool.Gps);
+                resolver.ResolveToolRootDependencies(gps_root);
             }
 
             if (resolver.CanResolvePatches())
