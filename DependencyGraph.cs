@@ -37,21 +37,15 @@ namespace LunarHelper
         private DependencyResolver resolver;
 
         public ToolRootVertex pixi_root { get; } = null;
-        // private HashSet<Vertex> uberasm_sources;
+        public ToolRootVertex uberasm_root { get; } = null;
         public ToolRootVertex gps_root { get; } = null;
         public ToolRootVertex amk_root { get; } = null;
         public HashSet<PatchRootVertex> patch_roots = new HashSet<PatchRootVertex>();
 
-        // public DependencyGraph(ICollection<string> pixi_sources, ICollection<string> uberasm_sources, ICollection<string> gps_sources,
-        //      ICollection<string> amk_sources, ICollection<string> patch_sources)
         public DependencyGraph(Config config)
         {
             dependency_graph = new BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>>();
             resolver = new DependencyResolver(this, config);
-
-            // this.pixi_sources = CreateSourceSet(pixi_sources);
-            // this.uberasm_sources = CreateSourceSet(uberasm_sources);
-            // this.gps_sources = CreateSourceSet(gps_sources);
 
             if (resolver.CanResolveAmk())
             {
@@ -69,6 +63,12 @@ namespace LunarHelper
             {
                 gps_root = CreateToolRootVertex(ToolRootVertex.Tool.Gps);
                 resolver.ResolveToolRootDependencies(gps_root);
+            }
+
+            if (resolver.CanResolveUberAsm())
+            {
+                uberasm_root = CreateToolRootVertex(ToolRootVertex.Tool.UberAsm);
+                resolver.ResolveToolRootDependencies(uberasm_root);
             }
 
             if (resolver.CanResolvePatches())

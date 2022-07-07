@@ -134,7 +134,6 @@ namespace LunarHelper.Resolvers
             }
 
             graph.TryAddUniqueEdge(vertex, exe_vertex, "exe");
-
         }
 
         private void ResolveSongListDependencies(HashFileVertex vertex)
