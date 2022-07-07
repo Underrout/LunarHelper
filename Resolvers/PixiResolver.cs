@@ -443,9 +443,21 @@ namespace LunarHelper.Resolvers
             seen.Add(vertex);
 
             string contents = File.ReadAllText(vertex.normalized_file_path);
-            JsonNode node = JsonNode.Parse(contents);
+            JsonNode node;
+
+            try
+            {
+                node = JsonNode.Parse(contents);
+            }
+            catch
+            {
+                node = null;
+            }
+
+            var relative_asm_path = node != null && node["AsmFile"] != null ? node["AsmFile"].ToString() : "";
+
             var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
-                    vertex.normalized_file_path), node["AsmFile"].ToString()));
+                    vertex.normalized_file_path), relative_asm_path));
 
             Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
             graph.TryAddUniqueEdge(vertex, asm_vertex, config_to_asm_tag);
