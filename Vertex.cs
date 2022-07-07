@@ -71,7 +71,7 @@ namespace LunarHelper
 
         public PatchRootVertex(string user_specified_patch_path) : base(user_specified_patch_path)
         {
-            normalized_relative_patch_path = new Uri(user_specified_patch_path).LocalPath
+            normalized_relative_patch_path = user_specified_patch_path.Replace('/', '\\')
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).ToLowerInvariant();
         }
     }
