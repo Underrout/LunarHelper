@@ -80,9 +80,13 @@ namespace LunarHelper
         {
             foreach (string user_specified_patch_path in config.Patches)
             {
-                PatchRootVertex patch_root = new PatchRootVertex(user_specified_patch_path);
+                PatchRootVertex patch_root = null;
 
-                if (patch_root is not FileVertex)
+                try
+                {
+                    patch_root = new PatchRootVertex(user_specified_patch_path);
+                }
+                catch (NoUnderlyingFileException)
                 {
                     throw new CriticalDependencyMissingException(
                         "User-specified patch \"{0}\" was not found", user_specified_patch_path);
