@@ -18,7 +18,7 @@ namespace LunarHelper
 
         }
 
-        public CriticalDependencyMissingException(string file_path) : 
+        public CriticalDependencyMissingException(string file_path) :
             base($"Required dependency \"{file_path}\" is missing, cannot build")
         {
 
@@ -36,7 +36,7 @@ namespace LunarHelper
         public BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>> dependency_graph;
         private DependencyResolver resolver;
 
-        // private HashSet<Vertex> pixi_sources;
+        public ToolRootVertex pixi_root { get; } = null;
         // private HashSet<Vertex> uberasm_sources;
         // private HashSet<Vertex> gps_sources;
         public ToolRootVertex amk_root { get; } = null;
@@ -57,6 +57,12 @@ namespace LunarHelper
             {
                 amk_root = CreateToolRootVertex(ToolRootVertex.Tool.Amk);
                 resolver.ResolveToolRootDependencies(amk_root);
+            }
+
+            if (resolver.CanResolvePixi())
+            {
+                pixi_root = CreateToolRootVertex(ToolRootVertex.Tool.Pixi);
+                resolver.ResolveToolRootDependencies(pixi_root);
             }
 
             if (resolver.CanResolvePatches())
@@ -110,6 +116,24 @@ namespace LunarHelper
         public ArbitraryFileVertex CreateArbitraryFileVertex()
         {
             ArbitraryFileVertex vertex = new ArbitraryFileVertex();
+            dependency_graph.AddVertex(vertex);
+
+            return vertex;
+        }
+
+        public Vertex GetOrCreateMissingFileVertex(string file_path)
+        {
+            FileVertex maybe_vertex = dependency_graph.Vertices
+                .Where(v => v is FileVertex)
+                .Cast<FileVertex>()
+                .SingleOrDefault(v => Util.PathsEqual(v.normalized_file_path, file_path));
+
+            if (maybe_vertex != null)
+            {
+                return maybe_vertex;
+            }
+
+            MissingFileVertex vertex = new MissingFileVertex(file_path);
             dependency_graph.AddVertex(vertex);
 
             return vertex;

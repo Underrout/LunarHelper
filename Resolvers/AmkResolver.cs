@@ -96,7 +96,6 @@ namespace LunarHelper.Resolvers
 
                 Vertex dependency = graph.GetOrCreateVertex(Path.Combine(amk_directory, relative_path));
                 graph.TryAddUniqueEdge(vertex, dependency, tag);
-                seen.Add(dependency);
 
                 if (dependency is HashFileVertex)
                 {
@@ -132,6 +131,13 @@ namespace LunarHelper.Resolvers
 
         private void ResolveSongListDependencies(HashFileVertex vertex)
         {
+            if (seen.Contains(vertex))
+            {
+                return;
+            }
+
+            seen.Add(vertex);
+
             string contents = File.ReadAllText(vertex.normalized_file_path);
 
             var matches = songs_regex.Matches(contents);
@@ -160,6 +166,13 @@ namespace LunarHelper.Resolvers
 
         private void ResolveSampleGroupDependencies(HashFileVertex vertex)
         {
+            if (seen.Contains(vertex))
+            {
+                return;
+            }
+
+            seen.Add(vertex);
+
             string contents = File.ReadAllText(vertex.normalized_file_path);
 
             var matches = samples_in_sample_groups.Matches(contents);
@@ -187,6 +200,13 @@ namespace LunarHelper.Resolvers
 
         private void ResolveSoundEffectListDependencies(HashFileVertex vertex)
         {
+            if (seen.Contains(vertex))
+            {
+                return;
+            }
+
+            seen.Add(vertex);
+
             // BIG NOTE: sound effects can have asm in them, and yes, they can incsrc/incbin!
             //           probably can just treat them as asar files when resolving dependencies
 
@@ -240,6 +260,13 @@ namespace LunarHelper.Resolvers
 
         private void ResolveSongDependencies(HashFileVertex vertex)
         {
+            if (seen.Contains(vertex))
+            {
+                return;
+            }
+
+            seen.Add(vertex);
+
             string contents = File.ReadAllText(vertex.normalized_file_path);
 
             var matches = music_samples_and_paths.Matches(contents);

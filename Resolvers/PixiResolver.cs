@@ -27,6 +27,64 @@ namespace LunarHelper.Resolvers
             SpriteList
         }
 
+        public enum SpriteType
+        {
+            Normal,
+            Shooter,
+            Generator,
+            Cluster,
+            Extended
+        }
+
+        // range of sprite numbers that correspond to shooters (inclusive on both ends)
+        private (int, int) shooter_sprite_range = (0xC0, 0xCF);
+
+        // range of sprite numbers that correspond to generators (inclusive on both ends)
+        private (int, int) generator_sprite_range = (0xD0, 0xFF);
+
+        // for cfg files
+        private const string cfg_sprite_tag = "cfg_sprite";
+
+        // for json files
+        private const string json_sprite_tag = "json_sprite";
+
+        // for asm files (cluster & extended don't use config files)
+        private const string asm_sprite_tag = "asm_sprite";
+
+        private const string normal_sprite_tag = "normal";
+
+        private const string shooter_sprite_tag = "shooter";
+
+        private const string generator_sprite_tag = "generator";
+
+        private const string cluster_sprite_tag = "cluster";
+
+        private const string extended_sprite_tag = "extended";
+
+        // tag used between config files and the asm file they refer to
+        private const string config_to_asm_tag = "asm_file";
+
+        private readonly Regex list_section = new Regex(
+            @"^\s*(?i)(?<section>SPRITE|EXTENDED|CLUSTER|)(?-i):",
+            RegexOptions.Compiled | RegexOptions.Multiline
+        );
+
+        // by "normal" I mean not per-level
+        private readonly Regex normal_sprite = new Regex(
+            @"^\s*(?<number>[a-fA-F0-9]+)\s+(?<path>(.*?)(?<extension>\.cfg|\.json|\.asm))",
+            RegexOptions.Compiled | RegexOptions.Multiline
+        );
+
+        private readonly Regex per_level_sprite = new Regex(
+            @"^\s*(?<number>[a-fA-F0-9]+:[a-fA-F0-9]+)\s+(?<path>(.*?)(?<extension>\.cfg|\.json|\.asm))",
+            RegexOptions.Compiled | RegexOptions.Multiline
+        );
+
+        private readonly Regex cfg_asm_path = new Regex(
+            @"^\s*(?<path>(?:.*).asm)",
+            RegexOptions.Compiled | RegexOptions.Multiline
+        );
+
         private readonly RootDependencyList static_root_dependencies = new RootDependencyList
         {
             ( "asar.dll", "asar", RootDependencyType.Binary )
@@ -44,7 +102,7 @@ namespace LunarHelper.Resolvers
 
         private readonly IEnumerable<(string, string)> asm_directory_generated_files = new List<(string, string)>
         {
-            ( "_ClusterPtr.asm", "cluster_ptr" ),
+            ( "_ClusterPtr.bin", "cluster_ptr" ),
             ( "_ExtendedPtr.bin", "extended_ptr" ),
             ( "_ExtendedCapePtr.bin", "extended_cape_ptr" ),
             ( "_versionflag.bin", "version_flag" ),
@@ -171,21 +229,193 @@ namespace LunarHelper.Resolvers
 
                 if (dependency is HashFileVertex)
                 {
-                    HashFileVertex depencency_file = (HashFileVertex)dependency;
+                    HashFileVertex dependency_file = (HashFileVertex)dependency;
 
                     switch (type)
                     {
                         case RootDependencyType.Asar:
-                            asar_resolver.ResolveDependencies(depencency_file);
+                            asar_resolver.ResolveDependencies(dependency_file);
                             break;
 
                         case RootDependencyType.Binary:
+                            break;
+
+                        case RootDependencyType.SpriteList:
+                            ResolveSpriteList(dependency_file);
                             break;
 
                         default:
                             break;
                     }
                 }
+            }
+        }
+
+        private void ResolveSpriteList(HashFileVertex vertex)
+        {
+            seen.Add(vertex);
+
+            using (StreamReader sr = new StreamReader(vertex.normalized_file_path))
+            {
+                string line;
+
+                SpriteType curr_section = SpriteType.Normal;
+
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        Match match = normal_sprite.Match(line);
+
+                        if (match.Success)
+                        {
+                            var number = int.Parse(match.Groups["number"].Value, System.Globalization.NumberStyles.HexNumber);
+
+                            SpriteType type = curr_section;
+
+                            if (type == SpriteType.Normal)
+                            {
+                                // check what kind of "normal" sprite it is
+                                if (number >= shooter_sprite_range.Item1 && number <= shooter_sprite_range.Item2)
+                                {
+                                    type = SpriteType.Shooter;
+                                }
+                                else if (number >= generator_sprite_range.Item1 && number <= generator_sprite_range.Item2)
+                                {
+                                    type = SpriteType.Generator;
+                                }
+                            }
+
+                            ResolveSprite(vertex, match.Groups["path"].Value, number.ToString(), type);
+                            continue;
+                        }
+
+                        match = list_section.Match(line);
+
+                        if (match.Success)
+                        {
+                            switch (match.Groups["section"].Value.ToLower())
+                            {
+                                case "sprite":
+                                    curr_section = SpriteType.Normal;
+                                    break;
+
+                                case "extended":
+                                    curr_section = SpriteType.Extended;
+                                    break;
+
+                                case "cluster":
+                                    curr_section = SpriteType.Cluster;
+                                    break;
+                            }
+                            continue;
+                        }
+
+                        match = per_level_sprite.Match(line);
+
+                        if (match.Success)
+                        {
+                            var number = match.Groups["number"].Value.ToLowerInvariant();
+
+                            ResolveSprite(vertex, match.Groups["path"].Value, number, curr_section);
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ResolveSprite(Vertex list_vertex, string relative_path, string number, SpriteType type)
+        {
+            string base_path = null;
+
+            string tag_base = null;
+
+            switch (type)
+            {
+                case SpriteType.Normal:
+                    base_path = sprites_directory;
+                    tag_base = normal_sprite_tag;
+                    break;
+
+                case SpriteType.Cluster:
+                    base_path = cluster_directory;
+                    tag_base = cluster_sprite_tag;
+                    break;
+
+                case SpriteType.Extended:
+                    base_path = extended_directory;
+                    tag_base = extended_sprite_tag;
+                    break;
+
+                case SpriteType.Shooter:
+                    base_path = shooters_directory;
+                    tag_base = shooter_sprite_tag;
+                    break;
+
+                case SpriteType.Generator:
+                    base_path = generators_directory;
+                    tag_base = generator_sprite_tag;
+                    break;
+            }
+
+            tag_base += "_";
+
+            // we know one of these three must be the extension, because we matched it in the regex!
+            //
+            // note that if we combine this switch case with the one from above, we're assuming that 
+            // every sprite has the correct extension for its section, which is definitely not always 
+            // the case judging by the times I've accidentally inserted an .asm file as a normal sprite
+            // and then debugged it for hours
+            switch (Path.GetExtension(relative_path))
+            {
+                case ".cfg":
+                    tag_base += cfg_sprite_tag;
+                    break;
+
+                case ".json":
+                    tag_base += json_sprite_tag;
+                    break;
+
+                case ".asm":
+                    tag_base += asm_sprite_tag;
+                    break;
+            }
+
+            var tag = $"{tag_base}_{number}";
+
+            var path = Util.NormalizePath(Path.Combine(base_path, relative_path));
+
+            Vertex sprite_config_file_vertex = graph.GetOrCreateVertex(path);
+            graph.AddEdge(list_vertex, sprite_config_file_vertex, tag);
+            
+            if (sprite_config_file_vertex is HashFileVertex)
+            {
+                switch (Path.GetExtension(relative_path))
+                {
+                    case ".cfg":
+                        ResolveCfgFileDependencies((HashFileVertex)sprite_config_file_vertex);
+                        break;
+
+                    case ".json":
+                        ResolveJsonFileDependencies((HashFileVertex)sprite_config_file_vertex);
+                        break;
+
+                    case ".asm":
+                        // not actually a sprite config file, it's just an actual extended or cluster sprite,
+                        // but I'm not going to rename the variable just to reflect that so, have this comment
+                        // instead
+                        asar_resolver.ResolveDependencies((HashFileVertex)sprite_config_file_vertex);
+                        break;
+                }
+            }
+            else
+            {
+                seen.Add(sprite_config_file_vertex);
             }
         }
 
@@ -210,41 +440,52 @@ namespace LunarHelper.Resolvers
 
         private void ResolveJsonFileDependencies(HashFileVertex vertex)
         {
+            seen.Add(vertex);
+
             string contents = File.ReadAllText(vertex.normalized_file_path);
             JsonNode node = JsonNode.Parse(contents);
             var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
                     vertex.normalized_file_path), node["AsmFile"].ToString()));
 
             Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
-            graph.TryAddUniqueEdge(vertex, asm_vertex, "asm_file");
+            graph.TryAddUniqueEdge(vertex, asm_vertex, config_to_asm_tag);
 
             if (asm_vertex is HashFileVertex)
             {
                 asar_resolver.ResolveDependencies((HashFileVertex)asm_vertex);
             }
+            else
+            {
+                seen.Add(asm_vertex);
+            }
         }
 
         private void ResolveCfgFileDependencies(HashFileVertex vertex)
         {
-            using (StreamReader sr = new StreamReader(vertex.normalized_file_path))
+            seen.Add(vertex);
+
+            var contents = File.ReadAllText(vertex.normalized_file_path);
+            Match match = cfg_asm_path.Match(contents);
+            var path = "";
+
+            if (match.Success)
             {
-                int idx = 0;
+                path = match.Groups["path"].Value;
+            }
 
-                while (++idx != 4)
-                {
-                    sr.ReadLine();
-                }
+            var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
+                vertex.normalized_file_path), path));
 
-                var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
-                    vertex.normalized_file_path), sr.ReadLine()));
+            Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
+            graph.TryAddUniqueEdge(vertex, asm_vertex, config_to_asm_tag);
 
-                Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
-                graph.TryAddUniqueEdge(vertex, asm_vertex, "asm_file");
-
-                if (asm_vertex is HashFileVertex)
-                {
-                    asar_resolver.ResolveDependencies((HashFileVertex)asm_vertex);
-                }
+            if (asm_vertex is HashFileVertex)
+            {
+                asar_resolver.ResolveDependencies((HashFileVertex)asm_vertex);
+            }
+            else
+            {
+                seen.Add(asm_vertex);
             }
         }
     }
