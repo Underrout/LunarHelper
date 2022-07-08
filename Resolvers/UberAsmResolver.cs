@@ -75,7 +75,7 @@ namespace LunarHelper.Resolvers
         public UberAsmResolver(DependencyGraph graph, string uberasm_exe_path, string uberasm_options)
         {
             this.graph = graph;
-            this.uberasm_directory = Util.NormalizePath(Path.GetDirectoryName(uberasm_exe_path));
+            this.uberasm_directory = Path.GetDirectoryName(uberasm_exe_path);
 
             DetermineDirectoryPaths(uberasm_options);
 
@@ -90,11 +90,11 @@ namespace LunarHelper.Resolvers
             // since I believe uberasm doesn't let you customize directory 
             // paths as of version 1.4
 
-            list_file = Util.NormalizePath(Path.Combine(uberasm_directory, default_list_file));
-            library_directory = Util.NormalizePath(Path.Combine(uberasm_directory, default_library_directory));
-            level_directory = Util.NormalizePath(Path.Combine(uberasm_directory, default_level_directory));
-            gamemode_directory = Util.NormalizePath(Path.Combine(uberasm_directory, default_gamemode_directory));
-            overworld_directory = Util.NormalizePath(Path.Combine(uberasm_directory, default_overworld_directory));
+            list_file = Path.Combine(uberasm_directory, default_list_file);
+            library_directory = Path.Combine(uberasm_directory, default_library_directory);
+            level_directory = Path.Combine(uberasm_directory, default_level_directory);
+            gamemode_directory = Path.Combine(uberasm_directory, default_gamemode_directory);
+            overworld_directory = Path.Combine(uberasm_directory, default_overworld_directory);
         }
 
         private RootDependencyList DetermineRootDependencies(string uberasm_exe_path)
@@ -103,14 +103,13 @@ namespace LunarHelper.Resolvers
 
             foreach ((string relative_path, string tag, RootDependencyType type) in static_root_dependencies)
             {
-                var path = Util.NormalizePath(Path.Combine(uberasm_directory, relative_path));
+                var path = Path.Combine(uberasm_directory, relative_path);
                 dependencies.Add((path, tag, type));
             }
 
             int library_file_idx = 0;
-            foreach (string file in Directory.EnumerateFiles(library_directory, "*.*", SearchOption.AllDirectories))
+            foreach (string path in Directory.EnumerateFiles(library_directory, "*.*", SearchOption.AllDirectories))
             {
-                var path = Util.NormalizePath(file);
                 dependencies.Add((path, $"{library_file_tag}_{library_file_idx++}", RootDependencyType.Asar));
             }
 
@@ -154,7 +153,7 @@ namespace LunarHelper.Resolvers
         {
             seen.Add(vertex);
 
-            using (StreamReader reader = new StreamReader(vertex.normalized_file_path))
+            using (StreamReader reader = new StreamReader(vertex.uri.LocalPath))
             {
                 string line;
                 bool section_set = false;
@@ -269,7 +268,7 @@ namespace LunarHelper.Resolvers
                     break;
             }
 
-            string full_path = Util.NormalizePath(Path.Combine(base_path, relative_path));
+            string full_path =Path.Combine(base_path, relative_path);
 
             Vertex asm_vertex = graph.GetOrCreateVertex(full_path);
             graph.AddEdge(list_vertex, asm_vertex, tag);

@@ -29,7 +29,7 @@ namespace LunarHelper.Resolvers
         public readonly string stddefines_file;
 
         // normalized generated file path, tag for generated file
-        private List<(string, string)> generated_files = new List<(string, string)>();
+        private List<(Uri, string)> generated_files = new List<(Uri, string)>();
 
         public AsarResolver(DependencyGraph graph, HashSet<Vertex> seen, string asar_exe_path = null, string asar_options = null)
         {
@@ -49,7 +49,7 @@ namespace LunarHelper.Resolvers
 
         public void NameGeneratedFile(string normalized_file_path, string tag)
         {
-            generated_files.Add((normalized_file_path, tag));
+            generated_files.Add((Util.GetUri(normalized_file_path), tag));
         }
 
         public void NameGeneratedFile((string, string) file_path_tag_tuple)
@@ -81,7 +81,7 @@ namespace LunarHelper.Resolvers
 
             int dependency_id = 0;
 
-            using (StreamReader sr = new StreamReader(vertex.normalized_file_path))
+            using (StreamReader sr = new StreamReader(vertex.uri.LocalPath))
             {
                 string line;
 
@@ -99,7 +99,7 @@ namespace LunarHelper.Resolvers
 
         private void TryResolveDependency(FileVertex vertex, Match match, ref int dependency_id)
         {
-            (var resolve_result, var attempted_paths) = TryResolveInclude(vertex, match);
+            (var resolve_result, var attempted_paths, var found_path) = TryResolveInclude(vertex, match);
 
             Vertex dependency = null;
             bool is_binary_dependency = match.Groups["method"].Value == "incbin";
@@ -124,7 +124,7 @@ namespace LunarHelper.Resolvers
 
                 case IncludeResolveResult.Generated:
                     dependency = graph.GetOrCreateVertex(attempted_paths.Last(), true);
-                    tag = generated_files.Single(t => t.Item1 == attempted_paths.Last()).Item2;
+                    tag = generated_files.Single(t => t.Item1.Equals(found_path)).Item2;
                     break;
             }
 
@@ -160,7 +160,7 @@ namespace LunarHelper.Resolvers
         //       if so -> return (Found/Generated, list + path_we_just_tried)
         //    b. else add the path we tried to the list
         // 5. return (NotFound, list)
-        public (IncludeResolveResult, List<string>) TryResolveInclude(FileVertex vertex, Match include)
+        public (IncludeResolveResult, List<string>, Uri?) TryResolveInclude(FileVertex vertex, Match include)
         {
             // TODO make it actually try hard to resolve correctly
             // by using additional include directories if those are 
@@ -186,7 +186,7 @@ namespace LunarHelper.Resolvers
                 // though it could also be a normal include like 
                 // incsrc "!my_name_starts_with_!.asm" which is totally legal
                 // on windows
-                return (IncludeResolveResult.Arbitrary, attempted_paths);
+                return (IncludeResolveResult.Arbitrary, attempted_paths, null);
             }
             else if (include_path.Contains('<') || include_path.Contains('>'))
             {
@@ -194,59 +194,62 @@ namespace LunarHelper.Resolvers
                 // could be incsrc <macro_variable>
                 // unlike !, < and > are actually not legal in windows path names afaik,
                 // so this should actually never flag on real file names
-                return (IncludeResolveResult.Arbitrary, attempted_paths);
+                return (IncludeResolveResult.Arbitrary, attempted_paths, null);
             }
 
             var generated_paths = generated_files.Select(t => t.Item1);
+            Uri uri;
 
             if (Path.IsPathRooted(include_path))
             {
-                var normalized_absolute_path = Util.NormalizePath(include_path);
-                attempted_paths.Add(normalized_absolute_path);
+                var absolute_path = include_path;
+                attempted_paths.Add(absolute_path);
+                uri = Util.GetUri(absolute_path);
 
-                if (generated_paths.Contains(normalized_absolute_path))
+                if (generated_paths.Contains(new Uri(absolute_path)))
                 {
-                    return (IncludeResolveResult.Generated, attempted_paths);
+                    return (IncludeResolveResult.Generated, attempted_paths, uri);
                 }
-                else if (File.Exists(normalized_absolute_path))
+                else if (File.Exists(absolute_path))
                 {
-                    return (IncludeResolveResult.Found, attempted_paths);
+                    return (IncludeResolveResult.Found, attempted_paths, uri);
                 }
                 else
                 {
-                    return (IncludeResolveResult.NotFound, attempted_paths);
+                    return (IncludeResolveResult.NotFound, attempted_paths, null);
                 }
             }
 
-            var relative_include_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
-                vertex.normalized_file_path), include_path));
+            var relative_include_path = Path.Combine(Path.GetDirectoryName(vertex.uri.LocalPath), include_path);
             attempted_paths.Add(relative_include_path);
+            uri = Util.GetUri(relative_include_path);
 
-            if (generated_paths.Contains(relative_include_path))
+            if (generated_paths.Contains(uri))
             {
-                return (IncludeResolveResult.Generated, attempted_paths);
+                return (IncludeResolveResult.Generated, attempted_paths, uri);
             }
             else if (File.Exists(relative_include_path))
             {
-                return (IncludeResolveResult.Found, attempted_paths);
+                return (IncludeResolveResult.Found, attempted_paths, uri);
             }
 
             foreach (var include_directory in additional_include_directories)
             {
-                var potential_path = Util.NormalizePath(Path.Combine(include_directory, include_path));
+                var potential_path = Path.Combine(include_directory, include_path);
                 attempted_paths.Add(potential_path);
+                uri = Util.GetUri(potential_path);
 
-                if (generated_paths.Contains(potential_path))
+                if (generated_paths.Contains(uri))
                 {
-                    return (IncludeResolveResult.Generated, attempted_paths);
+                    return (IncludeResolveResult.Generated, attempted_paths, uri);
                 }
                 else if (File.Exists(potential_path))
                 {
-                    return (IncludeResolveResult.Found, attempted_paths);
+                    return (IncludeResolveResult.Found, attempted_paths, uri);
                 }
             }
 
-            return (IncludeResolveResult.NotFound, attempted_paths);
+            return (IncludeResolveResult.NotFound, attempted_paths, null);
         }
     }
 }

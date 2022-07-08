@@ -148,7 +148,7 @@ namespace LunarHelper.Resolvers
         public PixiResolver(DependencyGraph graph, string pixi_exe_path, string pixi_options, string output_path)
         {
             this.graph = graph;
-            pixi_directory = Util.NormalizePath(Path.GetDirectoryName(pixi_exe_path));
+            pixi_directory = Path.GetDirectoryName(pixi_exe_path);
 
             DetermineDirectoryPaths(pixi_options, output_path);
 
@@ -162,13 +162,13 @@ namespace LunarHelper.Resolvers
 
             foreach ((string relative_path, string tag, RootDependencyType type) in static_root_dependencies)
             {
-                var path = Util.NormalizePath(Path.Combine(pixi_directory, relative_path));
+                var path = Path.Combine(pixi_directory, relative_path);
                 dependencies.Add((path, tag, type));
             }
 
             foreach ((string relative_path, string tag, RootDependencyType type) in asm_directory_dependencies)
             {
-                var path = Util.NormalizePath(Path.Combine(asm_directory, relative_path));
+                var path = Path.Combine(asm_directory, relative_path);
                 dependencies.Add((path, tag, type));
             }
 
@@ -176,7 +176,7 @@ namespace LunarHelper.Resolvers
             foreach (string directory_path in new[] { sprites_directory, shooters_directory, generators_directory,
                 extended_directory, cluster_directory })
             {
-                var path = Util.NormalizePath(Path.Combine(directory_path, potential_sprite_folder_header_file_dependency.Item1));
+                var path = Path.Combine(directory_path, potential_sprite_folder_header_file_dependency.Item1);
                 if (!File.Exists(path))
                 {
                     // these are sometimes optional, so if one doesn't exist, just skip it (pixi will complain about it if it's 
@@ -194,10 +194,8 @@ namespace LunarHelper.Resolvers
 
             foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
             {
-                var normalized_path = Util.NormalizePath(routine_path);
-                
                 // not numbering these tags since the order of routines probably doesn't matter
-                dependencies.Add((normalized_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
             }
 
             dependencies.Add((list_file, list_tag, RootDependencyType.SpriteList));
@@ -211,7 +209,7 @@ namespace LunarHelper.Resolvers
 
             foreach ((string generated_file_path, string tag) in asm_directory_generated_files)
             {
-                var full_path = Util.NormalizePath(Path.Combine(asm_directory, generated_file_path));
+                var full_path = Path.Combine(asm_directory, generated_file_path);
                 resolver.NameGeneratedFile(full_path, tag);
             }
 
@@ -253,7 +251,7 @@ namespace LunarHelper.Resolvers
         {
             seen.Add(vertex);
 
-            using (StreamReader sr = new StreamReader(vertex.normalized_file_path))
+            using (StreamReader sr = new StreamReader(vertex.uri.LocalPath))
             {
                 string line;
 
@@ -386,7 +384,7 @@ namespace LunarHelper.Resolvers
 
             var tag = $"{tag_base}_{number}";
 
-            var path = Util.NormalizePath(Path.Combine(base_path, relative_path));
+            var path = Path.Combine(base_path, relative_path);
 
             Vertex sprite_config_file_vertex = graph.GetOrCreateVertex(path);
             graph.AddEdge(list_vertex, sprite_config_file_vertex, tag);
@@ -423,24 +421,24 @@ namespace LunarHelper.Resolvers
 
             // pixi always resolves the list file relative to the rom's dir unless an absolute
             // -l option is passed
-            var rom_dir = Util.NormalizePath(Path.GetDirectoryName(Path.GetFullPath(output_path)));
+            var rom_dir = Path.GetDirectoryName(Path.GetFullPath(output_path));
 
             // everything else is resolved relative to the pixi directory
-            list_file = Util.NormalizePath(Path.Combine(pixi_directory, default_list_file));
-            asm_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_asm_directory));
-            sprites_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_sprites_directory));
-            shooters_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_shooters_directory));
-            generators_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_generators_directory));
-            extended_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_extended_directory));
-            cluster_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_cluster_directory));
-            routine_directory = Util.NormalizePath(Path.Combine(pixi_directory, default_routine_directory));
+            list_file = Path.Combine(pixi_directory, default_list_file);
+            asm_directory = Path.Combine(pixi_directory, default_asm_directory);
+            sprites_directory = Path.Combine(pixi_directory, default_sprites_directory);
+            shooters_directory = Path.Combine(pixi_directory, default_shooters_directory);
+            generators_directory = Path.Combine(pixi_directory, default_generators_directory);
+            extended_directory = Path.Combine(pixi_directory, default_extended_directory);
+            cluster_directory = Path.Combine(pixi_directory, default_cluster_directory);
+            routine_directory = Path.Combine(pixi_directory, default_routine_directory);
         }
 
         private void ResolveJsonFileDependencies(HashFileVertex vertex)
         {
             seen.Add(vertex);
 
-            string contents = File.ReadAllText(vertex.normalized_file_path);
+            string contents = File.ReadAllText(vertex.uri.LocalPath);
             JsonNode node;
 
             try
@@ -453,9 +451,7 @@ namespace LunarHelper.Resolvers
             }
 
             var relative_asm_path = node != null && node["AsmFile"] != null ? node["AsmFile"].ToString() : "";
-
-            var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
-                    vertex.normalized_file_path), relative_asm_path));
+            var asm_file_path = Path.Combine(Path.GetDirectoryName(vertex.uri.LocalPath), relative_asm_path);
 
             Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
             graph.TryAddUniqueEdge(vertex, asm_vertex, config_to_asm_tag);
@@ -474,7 +470,7 @@ namespace LunarHelper.Resolvers
         {
             seen.Add(vertex);
 
-            var contents = File.ReadAllText(vertex.normalized_file_path);
+            var contents = File.ReadAllText(vertex.uri.LocalPath);
             Match match = cfg_asm_path.Match(contents);
             var path = "";
 
@@ -483,8 +479,7 @@ namespace LunarHelper.Resolvers
                 path = match.Groups["path"].Value;
             }
 
-            var asm_file_path = Util.NormalizePath(Path.Combine(Path.GetDirectoryName(
-                vertex.normalized_file_path), path));
+            var asm_file_path = Path.Combine(Path.GetDirectoryName(vertex.uri.LocalPath), path);
 
             Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
             graph.TryAddUniqueEdge(vertex, asm_vertex, config_to_asm_tag);

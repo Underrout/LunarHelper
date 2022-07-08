@@ -24,28 +24,28 @@ namespace LunarHelper
         {
             if (!string.IsNullOrWhiteSpace(config.AsarPath) && config.Patches.Count != 0)
             {
-                patch_resolver = new PatchResolver(graph, Util.NormalizePath(config.AsarPath), config.AsarOptions);
+                patch_resolver = new PatchResolver(graph, config.AsarPath, config.AsarOptions);
             }
 
             if (!string.IsNullOrWhiteSpace(config.AddMusicKPath))
             {
-                amk_resolver = new AmkResolver(graph, Util.NormalizePath(config.AddMusicKPath));
+                amk_resolver = new AmkResolver(graph, config.AddMusicKPath);
             }
 
             if (!string.IsNullOrWhiteSpace(config.PixiPath))
             {
-                pixi_resolver = new PixiResolver(graph, Util.NormalizePath(config.PixiPath), 
-                    config.PixiOptions, Util.NormalizePath(config.OutputPath));
+                pixi_resolver = new PixiResolver(graph, config.PixiPath, 
+                    config.PixiOptions, config.OutputPath);
             }
 
             if (!string.IsNullOrWhiteSpace(config.GPSPath))
             {
-                gps_resolver = new GpsResolver(graph, Util.NormalizePath(config.GPSPath), config.GPSOptions);
+                gps_resolver = new GpsResolver(graph, config.GPSPath, config.GPSOptions);
             }
 
             if (!string.IsNullOrWhiteSpace(config.UberASMPath))
             {
-                uberasm_resolver = new UberAsmResolver(graph, Util.NormalizePath(config.UberASMPath), config.UberASMOptions);
+                uberasm_resolver = new UberAsmResolver(graph, config.UberASMPath, config.UberASMOptions);
             }
         }
 

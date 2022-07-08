@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -133,17 +133,19 @@ namespace LunarHelper
 
         public Vertex GetOrCreateMissingFileVertex(string file_path)
         {
-            FileVertex maybe_vertex = dependency_graph.Vertices
-                .Where(v => v is FileVertex)
-                .Cast<FileVertex>()
-                .SingleOrDefault(v => Util.PathsEqual(v.normalized_file_path, file_path));
+            Uri uri = Util.GetUri(file_path);
+
+            MissingFileVertex maybe_vertex = dependency_graph.Vertices
+                .Where(v => v is MissingFileVertex)
+                .Cast<MissingFileVertex>()
+                .SingleOrDefault(v => v.uri.Equals(uri));
 
             if (maybe_vertex != null)
             {
                 return maybe_vertex;
             }
 
-            MissingFileVertex vertex = new MissingFileVertex(file_path);
+            MissingFileVertex vertex = new MissingFileVertex(uri);
             dependency_graph.AddVertex(vertex);
 
             return vertex;
@@ -164,10 +166,17 @@ namespace LunarHelper
         // exists, a MissingFileVertex will be returned instead
         public Vertex GetOrCreateVertex(string file_path, bool is_generated = false)
         {
+            if (!File.Exists(file_path) && !is_generated)
+            {
+                return GetOrCreateMissingFileVertex(file_path);
+            }
+
+            Uri uri = Util.GetUri(file_path);
+
             FileVertex maybe_vertex = dependency_graph.Vertices
                 .Where(v => v is FileVertex)
                 .Cast<FileVertex>()
-                .SingleOrDefault(v => Util.PathsEqual(v.normalized_file_path, file_path));
+                .SingleOrDefault(v => v.uri.Equals(uri));
 
             if (maybe_vertex != null)
             {
@@ -178,11 +187,13 @@ namespace LunarHelper
 
             try
             {
-                new_vertex = is_generated ? new GeneratedFileVertex(file_path) : new HashFileVertex(file_path);
+                new_vertex = is_generated ? new GeneratedFileVertex(uri) : new HashFileVertex(uri);
             }
             catch (NoUnderlyingFileException)
             {
-                new_vertex = new MissingFileVertex(file_path);
+                // this should now never happen with the !File.Exists guard at the top, probably 
+                // remove this try/catch at some point
+                new_vertex = new MissingFileVertex(uri);
             }
 
             dependency_graph.AddVertex(new_vertex);

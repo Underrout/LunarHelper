@@ -26,7 +26,7 @@ namespace LunarHelper
     // specified file path
     class MissingFileVertex : FileVertex
     {
-        public MissingFileVertex(string file_path) : base(file_path)
+        public MissingFileVertex(Uri uri) : base(uri)
         {
 
         }
@@ -37,7 +37,7 @@ namespace LunarHelper
     // dependencies on them should still be recorded
     class GeneratedFileVertex : FileVertex
     {
-        public GeneratedFileVertex(string file_path) : base(file_path)
+        public GeneratedFileVertex(Uri uri) : base(uri)
         {
 
         }
@@ -69,7 +69,7 @@ namespace LunarHelper
     {
         public readonly string normalized_relative_patch_path;
 
-        public PatchRootVertex(string user_specified_patch_path) : base(user_specified_patch_path)
+        public PatchRootVertex(string user_specified_patch_path) : base(Util.GetUri(user_specified_patch_path))
         {
             normalized_relative_patch_path = user_specified_patch_path.Replace('/', '\\')
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).ToLowerInvariant();
@@ -78,8 +78,8 @@ namespace LunarHelper
 
     class NoUnderlyingFileException : Exception
     {
-        public NoUnderlyingFileException() 
-        { 
+        public NoUnderlyingFileException()
+        {
 
         }
 
@@ -92,16 +92,16 @@ namespace LunarHelper
     // Vertex class representing a file somewhere within the filesystem
     class FileVertex : Vertex
     {
-        public readonly string normalized_file_path;
+        public readonly Uri uri;
 
-        public FileVertex(string file_path)
+        public FileVertex(Uri uri)
         {
-            normalized_file_path = Util.NormalizePath(file_path);
+            this.uri = uri;
         }
 
         public override int GetHashCode()
         {
-            return normalized_file_path.GetHashCode();
+            return uri.GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -115,7 +115,7 @@ namespace LunarHelper
                 if (obj is FileVertex)
                 {
                     FileVertex other = (FileVertex)obj;
-                    return this.normalized_file_path == other.normalized_file_path;
+                    return this.uri == other.uri;
                 }
                 else
                 {
@@ -129,14 +129,14 @@ namespace LunarHelper
     {
         public readonly string hash;
 
-        public HashFileVertex(string file_path) : base(file_path)
+        public HashFileVertex(Uri uri) : base(uri)
         {
-            if (!File.Exists(normalized_file_path))
+            if (!File.Exists(uri.LocalPath))
             {
-                throw new NoUnderlyingFileException(normalized_file_path);
+                throw new NoUnderlyingFileException(uri.LocalPath);
             }
 
-            this.hash = Report.HashFile(normalized_file_path);
+            this.hash = Report.HashFile(uri.LocalPath);
         }
     }
 }

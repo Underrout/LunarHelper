@@ -70,7 +70,7 @@ namespace LunarHelper.Resolvers
         public GpsResolver(DependencyGraph graph, string gps_exe_path, string gps_options)
         {
             this.graph = graph;
-            this.gps_directory = Util.NormalizePath(Path.GetDirectoryName(gps_exe_path));
+            this.gps_directory = Path.GetDirectoryName(gps_exe_path);
 
             DetermineDirectoryPaths(gps_options);
 
@@ -114,9 +114,9 @@ namespace LunarHelper.Resolvers
         {
             // TODO make this handle -l, -b and -s options
 
-            list_file = Util.NormalizePath(Path.Combine(gps_directory, default_list_file));
-            block_directory = Util.NormalizePath(Path.Combine(gps_directory, default_block_directory));
-            routine_directory = Util.NormalizePath(Path.Combine(gps_directory, default_routine_directory));
+            list_file = Path.Combine(gps_directory, default_list_file);
+            block_directory = Path.Combine(gps_directory, default_block_directory);
+            routine_directory = Path.Combine(gps_directory, default_routine_directory);
         }
 
         private AsarResolver CreateAsarResolver()
@@ -125,7 +125,7 @@ namespace LunarHelper.Resolvers
 
             foreach ((string generated_file_path, string tag) in generated_files)
             {
-                var full_path = Util.NormalizePath(Path.Combine(gps_directory, generated_file_path));
+                var full_path = Path.Combine(gps_directory, generated_file_path);
                 resolver.NameGeneratedFile(full_path, tag);
             }
 
@@ -138,16 +138,14 @@ namespace LunarHelper.Resolvers
 
             foreach ((string relative_path, string tag, RootDependencyType type) in static_root_dependencies)
             {
-                var path = Util.NormalizePath(Path.Combine(gps_directory, relative_path));
+                var path = Path.Combine(gps_directory, relative_path);
                 dependencies.Add((path, tag, type));
             }
 
             foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
             {
-                var normalized_path = Util.NormalizePath(routine_path);
-
                 // not numbering these tags since the order of routines probably doesn't matter
-                dependencies.Add((normalized_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
             }
 
             dependencies.Add((list_file, list_tag, RootDependencyType.BlockList));
@@ -159,7 +157,7 @@ namespace LunarHelper.Resolvers
         {
             seen.Add(vertex);
 
-            using (StreamReader reader = new StreamReader(vertex.normalized_file_path))
+            using (StreamReader reader = new StreamReader(vertex.uri.LocalPath))
             {
                 string line;
 
@@ -183,7 +181,7 @@ namespace LunarHelper.Resolvers
 
         private void ResolveBlock(HashFileVertex list_vertex, string number, string relative_path)
         {
-            var full_path = Util.NormalizePath(Path.Combine(block_directory, relative_path));
+            var full_path = Path.Combine(block_directory, relative_path);
 
             Vertex block_vertex = graph.GetOrCreateVertex(full_path);
             graph.AddEdge(list_vertex, block_vertex, $"{block_tag_base}_{number}");

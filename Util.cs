@@ -9,16 +9,15 @@ namespace LunarHelper
 {
     class Util
     {
-        public static bool PathsEqual(string path1, string path2)
+        public static Uri GetUri(string relative_or_absolute_path)
         {
-            return string.Equals(NormalizePath(path1), NormalizePath(path2), StringComparison.OrdinalIgnoreCase);
-        }
+            var absolute_path = Path.IsPathRooted(relative_or_absolute_path) ?
+                relative_or_absolute_path : Path.GetFullPath(relative_or_absolute_path);
 
-        public static string NormalizePath(string path)
-        {
-            return Path.GetFullPath(new Uri(Path.GetFullPath(path)).LocalPath)
-                       .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                       .ToLowerInvariant();
+            UriCreationOptions options = new UriCreationOptions();
+            options.DangerousDisablePathAndQueryCanonicalization = !File.Exists(absolute_path);
+
+            return new Uri(absolute_path, options);
         }
     }
 }

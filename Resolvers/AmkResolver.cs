@@ -80,12 +80,10 @@ namespace LunarHelper.Resolvers
         public AmkResolver(DependencyGraph graph, string amk_exe_path)
         {
             this.graph = graph;
-            amk_directory = Util.NormalizePath(Path.GetDirectoryName(amk_exe_path));
-            asar_resolver = new AsarResolver(graph, seen, Util.NormalizePath(
-                Path.Combine(amk_directory, amk_asar_exe_name)));
+            amk_directory = Path.GetDirectoryName(amk_exe_path);
+            asar_resolver = new AsarResolver(graph, seen, Path.Combine(amk_directory, amk_asar_exe_name));
 
-            var full_song_sample_list_ignore_path = Util.NormalizePath(
-                Path.Combine(amk_directory, amk_song_sample_list_ignore.Item1));
+            var full_song_sample_list_ignore_path = Path.Combine(amk_directory, amk_song_sample_list_ignore.Item1);
 
             asar_resolver.NameGeneratedFile(full_song_sample_list_ignore_path, amk_song_sample_list_ignore.Item2);
 
@@ -145,15 +143,15 @@ namespace LunarHelper.Resolvers
 
             seen.Add(vertex);
 
-            string contents = File.ReadAllText(vertex.normalized_file_path);
+            string contents = File.ReadAllText(vertex.uri.LocalPath);
 
             var matches = songs_regex.Matches(contents);
 
-            var base_music_path = Util.NormalizePath(Path.Combine(amk_directory, amk_music_folder_name));
+            var base_music_path = Path.Combine(amk_directory, amk_music_folder_name);
 
             foreach (Match match in matches)
             {
-                var song_path = Util.NormalizePath(Path.Combine(base_music_path, match.Groups["path"].Value));
+                var song_path = Path.Combine(base_music_path, match.Groups["path"].Value);
                 var song_number = int.Parse(match.Groups["number"].Value, System.Globalization.NumberStyles.HexNumber);
                 var tag = $"song_{song_number}";
 
@@ -180,11 +178,11 @@ namespace LunarHelper.Resolvers
 
             seen.Add(vertex);
 
-            string contents = File.ReadAllText(vertex.normalized_file_path);
+            string contents = File.ReadAllText(vertex.uri.LocalPath);
 
             var matches = samples_in_sample_groups.Matches(contents);
 
-            var base_sample_path = Util.NormalizePath(Path.Combine(amk_directory, amk_samples_folder_name));
+            var base_sample_path = Path.Combine(amk_directory, amk_samples_folder_name);
 
             foreach (Match match in matches)
             {
@@ -193,7 +191,7 @@ namespace LunarHelper.Resolvers
 
                 foreach (Capture capture in match.Groups["samples"].Captures)
                 {
-                    var sample_path = Util.NormalizePath(Path.Combine(base_sample_path, capture.Value));
+                    var sample_path = Path.Combine(base_sample_path, capture.Value);
                     var tag = $"sample_group_{sample_group}_{sample_id++}";
 
                     Vertex sample_vertex = graph.GetOrCreateVertex(sample_path);
@@ -217,12 +215,12 @@ namespace LunarHelper.Resolvers
             // BIG NOTE: sound effects can have asm in them, and yes, they can incsrc/incbin!
             //           probably can just treat them as asar files when resolving dependencies
 
-            string contents = File.ReadAllText(vertex.normalized_file_path);
+            string contents = File.ReadAllText(vertex.uri.LocalPath);
 
             var matches = sound_effects_and_addresses.Matches(contents);
 
-            var sfx_addr_1DF9_folder = Util.NormalizePath(Path.Combine(amk_directory, amk_1DF9_folder_name));
-            var sfx_addr_1DFC_folder = Util.NormalizePath(Path.Combine(amk_directory, amk_1DFC_folder_name));
+            var sfx_addr_1DF9_folder = Path.Combine(amk_directory, amk_1DF9_folder_name);
+            var sfx_addr_1DFC_folder = Path.Combine(amk_directory, amk_1DFC_folder_name);
 
             var tag_prefix_1DF9 = amk_1DF9_folder_name.ToLower();
             var tag_prefix_1DFC = amk_1DFC_folder_name.ToLower();
@@ -236,7 +234,7 @@ namespace LunarHelper.Resolvers
             {
                 if (match.Groups["path"].Success)
                 {
-                    var sound_effect_path = Util.NormalizePath(Path.Combine(curr_sfx_folder, match.Groups["path"].Value));
+                    var sound_effect_path = Path.Combine(curr_sfx_folder, match.Groups["path"].Value);
                     var sound_effect_number = int.Parse(match.Groups["number"].Value, System.Globalization.NumberStyles.HexNumber);
                     var tag = $"sound_effect_{curr_tag_prefix}_{sound_effect_number}";
 
@@ -274,11 +272,11 @@ namespace LunarHelper.Resolvers
 
             seen.Add(vertex);
 
-            string contents = File.ReadAllText(vertex.normalized_file_path);
+            string contents = File.ReadAllText(vertex.uri.LocalPath);
 
             var matches = music_samples_and_paths.Matches(contents);
 
-            var base_sample_path = Util.NormalizePath(Path.Combine(amk_directory, amk_samples_folder_name));
+            var base_sample_path = Path.Combine(amk_directory, amk_samples_folder_name);
             var curr_path = base_sample_path;
 
             int sample_id = 0;
@@ -286,13 +284,13 @@ namespace LunarHelper.Resolvers
             {
                 if (match.Groups["path"].Success)
                 {
-                    curr_path = Util.NormalizePath(Path.Combine(base_sample_path, match.Groups["path"].Value));
+                    curr_path = Path.Combine(base_sample_path, match.Groups["path"].Value);
                 }
                 else if (match.Groups["samples"].Success)
                 {
                     foreach (Capture capture in match.Groups["samples"].Captures)
                     {
-                        var sample_path = Util.NormalizePath(Path.Combine(curr_path, capture.Value));
+                        var sample_path = Path.Combine(curr_path, capture.Value);
                         var tag = $"sample_{sample_id}";
 
                         Vertex sample_vertex = graph.GetOrCreateVertex(sample_path);
