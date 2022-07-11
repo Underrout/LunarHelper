@@ -135,9 +135,9 @@ namespace LunarHelper
         {
             Uri uri = Util.GetUri(file_path);
 
-            MissingFileVertex maybe_vertex = dependency_graph.Vertices
-                .Where(v => v is MissingFileVertex)
-                .Cast<MissingFileVertex>()
+            MissingFileOrDirectoryVertex maybe_vertex = dependency_graph.Vertices
+                .Where(v => v is MissingFileOrDirectoryVertex)
+                .Cast<MissingFileOrDirectoryVertex>()
                 .SingleOrDefault(v => v.uri.Equals(uri));
 
             if (maybe_vertex != null)
@@ -145,7 +145,7 @@ namespace LunarHelper
                 return maybe_vertex;
             }
 
-            MissingFileVertex vertex = new MissingFileVertex(uri);
+            MissingFileOrDirectoryVertex vertex = new MissingFileOrDirectoryVertex(uri);
             dependency_graph.AddVertex(vertex);
 
             return vertex;
@@ -193,7 +193,7 @@ namespace LunarHelper
             {
                 // this should now never happen with the !File.Exists guard at the top, probably 
                 // remove this try/catch at some point
-                new_vertex = new MissingFileVertex(uri);
+                new_vertex = new MissingFileOrDirectoryVertex(uri);
             }
 
             dependency_graph.AddVertex(new_vertex);
