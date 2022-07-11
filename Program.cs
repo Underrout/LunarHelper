@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Text.Json;
+using Newtonsoft.Json;
 using System.Text;
 
 using LunarHelper;
@@ -113,7 +113,6 @@ namespace LunarHelper
         static private bool QuickBuild()
         {
             dependency_graph = new DependencyGraph(Config);
-            dependency_graph_converter = new DependencyGraphConverter(dependency_graph);
 
             BuildPlan plan = BuildPlan.PlanBuild(Config, dependency_graph);
             
@@ -433,11 +432,21 @@ namespace LunarHelper
         static private void WriteReport()
         {
             var report = GetBuildReport();
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonString = JsonSerializer.Serialize(report, options);
+
+            var serializer = new JsonSerializer();
+            serializer.Formatting = Formatting.Indented;
+            serializer.TypeNameHandling = TypeNameHandling.Objects;
+
+            StringWriter sw = new StringWriter();
+
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, report);
+            }
+
             Directory.CreateDirectory(".lunar_helper");
             File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
-            File.WriteAllText(".lunar_helper\\build_report.json", jsonString);
+            File.WriteAllText(".lunar_helper\\build_report.json", sw.ToString());
         }
 
         static private Report GetBuildReport()
@@ -446,7 +455,7 @@ namespace LunarHelper
 
             report.build_time = DateTime.Now;
 
-            report.dependency_graph = DependencyGraphSerializer.SerializeGraph(dependency_graph).Cast<object>().ToList();
+            report.dependency_graph = DependencyGraphSerializer.SerializeGraph(dependency_graph).ToList();
 
             report.levels = GetLevelReport();
             report.graphics = Report.HashFolder("Graphics");

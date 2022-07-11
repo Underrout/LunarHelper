@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Text.Json;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace LunarHelper
 {
@@ -53,11 +53,17 @@ namespace LunarHelper
                 return plan;
             }
 
-            var jsonString = File.ReadAllText(".lunar_helper\\build_report.json");
             Report report;
             try
             {
-                report = JsonSerializer.Deserialize<Report>(jsonString);
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.TypeNameHandling = TypeNameHandling.Objects;
+
+                using (StreamReader sr = new StreamReader(".lunar_helper\\build_report.json"))
+                using (JsonReader reader = new JsonTextReader(sr))
+                {
+                    report = (Report)serializer.Deserialize(reader, typeof(Report));
+                }
             }
             catch(Exception)
             {
@@ -68,6 +74,15 @@ namespace LunarHelper
                 return plan;
             }
 
+            if (report.report_format_version != Report.REPORT_FORMAT_VERSION)
+            {
+                Program.Log("Previous build report found but used old format, rebuilding ROM...", ConsoleColor.Yellow);
+                Console.WriteLine();
+                plan.rebuild = true;
+                plan.uptodate = false;
+                return plan;
+            }
+            /*
             Dictionary<string, DependencyGraphConverter.Vertex> oldPatches = report.patches;
             Dictionary<string, DependencyGraphConverter.Vertex> newPatches = Program.GetPatchReport();
 
@@ -84,7 +99,7 @@ namespace LunarHelper
                     plan.uptodate = false;
                     return plan;
                 }
-            }
+            }*/
 
             Dictionary<string, string> oldLevels = report.levels;
             Dictionary<string, string> newLevels = Program.GetLevelReport();
@@ -119,88 +134,7 @@ namespace LunarHelper
 
             // check if tools/patches need to be reapplied
 
-            if (Report.HashFolder(config.SharedFolder) != report.shared_folders)
-            {
-                Program.Log("Change in shared folder detected, will reapply all tools and patches...", ConsoleColor.Yellow);
-                plan.apply_addmusick = true;
-                plan.apply_gps = true;
-                plan.apply_pixi = true;
-                plan.apply_uberasm = true;
-                plan.uptodate = false;
-                plan.patches_to_apply = new List<string>(newPatches.Keys);
-            }
-            else
-            {
-                if (Report.HashFolder(Path.GetDirectoryName(config.GPSPath)) != report.gps_folders || report.gps_options != config.GPSOptions)
-                {
-                    Program.Log("Change in GPS detected, will reapply GPS...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.apply_gps = true;
-                    plan.uptodate = false;
-                }
-
-                if (Report.HashFolder(Path.GetDirectoryName(config.PixiPath)) != report.pixi_folders || report.pixi_options != config.PixiOptions)
-                {
-                    Program.Log("Change in PIXI detected, will reapply PIXI...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.apply_pixi = true;
-                    plan.uptodate = false;
-
-                    if (report.pixi_folders == null)
-                    {
-                        // PIXI was never applied to the ROM before, may need two passes if we're on LM 3.31
-                        plan.may_need_two_pixi_passes = true;
-                    }
-                }
-
-                // check which patches to apply
-
-                if (report.asar_options == config.AsarOptions)
-                {
-                    foreach (var (patch, hash) in newPatches)
-                    {
-                        if (!oldPatches.ContainsKey(patch))
-                        {
-                            Program.Log($"New patch '{patch}' detected, will be inserted...", ConsoleColor.Yellow);
-                            Console.WriteLine();
-                            plan.patches_to_apply.Add(patch);
-                            plan.uptodate = false;
-                        }
-                        // TODO uncomment this again
-                        /*else if (oldPatches[patch] != hash)
-                        {
-                            Program.Log($"Change in patch '{patch}' detected, will be reinserted...", ConsoleColor.Yellow);
-                            Console.WriteLine();
-                            plan.patches_to_apply.Add(patch);
-                            plan.uptodate = false;
-                        }*/
-                    }
-                }
-                else
-                {
-                    Program.Log("Change in asar options detected, reapplying all patches...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.patches_to_apply = new List<string>(newPatches.Keys);
-                    plan.uptodate = false;
-                }
-
-                if (Report.HashFolder(Path.GetDirectoryName(config.UberASMPath)) != report.uberasm_folders || report.uberasm_options != config.UberASMOptions)
-                {
-                    Program.Log("Change in UberASMTool folder detected, will reapply UberASMTool...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.apply_uberasm = true;
-                    plan.uptodate = false;
-                }
-
-                // TODO uncomment this again
-                /*if (Report.HashFolder(Path.GetDirectoryName(config.AddMusicKPath)) != report.addmusick_folders || report.addmusick_options != config.AddmusicKOptions)
-                {
-                    Program.Log("Change in AddMusicK detected, will reapply AddMusicK...", ConsoleColor.Yellow);
-                    Console.WriteLine();
-                    plan.apply_addmusick = true;
-                    plan.uptodate = false;
-                }*/
-            }
+            // TODO use dependency graph here to determine stuff
 
             // check resources
 

@@ -40,7 +40,7 @@ namespace LunarHelper
         public ToolRootVertex uberasm_root { get; } = null;
         public ToolRootVertex gps_root { get; } = null;
         public ToolRootVertex amk_root { get; } = null;
-        public HashSet<PatchRootVertex> patch_roots = new HashSet<PatchRootVertex>();
+        public HashSet<Vertex> patch_roots = new HashSet<Vertex>();
 
         public DependencyGraph(Config config)
         {
@@ -77,7 +77,10 @@ namespace LunarHelper
 
                 foreach (var root in patch_roots)
                 {
-                    resolver.ResolveDependencies(root);
+                    if (root is PatchRootVertex)
+                    {
+                        resolver.ResolveDependencies((PatchRootVertex)root);
+                    }
                 }
             }
         }
@@ -86,7 +89,7 @@ namespace LunarHelper
         {
             foreach (string user_specified_patch_path in config.Patches)
             {
-                PatchRootVertex patch_root = null;
+                Vertex patch_root = null;
 
                 try
                 {
@@ -94,8 +97,7 @@ namespace LunarHelper
                 }
                 catch (NoUnderlyingFileException)
                 {
-                    throw new CriticalDependencyMissingException(
-                        "User-specified patch \"{0}\" was not found", user_specified_patch_path);
+                    patch_root = new MissingFileOrDirectoryVertex(Util.GetUri(user_specified_patch_path));
                 }
 
                 patch_roots.Add(patch_root);

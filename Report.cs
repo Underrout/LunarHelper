@@ -4,16 +4,19 @@ using System.Text;
 using System.Security.Cryptography;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace LunarHelper
 {
     class Report
     {
-        public int report_format_version { get; set; } = 2;
+        [JsonIgnore]
+        public const int REPORT_FORMAT_VERSION = 2;
+        public int report_format_version { get; set; } = REPORT_FORMAT_VERSION;
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
         public Dictionary<string, string> levels { get; set; }
-        public List<object> dependency_graph { get; set; }
+        public List<DependencyGraphSerializer.JsonVertex> dependency_graph { get; set; }
         public string graphics { get; set; }
         public string exgraphics { get; set; }
         public string init_bps { get; set; }
