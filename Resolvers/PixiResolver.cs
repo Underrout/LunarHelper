@@ -437,53 +437,56 @@ namespace LunarHelper.Resolvers
 
         private void DetermineDirectoryPaths(string pixi_options, string output_path)
         {
-            var matches = passed_directories.Matches(pixi_options);
-
-            // iterating in reverse so that the last path will stick if the same 
-            // option is passed multiple times
-            foreach (Match match in matches.Reverse())
+            if (!string.IsNullOrWhiteSpace(pixi_options))
             {
-                switch (match.Groups["type"].Value)
+                var matches = passed_directories.Matches(pixi_options);
+
+                // iterating in reverse so that the last path will stick if the same 
+                // option is passed multiple times
+                foreach (Match match in matches.Reverse())
                 {
-                    case "l":
-                        // only set list_file if it's not already been set (we're iterating in reverse!)
-                        list_file ??= match.Groups["path"].Value;
-                        break;
+                    switch (match.Groups["type"].Value)
+                    {
+                        case "l":
+                            // only set list_file if it's not already been set (we're iterating in reverse!)
+                            list_file ??= match.Groups["path"].Value;
+                            break;
 
-                    case "a":
-                        asm_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "a":
+                            asm_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "sp":
-                        sprites_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "sp":
+                            sprites_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "sh":
-                        shooters_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "sh":
+                            shooters_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "g":
-                        generators_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "g":
+                            generators_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "e":
-                        extended_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "e":
+                            extended_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "c":
-                        cluster_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "c":
+                            cluster_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "r":
-                        routine_directory ??= match.Groups["path"].Value;
-                        break;
-                }
+                        case "r":
+                            routine_directory ??= match.Groups["path"].Value;
+                            break;
+                    }
 
-                // if all paths are already set, we don't need to scan the remaining matches
-                if (new[] { list_file, asm_directory, sprites_directory, shooters_directory,
+                    // if all paths are already set, we don't need to scan the remaining matches
+                    if (new[] { list_file, asm_directory, sprites_directory, shooters_directory,
                     generators_directory, extended_directory, cluster_directory, routine_directory}.All(p => p != null))
-                {
-                    break;
+                    {
+                        break;
+                    }
                 }
             }
 

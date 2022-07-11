@@ -129,32 +129,35 @@ namespace LunarHelper.Resolvers
 
         private void DetermineDirectoryPaths(string gps_options)
         {
-            var matches = passed_directories.Matches(gps_options);
-
-            // iterating in reverse so that the last path will stick if the same 
-            // option is passed multiple times
-            foreach (Match match in matches.Reverse())
+            if (!string.IsNullOrWhiteSpace(gps_options))
             {
-                switch (match.Groups["type"].Value)
+                var matches = passed_directories.Matches(gps_options);
+
+                // iterating in reverse so that the last path will stick if the same 
+                // option is passed multiple times
+                foreach (Match match in matches.Reverse())
                 {
-                    case "l":
-                        // only set list_file if it's not already been set (we're iterating in reverse!)
-                        list_file ??= match.Groups["path"].Value; 
-                        break;
+                    switch (match.Groups["type"].Value)
+                    {
+                        case "l":
+                            // only set list_file if it's not already been set (we're iterating in reverse!)
+                            list_file ??= match.Groups["path"].Value;
+                            break;
 
-                    case "b":
-                        block_directory ??= match.Groups["path"].Value;
-                        break;
+                        case "b":
+                            block_directory ??= match.Groups["path"].Value;
+                            break;
 
-                    case "s":
-                        routine_directory ??= match.Groups["path"].Value;
-                        break;
-                }
+                        case "s":
+                            routine_directory ??= match.Groups["path"].Value;
+                            break;
+                    }
 
-                // if all paths are already set, we don't need to scan the remaining matches
-                if (list_file != null && block_directory != null && routine_directory != null)
-                {
-                    break;
+                    // if all paths are already set, we don't need to scan the remaining matches
+                    if (list_file != null && block_directory != null && routine_directory != null)
+                    {
+                        break;
+                    }
                 }
             }
 
