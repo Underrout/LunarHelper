@@ -81,7 +81,7 @@ namespace LunarHelper.Resolvers
 
             if (File.Exists(potential_stddefines))
             {
-                return (HashFileVertex)graph.GetOrCreateVertex(stddefines_file_name);
+                return (HashFileVertex)graph.GetOrCreateVertex(potential_stddefines);
             }
             else
             {
