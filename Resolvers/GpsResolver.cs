@@ -33,6 +33,11 @@ namespace LunarHelper.Resolvers
             RegexOptions.Compiled
         );
 
+        private readonly Regex passed_directories = new Regex(
+            "-(?<type>l|b|s)\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s\"]+))",
+            RegexOptions.Compiled
+        );
+
         private readonly RootDependencyList static_root_dependencies = new RootDependencyList
         {
             ( "asar.dll", "asar", RootDependencyType.Binary ),
@@ -108,15 +113,55 @@ namespace LunarHelper.Resolvers
                     }
                 }
             }
+
+            if (!File.Exists(list_file))
+            {
+                Vertex missing_list_file = graph.GetOrCreateMissingFileVertex(list_file);
+                graph.TryAddUniqueEdge(vertex, missing_list_file, list_tag);
+            }
+
+            if (!Directory.Exists(routine_directory))
+            {
+                Vertex missing_routine_dir = graph.GetOrCreateMissingFileVertex(routine_directory);
+                graph.TryAddUniqueEdge(vertex, missing_routine_dir, "routine_folder");
+            }
         }
 
         private void DetermineDirectoryPaths(string gps_options)
         {
-            // TODO make this handle -l, -b and -s options
+            var matches = passed_directories.Matches(gps_options);
 
-            list_file = Path.Combine(gps_directory, default_list_file);
-            block_directory = Path.Combine(gps_directory, default_block_directory);
-            routine_directory = Path.Combine(gps_directory, default_routine_directory);
+            // iterating in reverse so that the last path will stick if the same 
+            // option is passed multiple times
+            foreach (Match match in matches.Reverse())
+            {
+                switch (match.Groups["type"].Value)
+                {
+                    case "l":
+                        // only set list_file if it's not already been set (we're iterating in reverse!)
+                        list_file ??= match.Groups["path"].Value; 
+                        break;
+
+                    case "b":
+                        block_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "s":
+                        routine_directory ??= match.Groups["path"].Value;
+                        break;
+                }
+
+                // if all paths are already set, we don't need to scan the remaining matches
+                if (list_file != null && block_directory != null && routine_directory != null)
+                {
+                    break;
+                }
+            }
+
+            // use defaults if any paths are still null
+            list_file ??= Path.Combine(gps_directory, default_list_file);
+            block_directory ??= Path.Combine(gps_directory, default_block_directory);
+            routine_directory ??= Path.Combine(gps_directory, default_routine_directory);
         }
 
         private AsarResolver CreateAsarResolver()
@@ -142,10 +187,13 @@ namespace LunarHelper.Resolvers
                 dependencies.Add((path, tag, type));
             }
 
-            foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
+            if (Directory.Exists(routine_directory))
             {
-                // not numbering these tags since the order of routines probably doesn't matter
-                dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
+                {
+                    // not numbering these tags since the order of routines probably doesn't matter
+                    dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                }
             }
 
             dependencies.Add((list_file, list_tag, RootDependencyType.BlockList));

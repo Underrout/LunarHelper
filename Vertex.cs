@@ -22,11 +22,11 @@ namespace LunarHelper
 
     }
 
-    // Vertex representing a file that was not found at the 
+    // Vertex representing a file or directory that was not found at the 
     // specified file path
-    class MissingFileVertex : FileVertex
+    class MissingFileOrDirectoryVertex : FileVertex
     {
-        public MissingFileVertex(Uri uri) : base(uri)
+        public MissingFileOrDirectoryVertex(Uri uri) : base(uri)
         {
 
         }

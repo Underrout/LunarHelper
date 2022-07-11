@@ -85,6 +85,11 @@ namespace LunarHelper.Resolvers
             RegexOptions.Compiled | RegexOptions.Multiline
         );
 
+        private readonly Regex passed_directories = new Regex(
+            "-(?<type>l|a|sp|sh|g|e|c|r)\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s\"]+))",
+            RegexOptions.Compiled
+        );
+
         private readonly RootDependencyList static_root_dependencies = new RootDependencyList
         {
             ( "asar.dll", "asar", RootDependencyType.Binary )
@@ -116,7 +121,7 @@ namespace LunarHelper.Resolvers
             ( "config.asm", "config" )
         };
 
-        private readonly (string, RootDependencyType) routine_tag_and_type = ( "routine", RootDependencyType.Asar );
+        private readonly (string, RootDependencyType) routine_tag_and_type = ("routine", RootDependencyType.Asar);
 
         // these header files may or may not exist, you can delete them as long as you don't insert any sprites
         // of the corresponding type (not that you should)
@@ -192,10 +197,13 @@ namespace LunarHelper.Resolvers
                 dependencies.Add((path, tag, potential_sprite_folder_header_file_dependency.Item3));
             }
 
-            foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
+            if (Directory.Exists(routine_directory))
             {
-                // not numbering these tags since the order of routines probably doesn't matter
-                dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
+                {
+                    // not numbering these tags since the order of routines probably doesn't matter
+                    dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                }
             }
 
             dependencies.Add((list_file, list_tag, RootDependencyType.SpriteList));
@@ -244,6 +252,18 @@ namespace LunarHelper.Resolvers
                             break;
                     }
                 }
+            }
+
+            if (!File.Exists(list_file))
+            {
+                Vertex missing_list_file = graph.GetOrCreateMissingFileVertex(list_file);
+                graph.TryAddUniqueEdge(vertex, missing_list_file, list_tag);
+            }
+
+            if (!Directory.Exists(routine_directory))
+            {
+                Vertex missing_routine_dir = graph.GetOrCreateMissingFileVertex(routine_directory);
+                graph.TryAddUniqueEdge(vertex, missing_routine_dir, "routine_folder");
             }
         }
 
@@ -388,7 +408,7 @@ namespace LunarHelper.Resolvers
 
             Vertex sprite_config_file_vertex = graph.GetOrCreateVertex(path);
             graph.AddEdge(list_vertex, sprite_config_file_vertex, tag);
-            
+
             if (sprite_config_file_vertex is HashFileVertex)
             {
                 switch (Path.GetExtension(relative_path))
@@ -417,21 +437,73 @@ namespace LunarHelper.Resolvers
 
         private void DetermineDirectoryPaths(string pixi_options, string output_path)
         {
-            // TODO make this actually account for different path specifiers in pixi_options
+            var matches = passed_directories.Matches(pixi_options);
 
-            // pixi always resolves the list file relative to the rom's dir unless an absolute
-            // -l option is passed
-            var rom_dir = Path.GetDirectoryName(Path.GetFullPath(output_path));
+            // iterating in reverse so that the last path will stick if the same 
+            // option is passed multiple times
+            foreach (Match match in matches.Reverse())
+            {
+                switch (match.Groups["type"].Value)
+                {
+                    case "l":
+                        // only set list_file if it's not already been set (we're iterating in reverse!)
+                        list_file ??= match.Groups["path"].Value;
+                        break;
 
-            // everything else is resolved relative to the pixi directory
-            list_file = Path.Combine(pixi_directory, default_list_file);
-            asm_directory = Path.Combine(pixi_directory, default_asm_directory);
-            sprites_directory = Path.Combine(pixi_directory, default_sprites_directory);
-            shooters_directory = Path.Combine(pixi_directory, default_shooters_directory);
-            generators_directory = Path.Combine(pixi_directory, default_generators_directory);
-            extended_directory = Path.Combine(pixi_directory, default_extended_directory);
-            cluster_directory = Path.Combine(pixi_directory, default_cluster_directory);
-            routine_directory = Path.Combine(pixi_directory, default_routine_directory);
+                    case "a":
+                        asm_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "sp":
+                        sprites_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "sh":
+                        shooters_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "g":
+                        generators_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "e":
+                        extended_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "c":
+                        cluster_directory ??= match.Groups["path"].Value;
+                        break;
+
+                    case "r":
+                        routine_directory ??= match.Groups["path"].Value;
+                        break;
+                }
+
+                // if all paths are already set, we don't need to scan the remaining matches
+                if (new[] { list_file, asm_directory, sprites_directory, shooters_directory,
+                    generators_directory, extended_directory, cluster_directory, routine_directory}.All(p => p != null))
+                {
+                    break;
+                }
+            }
+
+            if (list_file == null)
+            {
+                // pixi always resolves the list file relative to the rom's dir unless an absolute
+                // -l option is passed
+                var rom_dir = Path.GetDirectoryName(Path.GetFullPath(output_path));
+
+                // everything else is resolved relative to the pixi directory
+                list_file = Path.Combine(rom_dir, default_list_file);
+            }
+
+            asm_directory ??= Path.Combine(pixi_directory, default_asm_directory);
+            sprites_directory ??= Path.Combine(pixi_directory, default_sprites_directory);
+            shooters_directory ??= Path.Combine(pixi_directory, default_shooters_directory);
+            generators_directory ??= Path.Combine(pixi_directory, default_generators_directory);
+            extended_directory ??= Path.Combine(pixi_directory, default_extended_directory);
+            cluster_directory ??= Path.Combine(pixi_directory, default_cluster_directory);
+            routine_directory ??= Path.Combine(pixi_directory, default_routine_directory);
         }
 
         private void ResolveJsonFileDependencies(HashFileVertex vertex)

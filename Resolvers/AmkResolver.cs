@@ -132,6 +132,13 @@ namespace LunarHelper.Resolvers
             }
 
             graph.TryAddUniqueEdge(vertex, exe_vertex, "exe");
+
+            if (asar_resolver.stddefines_vertex != null)
+            {
+                // I believe since amk comes with an asar exe rather than dll, you 
+                // actually can use stddefines with it, so we're going to handle that case
+                graph.TryAddUniqueEdge(vertex, asar_resolver.stddefines_vertex, "stddefines");
+            }
         }
 
         private void ResolveSongListDependencies(HashFileVertex vertex)

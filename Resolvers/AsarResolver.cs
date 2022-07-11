@@ -23,10 +23,18 @@ namespace LunarHelper.Resolvers
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
 
+        private static readonly Regex additional_include_directories_regex = new Regex(
+            "(?:--include\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s]*)))|(?:-I(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s\"]+)))",
+            RegexOptions.Compiled
+        );
+
+        private const string stddefines_file_name = "stddefines.txt";
+        private const string stddefines_tag = "stddefines";
+
         private readonly DependencyGraph graph;
         private HashSet<Vertex> seen;
         private readonly IEnumerable<string> additional_include_directories = new List<string>();
-        public readonly string stddefines_file;
+        public readonly HashFileVertex stddefines_vertex = null;
 
         // normalized generated file path, tag for generated file
         private List<(Uri, string)> generated_files = new List<(Uri, string)>();
@@ -36,14 +44,23 @@ namespace LunarHelper.Resolvers
             this.graph = graph;
             this.seen = seen;
 
-            if (asar_exe_path != null)
-            {
-                stddefines_file = DetermineStddefinesFile(asar_exe_path);
-            }
-
-            if (asar_options != null)
+            if (!string.IsNullOrWhiteSpace(asar_options))
             {
                 additional_include_directories = DetermineAdditionalIncludeDirectories(asar_options);
+            }
+
+            // afaik you can only have a stddefines file with the exe, not a dll
+            if (!string.IsNullOrWhiteSpace(asar_exe_path) && Path.GetExtension(asar_exe_path) == ".exe")
+            {
+                stddefines_vertex = DetermineStddefinesFile(asar_exe_path);
+
+                if (stddefines_vertex != null)
+                {
+                    // stddefines file apparently cannot contain incsrc/incbin, so I'm going to 
+                    // treat it as if it were a binary file, since it presumably cannot cause 
+                    // further dependencies
+                    seen.Add(stddefines_vertex);
+                }
             }
         }
 
@@ -57,17 +74,25 @@ namespace LunarHelper.Resolvers
             NameGeneratedFile(file_path_tag_tuple.Item1, file_path_tag_tuple.Item2);
         }
 
-        private string DetermineStddefinesFile(string asar_exe_path)
+        private HashFileVertex DetermineStddefinesFile(string asar_exe_path)
         {
-            // TODO implement this so it returns the path to the stddefines.txt file 
-            // in the asar exe's folder, if there is such a file
-            return null;
+            var asar_dir = Path.GetDirectoryName(asar_exe_path);
+            var potential_stddefines = Path.Combine(asar_dir, stddefines_file_name);
+
+            if (File.Exists(potential_stddefines))
+            {
+                return (HashFileVertex)graph.GetOrCreateVertex(stddefines_file_name);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private IEnumerable<string> DetermineAdditionalIncludeDirectories(string asar_options)
         {
-            // TODO implement this, see asar's -I and --include options
-            return new List<string>();
+            return additional_include_directories_regex.Matches(asar_options)
+                .SelectMany(m => m.Groups["path"].Captures.Select(c => c.Value));
         }
 
         public void ResolveDependencies(HashFileVertex vertex)
@@ -113,7 +138,7 @@ namespace LunarHelper.Resolvers
                     break;
 
                 case IncludeResolveResult.NotFound:
-                // [FALLTHROUGH]
+                    // [FALLTHROUGH]
 
                 case IncludeResolveResult.Found:
                     // if the file was not found, GetOrCreateVertex should handle it, 
@@ -160,21 +185,8 @@ namespace LunarHelper.Resolvers
         //       if so -> return (Found/Generated, list + path_we_just_tried)
         //    b. else add the path we tried to the list
         // 5. return (NotFound, list)
-        public (IncludeResolveResult, List<string>, Uri?) TryResolveInclude(FileVertex vertex, Match include)
+        public (IncludeResolveResult, List<string>, Uri) TryResolveInclude(FileVertex vertex, Match include)
         {
-            // TODO make it actually try hard to resolve correctly
-            // by using additional include directories if those are 
-            // available
-
-            // TODO if the include is unresolvable, return a plain vertex
-            // Note that there are a lot of ways something could be unresolvable
-            // It could be something like `incsrc <macro_variable>` or 
-            // `incsrc !some_define` or even `incsrc "normal_stuff/!define_time/normal_stuff"
-            // Probably just look for <> at start and end of the path -> unresolvable
-            // Look for ! anywhere in the path -> unresolvable (even though it's not against
-            // window's naming scheme to have ! in file names, I just can't resolve that without
-            // evaluating defines, which I do not really want to do
-
             List<string> attempted_paths = new List<string>();
 
             string include_path = include.Groups["path"].Value;

@@ -89,8 +89,16 @@ namespace LunarHelper.Resolvers
             // we don't actually have to resolve uberasm_options for now
             // since I believe uberasm doesn't let you customize directory 
             // paths as of version 1.4
+            //
+            // the one thing we do want to handle is if uberasm_options is not
+            // empty, it must be an overriden list path, since that's currently
+            // the only option you can actually pass (may change in the future,
+            // watch out!)
 
-            list_file = Path.Combine(uberasm_directory, default_list_file);
+            string list_file_path = string.IsNullOrWhiteSpace(uberasm_options) ? 
+                default_list_file : uberasm_options.Trim();
+
+            list_file = Path.Combine(uberasm_directory, list_file_path);
             library_directory = Path.Combine(uberasm_directory, default_library_directory);
             level_directory = Path.Combine(uberasm_directory, default_level_directory);
             gamemode_directory = Path.Combine(uberasm_directory, default_gamemode_directory);
@@ -107,10 +115,13 @@ namespace LunarHelper.Resolvers
                 dependencies.Add((path, tag, type));
             }
 
-            int library_file_idx = 0;
-            foreach (string path in Directory.EnumerateFiles(library_directory, "*.*", SearchOption.AllDirectories))
+            if (Directory.Exists(library_directory))
             {
-                dependencies.Add((path, $"{library_file_tag}_{library_file_idx++}", RootDependencyType.Asar));
+                int library_file_idx = 0;
+                foreach (string path in Directory.EnumerateFiles(library_directory, "*.*", SearchOption.AllDirectories))
+                {
+                    dependencies.Add((path, $"{library_file_tag}_{library_file_idx++}", RootDependencyType.Asar));
+                }
             }
 
             dependencies.Add((list_file, list_tag, RootDependencyType.List));
@@ -146,6 +157,18 @@ namespace LunarHelper.Resolvers
                             break;
                     }
                 }
+            }
+
+            if (!File.Exists(list_file))
+            {
+                Vertex missing_list_file = graph.GetOrCreateMissingFileVertex(list_file);
+                graph.TryAddUniqueEdge(vertex, missing_list_file, list_tag);
+            }
+
+            if (!Directory.Exists(library_directory))
+            {
+                Vertex missing_library_dir = graph.GetOrCreateMissingFileVertex(library_directory);
+                graph.TryAddUniqueEdge(vertex, missing_library_dir, "library_folder");
             }
         }
 
@@ -268,7 +291,7 @@ namespace LunarHelper.Resolvers
                     break;
             }
 
-            string full_path =Path.Combine(base_path, relative_path);
+            string full_path = Path.Combine(base_path, relative_path);
 
             Vertex asm_vertex = graph.GetOrCreateVertex(full_path);
             graph.AddEdge(list_vertex, asm_vertex, tag);
