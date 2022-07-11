@@ -7,15 +7,13 @@ using System.Linq;
 
 namespace LunarHelper
 {
-    using JsonVertex = DependencyGraphConverter.JsonVertex;
     class Report
     {
         public int report_format_version { get; set; } = 2;
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
         public Dictionary<string, string> levels { get; set; }
-        public List<JsonVertex> dependencies { get; set; }
-        public Dictionary<string, JsonVertex> patches { get; set; }
+        public List<object> dependency_graph { get; set; }
         public string graphics { get; set; }
         public string exgraphics { get; set; }
         public string init_bps { get; set; }
@@ -23,19 +21,13 @@ namespace LunarHelper
         public string title_moves { get; set; }
         public string shared_palettes { get; set; }
         public string map16 { get; set; }
-        public string gps_folders { get; set; }
         public string gps_options { get; set; }
-        public string pixi_folders { get; set; }
         public string pixi_options { get; set; }
-        public string uberasm_folders { get; set; }
         public string uberasm_options { get; set; }
-        public List<FileVertex> addmusick_roots { get; set; }
         public string addmusick_options { get; set; }
-        public string shared_folders { get; set; }
         public string flips { get; set; }
         public string lunar_magic { get; set; }
         public string lunar_magic_level_import_flags { get; set; }
-        public string asar { get; set; }
         public string asar_options { get; set; }
         public string human_readable_map16 { get; set; }
 

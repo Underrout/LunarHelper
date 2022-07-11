@@ -9,10 +9,8 @@ using System.Text;
 using LunarHelper;
 using System.Linq;
 
-namespace SMWPatcher
+namespace LunarHelper
 {
-    using JsonVertex = DependencyGraphConverter.JsonVertex;
-
     class Program
     {
         static public Config Config { get; private set; }
@@ -24,7 +22,6 @@ namespace SMWPatcher
         static private Process LunarMagicProcess;
 
         static private DependencyGraph dependency_graph;
-        static private DependencyGraphConverter dependency_graph_converter;
 
         private enum Result
         {
@@ -449,7 +446,7 @@ namespace SMWPatcher
 
             report.build_time = DateTime.Now;
 
-            report.dependencies = dependency_graph_converter.GetDependencies().ToList();
+            report.dependency_graph = DependencyGraphSerializer.SerializeGraph(dependency_graph).Cast<object>().ToList();
 
             report.levels = GetLevelReport();
             report.graphics = Report.HashFolder("Graphics");
@@ -477,19 +474,8 @@ namespace SMWPatcher
                 }
             }
 
-            report.patches = GetPatchReport();
-
-            report.pixi_folders = Report.HashFolder(Path.GetDirectoryName(Config.PixiPath));
-            report.gps_folders = Report.HashFolder(Path.GetDirectoryName(Config.GPSPath));
-            report.uberasm_folders = Report.HashFolder(Path.GetDirectoryName(Config.UberASMPath));
-
-            report.addmusick_roots = dependency_graph_converter.GetAmkRoots().ToList();
-
-            report.shared_folders = Report.HashFolder(Config.SharedFolder);
-
             report.rom_hash = Report.HashFile(Config.OutputPath);
 
-            report.asar = Report.HashFile(Config.AsarPath);
             report.flips = Report.HashFile(Config.FlipsPath);
             report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
@@ -502,26 +488,6 @@ namespace SMWPatcher
             report.lunar_magic_level_import_flags = Config.LunarMagicLevelImportFlags;
 
             return report;
-        }
-
-        static public Dictionary<string, JsonVertex> GetPatchReport()
-        {
-            if (Config.Patches == null)
-            {
-                return null;
-            }
-
-            var dict = new Dictionary<string, JsonVertex>();
-
-            List<DependencyGraphConverter.JsonVertex> patch_list = dependency_graph_converter.GetPatchRoots().ToList();
-
-            foreach (var patch in Config.Patches)
-            {
-                // TODO make this not rehash the file to find the corresponding vertex, that's needlessly wasteful
-                dict[patch] = patch_list.Find(v => v.hash == Report.HashFile(patch));
-            }
-
-            return dict;
         }
 
         static public Dictionary<string, string> GetLevelReport()
@@ -605,7 +571,6 @@ namespace SMWPatcher
             }
 
             dependency_graph = new DependencyGraph(Config);
-            dependency_graph_converter = new DependencyGraphConverter(dependency_graph);
 
             // delete existing temp ROM
             if (File.Exists(Config.TempPath))
