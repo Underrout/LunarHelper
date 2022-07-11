@@ -194,7 +194,7 @@ namespace LunarHelper.Resolvers
             foreach (Match match in matches)
             {
                 int sample_id = 0;
-                var sample_group = match.Groups["sample_group"].Value;
+                var sample_group = match.Groups["sample_group"].Value.ToLowerInvariant();
 
                 foreach (Capture capture in match.Groups["samples"].Captures)
                 {
