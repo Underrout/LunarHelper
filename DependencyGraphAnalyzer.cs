@@ -31,6 +31,60 @@ namespace LunarHelper
             Arbitrary
         }
 
+        // returns (true, null) if we have to suspect that an old patch was removed from the list
+        // otherwise returns a list of patch root vertices and the result of analyzing their dependencies
+        public static (bool, IEnumerable<(PatchRootVertex, (Result, Vertex))>) Analyze(DependencyGraph new_graph, IEnumerable<PatchRootVertex> new_roots, 
+            IEnumerable<JsonVertex> old_graph)
+        {
+            var old_roots = old_graph.Where(v => v is JsonPatchRootVertex).Cast<JsonPatchRootVertex>();
+
+            if (old_roots.Count() > new_roots.Count())
+            {
+                return (true, null);
+            }
+
+            var old_hashes_paths_and_vertices = old_roots.Select(r => (r.hash, r.path, r)).Cast<(string, string, JsonPatchRootVertex)>();
+            var new_hashes_paths_and_vertices = new_roots.Select(r => (r.hash, r.normalized_relative_patch_path, r)).Cast<(string, string, PatchRootVertex)>();
+
+            var old_dont_match_any_new = old_hashes_paths_and_vertices.Where(o =>
+                !new_hashes_paths_and_vertices.Any(n => n.Item1 == o.Item1) &&
+                !new_hashes_paths_and_vertices.Any(n => n.Item2 == o.Item2));
+
+            if (old_dont_match_any_new.Count() != 0)
+            {
+                // we have at least one old patch which doesn't match any 
+                // new patches by either path or hash, so we must assume that 
+                // it was removed, which requires a reubild
+                return (true, null);
+            }
+
+            var new_dont_match_any_old = new_hashes_paths_and_vertices.Where(n =>
+                !old_hashes_paths_and_vertices.Any(o => o.Item1 == n.Item1) &&
+                !old_hashes_paths_and_vertices.Any(o => o.Item2 == n.Item2));
+
+            var remaining_new = new_hashes_paths_and_vertices.Where(n =>
+                !new_dont_match_any_old.Select(t => t.Item3).Contains(n.Item3));
+
+            IEnumerable<(PatchRootVertex, (Result, Vertex))> results = new List<(PatchRootVertex, (Result, Vertex))>();
+
+            foreach (var match in remaining_new)
+            {
+                var old_root = old_roots.SingleOrDefault(r => r.hash == match.Item1 && r.path == match.Item2);
+                if (old_root == null)
+                {
+                    old_root = old_roots.FirstOrDefault(r => r.hash == match.Item1 || r.path == match.Item2);
+                }
+                results = results.Append((match.Item3, CompareSubgraphs(new_graph, match.Item3, old_root, old_graph.ToList())));
+            }
+
+            foreach (var new_patch in new_dont_match_any_old)
+            {
+                results = results.Append((new_patch.Item3, (Result.NewRoot, new_patch.Item3)));
+            }
+
+            return (false, results);
+        }
+
         public static (Result, Vertex) Analyze(DependencyGraph new_graph, ToolRootVertex tool_root_vertex, List<JsonVertex> old_graph)
         {
             var old_root = old_graph.SingleOrDefault(v => v is JsonToolRootVertex && ((JsonToolRootVertex)v).tool == tool_root_vertex.type);
