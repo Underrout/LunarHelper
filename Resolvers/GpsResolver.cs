@@ -137,19 +137,22 @@ namespace LunarHelper.Resolvers
                 // option is passed multiple times
                 foreach (Match match in matches.Reverse())
                 {
+                    var path = match.Groups["path"].Value;
+                    path = Path.IsPathRooted(path) ? path : Path.Combine(gps_directory, path);
+
                     switch (match.Groups["type"].Value)
                     {
                         case "l":
                             // only set list_file if it's not already been set (we're iterating in reverse!)
-                            list_file ??= match.Groups["path"].Value;
+                            list_file = path;
                             break;
 
                         case "b":
-                            block_directory ??= match.Groups["path"].Value;
+                            block_directory = path;
                             break;
 
                         case "s":
-                            routine_directory ??= match.Groups["path"].Value;
+                            routine_directory = path;
                             break;
                     }
 

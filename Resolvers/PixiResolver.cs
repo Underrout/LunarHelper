@@ -445,39 +445,44 @@ namespace LunarHelper.Resolvers
                 // option is passed multiple times
                 foreach (Match match in matches.Reverse())
                 {
+                    var path = match.Groups["path"].Value;
+                    path = Path.IsPathRooted(path) ? path : Path.Combine(pixi_directory, path);
+
                     switch (match.Groups["type"].Value)
                     {
                         case "l":
+                            var list_path = match.Groups["path"].Value;
+                            path = Path.IsPathRooted(list_path) ? list_path : Path.Combine(output_path, list_path);
                             // only set list_file if it's not already been set (we're iterating in reverse!)
-                            list_file ??= match.Groups["path"].Value;
+                            list_file ??= list_path;
                             break;
 
                         case "a":
-                            asm_directory ??= match.Groups["path"].Value;
+                            asm_directory ??= path;
                             break;
 
                         case "sp":
-                            sprites_directory ??= match.Groups["path"].Value;
+                            sprites_directory ??= path;
                             break;
 
                         case "sh":
-                            shooters_directory ??= match.Groups["path"].Value;
+                            shooters_directory ??= path;
                             break;
 
                         case "g":
-                            generators_directory ??= match.Groups["path"].Value;
+                            generators_directory ??= path;
                             break;
 
                         case "e":
-                            extended_directory ??= match.Groups["path"].Value;
+                            extended_directory ??= path;
                             break;
 
                         case "c":
-                            cluster_directory ??= match.Groups["path"].Value;
+                            cluster_directory ??= path;
                             break;
 
                         case "r":
-                            routine_directory ??= match.Groups["path"].Value;
+                            routine_directory ??= path;
                             break;
                     }
 
