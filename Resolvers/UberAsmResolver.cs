@@ -117,10 +117,9 @@ namespace LunarHelper.Resolvers
 
             if (Directory.Exists(library_directory))
             {
-                int library_file_idx = 0;
                 foreach (string path in Directory.EnumerateFiles(library_directory, "*.*", SearchOption.AllDirectories))
                 {
-                    dependencies.Add((path, $"{library_file_tag}_{library_file_idx++}", RootDependencyType.Asar));
+                    dependencies.Add((path, library_file_tag, RootDependencyType.Asar));
                 }
             }
 
@@ -135,7 +134,7 @@ namespace LunarHelper.Resolvers
             {
                 (string path, string tag, RootDependencyType type) = root_dependency;
 
-                Vertex dependency = graph.GetOrCreateVertex(path);
+                Vertex dependency = tag != library_file_tag ? graph.GetOrCreateVertex(path) : graph.GetOrCreateFileNameVertex(path);
                 graph.TryAddUniqueEdge(vertex, dependency, tag);
 
                 if (dependency is HashFileVertex)

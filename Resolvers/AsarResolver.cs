@@ -155,7 +155,7 @@ namespace LunarHelper.Resolvers
 
             tag = $"{tag}_{dependency_id++}";
 
-            graph.AddEdge(vertex, dependency, tag);
+            graph.TryAddUniqueEdge(vertex, dependency, tag, true);
 
             if (!is_binary_dependency && dependency is HashFileVertex)
             {

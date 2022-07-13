@@ -11,26 +11,6 @@ using QuickGraph;
 
 namespace LunarHelper
 {
-    class CriticalDependencyMissingException : Exception
-    {
-        public CriticalDependencyMissingException()
-        {
-
-        }
-
-        public CriticalDependencyMissingException(string file_path) :
-            base($"Required dependency \"{file_path}\" is missing, cannot build")
-        {
-
-        }
-
-        public CriticalDependencyMissingException(string message, string file_path) :
-            base(String.Format(message, file_path))
-        {
-
-        }
-    }
-
     class DependencyGraph
     {
         public BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>> dependency_graph;
@@ -113,9 +93,11 @@ namespace LunarHelper
 
         // will add a tagged edge between two vertices, but only if no edge exists between them yet
         // returns true if an edge was added and false if one was already found
-        public bool TryAddUniqueEdge(Vertex source, Vertex target, string tag)
+        // if unique_tag = true, multiple edges between the vertex will be created as long as each 
+        // has a unique tag
+        public bool TryAddUniqueEdge(Vertex source, Vertex target, string tag, bool unique_tag = false)
         {
-            if (dependency_graph.OutEdges(source).Any(e => e.Target == target))
+            if (dependency_graph.OutEdges(source).Any(e => e.Target == target && (!unique_tag || e.Tag == tag)))
             {
                 return false;
             }
@@ -131,6 +113,38 @@ namespace LunarHelper
             dependency_graph.AddVertex(vertex);
 
             return vertex;
+        }
+
+        public Vertex GetOrCreateFileNameVertex(string file_path)
+        {
+            Uri uri = Util.GetUri(file_path);
+
+            FileVertex maybe_vertex = dependency_graph.Vertices
+                .Where(v => v is FileVertex)
+                .Cast<FileVertex>()
+                .SingleOrDefault(v => v.uri.Equals(uri));
+
+            if (maybe_vertex != null)
+            {
+                return maybe_vertex;
+            }
+
+            Vertex new_vertex;
+
+            try
+            {
+                new_vertex = new HashFileNameVertex(uri);
+            }
+            catch (NoUnderlyingFileException)
+            {
+                // this should now never happen with the !File.Exists guard at the top, probably 
+                // remove this try/catch at some point
+                new_vertex = new MissingFileOrDirectoryVertex(uri);
+            }
+
+            dependency_graph.AddVertex(new_vertex);
+
+            return new_vertex;
         }
 
         public Vertex GetOrCreateMissingFileVertex(string file_path)
@@ -166,7 +180,7 @@ namespace LunarHelper
         // checked and a GeneratedFileVertex will be returned, otherwise, if the 
         // underlying file exists, a HashFileVertex will be returned, if no such file
         // exists, a MissingFileVertex will be returned instead
-        public Vertex GetOrCreateVertex(string file_path, bool is_generated = false)
+        public Vertex GetOrCreateVertex(string file_path, bool is_generated = false, bool include_file_name_in_hash = false)
         {
             if (!File.Exists(file_path) && !is_generated)
             {

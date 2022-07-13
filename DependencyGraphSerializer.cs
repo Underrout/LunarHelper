@@ -41,6 +41,11 @@ namespace LunarHelper
             public string hash { get; set; }
         }
 
+        public class JsonHashFileNameVertex : JsonHashVertex
+        {
+            public string file_name { get; set; }
+        }
+
         public static IEnumerable<JsonVertex> SerializeGraph(DependencyGraph graph)
         {
             OrderedDictionary vertices = new OrderedDictionary();
@@ -81,7 +86,19 @@ namespace LunarHelper
             var type = vertex.GetType();
             int idx;
 
-            if (type == typeof(HashFileVertex))
+            if (type == typeof(HashFileNameVertex))
+            {
+                HashFileNameVertex hash_file_vertex = (HashFileNameVertex)vertex;
+                JsonHashFileNameVertex json_hash_vertex = new JsonHashFileNameVertex 
+                { 
+                    hash = hash_file_vertex.hash, 
+                    file_name = hash_file_vertex.file_name 
+                };
+                idx = vertices.Count;
+
+                vertices.Add(vertex, json_hash_vertex);
+            }
+            else if (type == typeof(HashFileVertex))
             {
                 HashFileVertex hash_vertex = (HashFileVertex)vertex;
                 JsonHashVertex json_hash_vertex = new JsonHashVertex { hash = hash_vertex.hash };

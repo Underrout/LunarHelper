@@ -90,7 +90,7 @@ namespace LunarHelper.Resolvers
             {
                 (string path, string tag, RootDependencyType type) = root_dependency;
 
-                Vertex dependency = graph.GetOrCreateVertex(path);
+                Vertex dependency = tag != routine_tag_and_type.Item1 ? graph.GetOrCreateVertex(path) : graph.GetOrCreateFileNameVertex(path);
                 graph.TryAddUniqueEdge(vertex, dependency, tag);
 
                 if (dependency is HashFileVertex)

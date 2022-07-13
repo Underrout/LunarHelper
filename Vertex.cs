@@ -125,6 +125,19 @@ namespace LunarHelper
         }
     }
 
+    // vertex that includes a hash of a file's content as well as
+    // its (case-sensitive) file name including its extension
+    class HashFileNameVertex : HashFileVertex
+    {
+        public readonly string file_name;
+
+        public HashFileNameVertex(Uri uri) : base(uri)
+        {
+            file_name = Path.GetFileName(uri.LocalPath);
+        }
+    }
+
+    // vertex that includes a hash of a file's content
     class HashFileVertex : FileVertex
     {
         public readonly string hash;
