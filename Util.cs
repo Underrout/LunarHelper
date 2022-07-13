@@ -14,10 +14,7 @@ namespace LunarHelper
             var absolute_path = Path.IsPathRooted(relative_or_absolute_path) ?
                 relative_or_absolute_path : Path.GetFullPath(relative_or_absolute_path);
 
-            UriCreationOptions options = new UriCreationOptions();
-            options.DangerousDisablePathAndQueryCanonicalization = !File.Exists(absolute_path);
-
-            return new Uri(absolute_path, options);
+            return new Uri(absolute_path);
         }
     }
 }
