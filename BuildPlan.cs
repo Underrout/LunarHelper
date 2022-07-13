@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
@@ -258,6 +258,45 @@ namespace LunarHelper
             }
 
             return plan;
+        }
+
+        private static string DependencyChainAsString(string base_directory, IEnumerable<Vertex> dependency_chain)
+        {
+            Uri base_uri = new Uri(base_directory);
+
+            StringBuilder builder = new StringBuilder();
+
+            foreach (var vertex in dependency_chain)
+            {
+                if (vertex is ToolRootVertex)
+                {
+                    builder.Append(((ToolRootVertex)vertex).type.ToString());
+                }
+                else if (vertex is PatchRootVertex)
+                {
+                    builder.Append(((PatchRootVertex)vertex).normalized_relative_patch_path);
+                }
+                else if (vertex is FileVertex)
+                {
+                    builder.Append(base_uri.MakeRelativeUri(((FileVertex)vertex).uri).OriginalString);
+                }
+                else if (vertex is ArbitraryFileVertex)
+                {
+                    builder.Append("Arbitrary file(s)");
+                }
+                else if (vertex == null)
+                {
+                    // not sure if this actually ever happens
+                    builder.Append("Missing file");
+                }
+                
+                if (vertex != dependency_chain.Last())
+                {
+                    builder.Append(" -> ");
+                }
+            }
+
+            return builder.ToString();
         }
     }
 }
