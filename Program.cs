@@ -155,118 +155,6 @@ namespace LunarHelper
 
             File.Copy(Config.OutputPath, Config.TempPath);
 
-            // GPS
-
-            if (plan.apply_gps)
-            {
-                var res = ApplyGPS();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("GPS was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // PIXI
-
-            if (plan.apply_pixi)
-            {
-                Log("PIXI", ConsoleColor.Cyan);
-                var res = ApplyPixi();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("PIXI was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // patches
-
-            if (plan.patches_to_apply.Count != 0)
-            {
-                // asar patches
-                Log("Patches", ConsoleColor.Cyan);
-                if (string.IsNullOrWhiteSpace(Config.AsarPath))
-                {
-                    Log("No path to Asar provided, but was used to insert patches previously. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-                else if (!File.Exists(Config.AsarPath))
-                {
-                    Log("Asar not found at provided path. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-                else
-                {
-                    foreach (var patch in plan.patches_to_apply)
-                    {
-                        Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
-
-                        ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
-
-                        var p = Process.Start(psi);
-                        p.WaitForExit();
-
-                        if (p.ExitCode == 0)
-                            Log("Success!", ConsoleColor.Green);
-                        else
-                        {
-                            Log("Failure!", ConsoleColor.Red);
-                            return false;
-                        }
-                    }
-
-                    Log("Patching Success!", ConsoleColor.Green);
-                    Console.WriteLine();
-                }
-            }
-
-            if (plan.apply_uberasm)
-            {
-                var res = ApplyUberASM();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("UberASMTool was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.apply_addmusick)
-            {
-                var res = ApplyAddmusicK();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("AddmusicK was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
             if (plan.insert_gfx)
             {
                 // import gfx
@@ -377,6 +265,25 @@ namespace LunarHelper
                 }
             }
 
+            // PIXI
+
+            if (plan.apply_pixi)
+            {
+                Log("PIXI", ConsoleColor.Cyan);
+                var res = ApplyPixi();
+
+                if (res == Result.Error)
+                {
+                    return false;
+                }
+                else if (res == Result.NotFound || res == Result.NotSpecified)
+                {
+                    Log("PIXI was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
             if (plan.insert_all_levels)
             {
                 if (!ImportLevels(false))
@@ -427,6 +334,101 @@ namespace LunarHelper
                             "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
                         return false;
                     }
+                }
+            }
+
+            // AddmusicK
+
+            if (plan.apply_addmusick)
+            {
+                var res = ApplyAddmusicK();
+
+                if (res == Result.Error)
+                {
+                    return false;
+                }
+                else if (res == Result.NotFound || res == Result.NotSpecified)
+                {
+                    Log("AddmusicK was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // GPS
+
+            if (plan.apply_gps)
+            {
+                var res = ApplyGPS();
+
+                if (res == Result.Error)
+                {
+                    return false;
+                }
+                else if (res == Result.NotFound || res == Result.NotSpecified)
+                {
+                    Log("GPS was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            if (plan.apply_uberasm)
+            {
+                var res = ApplyUberASM();
+
+                if (res == Result.Error)
+                {
+                    return false;
+                }
+                else if (res == Result.NotFound || res == Result.NotSpecified)
+                {
+                    Log("UberASMTool was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // patches
+
+            if (plan.patches_to_apply.Count != 0)
+            {
+                // asar patches
+                Log("Patches", ConsoleColor.Cyan);
+                if (string.IsNullOrWhiteSpace(Config.AsarPath))
+                {
+                    Log("No path to Asar provided, but was used to insert patches previously. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+                else if (!File.Exists(Config.AsarPath))
+                {
+                    Log("Asar not found at provided path. If this is not a mistake, " +
+                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
+                    return false;
+                }
+                else
+                {
+                    foreach (var patch in plan.patches_to_apply)
+                    {
+                        Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
+
+                        ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
+
+                        var p = Process.Start(psi);
+                        p.WaitForExit();
+
+                        if (p.ExitCode == 0)
+                            Log("Success!", ConsoleColor.Green);
+                        else
+                        {
+                            Log("Failure!", ConsoleColor.Red);
+                            return false;
+                        }
+                    }
+
+                    Log("Patching Success!", ConsoleColor.Green);
+                    Console.WriteLine();
                 }
             }
 
@@ -705,66 +707,6 @@ namespace LunarHelper
                 File.Copy(Config.CleanPath, Config.TempPath);
             }
 
-            // run GPS
-
-            if (ApplyGPS() == Result.Error)
-            {
-                return false;
-            }
-
-            // run PIXI
-            Log("PIXI", ConsoleColor.Cyan);
-            if (ApplyPixi() == Result.Error)
-            {
-                return false;
-            }
-
-            // asar patches
-            Log("Patches", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.AsarPath))
-                Log("No path to Asar provided, not applying any patches.", ConsoleColor.Red);
-            else if (!File.Exists(Config.AsarPath))
-                Log("Asar not found at provided path, not applying any patches.", ConsoleColor.Red);
-            else if (Config.Patches.Count == 0)
-                Log("Path to Asar provided, but no patches were registerd to be applied.", ConsoleColor.Red);
-            else
-            {
-                foreach (var patch in Config.Patches)
-                {
-                    Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
-
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
-
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Failure!", ConsoleColor.Red);
-                        return false;
-                    }
-                }
-
-                Log("Patching Success!", ConsoleColor.Green);
-                Console.WriteLine();
-            }
-
-            // uber ASM
-
-            if (ApplyUberASM() == Result.Error)
-            {
-                return false;
-            }
-
-            // run AddMusicK
-
-            if (ApplyAddmusicK() == Result.Error)
-            {
-                return false;
-            }
-
             // import gfx
             Log("Graphics", ConsoleColor.Cyan);
             {
@@ -813,6 +755,13 @@ namespace LunarHelper
                 return false;
             }
 
+            // run PIXI
+            Log("PIXI", ConsoleColor.Cyan);
+            if (ApplyPixi() == Result.Error)
+            {
+                return false;
+            }
+
             // import levels
             if (!ImportLevels(false))
             {
@@ -828,6 +777,59 @@ namespace LunarHelper
                 {
                     return false;
                 }
+            }
+
+            // run AddMusicK
+
+            if (ApplyAddmusicK() == Result.Error)
+            {
+                return false;
+            }
+
+            // run GPS
+
+            if (ApplyGPS() == Result.Error)
+            {
+                return false;
+            }
+
+            // uber ASM
+
+            if (ApplyUberASM() == Result.Error)
+            {
+                return false;
+            }
+
+            // asar patches
+            Log("Patches", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.AsarPath))
+                Log("No path to Asar provided, not applying any patches.", ConsoleColor.Red);
+            else if (!File.Exists(Config.AsarPath))
+                Log("Asar not found at provided path, not applying any patches.", ConsoleColor.Red);
+            else if (Config.Patches.Count == 0)
+                Log("Path to Asar provided, but no patches were registerd to be applied.", ConsoleColor.Red);
+            else
+            {
+                foreach (var patch in Config.Patches)
+                {
+                    Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
+
+                    ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
+
+                    var p = Process.Start(psi);
+                    p.WaitForExit();
+
+                    if (p.ExitCode == 0)
+                        Log("Success!", ConsoleColor.Green);
+                    else
+                    {
+                        Log("Failure!", ConsoleColor.Red);
+                        return false;
+                    }
+                }
+
+                Log("Patching Success!", ConsoleColor.Green);
+                Console.WriteLine();
             }
 
             FinalizeOutputROM();
@@ -1187,15 +1189,15 @@ namespace LunarHelper
 
         static private Result ApplyAddmusicK()
         {
-            Log("AddMusicK", ConsoleColor.Cyan);
+            Log("AddmusicK", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(Config.AddMusicKPath))
             {
-                Log("No path to AddMusicK provided, no music will be inserted.", ConsoleColor.Red);
+                Log("No path to AddmusicK provided, no music will be inserted.", ConsoleColor.Red);
                 return Result.NotSpecified;
             }
             else if (!File.Exists(Config.AddMusicKPath))
             {
-                Log("AddMusicK not found at provided path, no music will be inserted.", ConsoleColor.Red);
+                Log("AddmusicK not found at provided path, no music will be inserted.", ConsoleColor.Red);
                 return Result.NotFound;
             }
             else
@@ -1220,10 +1222,10 @@ namespace LunarHelper
                 p.WaitForExit();
 
                 if (p.ExitCode == 0)
-                    Log("AddMusicK Success!", ConsoleColor.Green);
+                    Log("AddmusicK Success!", ConsoleColor.Green);
                 else
                 {
-                    Log("AddMusicK Failure!", ConsoleColor.Red);
+                    Log("AddmusicK Failure!", ConsoleColor.Red);
                     return Result.Error;
                 }
 
@@ -1234,15 +1236,15 @@ namespace LunarHelper
 
         static private Result ApplyUberASM()
         {
-            Log("Uber ASM", ConsoleColor.Cyan);
+            Log("UberASM", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(Config.UberASMPath))
             {
-                Log("No path to UberASMTool provided, no UberASM will be inserted.", ConsoleColor.Red);
+                Log("No path to UberASM Tool provided, no UberASM will be inserted.", ConsoleColor.Red);
                 return Result.NotSpecified;
             }
             else if (!File.Exists(Config.UberASMPath))
             {
-                Log("UberASMTool not found at provided path, no UberASM will be inserted.", ConsoleColor.Red);
+                Log("UberASM Tool not found at provided path, no UberASM will be inserted.", ConsoleColor.Red);
                 return Result.NotFound;
             }
             else
