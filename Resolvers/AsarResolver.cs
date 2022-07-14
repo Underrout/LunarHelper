@@ -28,6 +28,11 @@ namespace LunarHelper.Resolvers
             RegexOptions.Compiled
         );
 
+        private static readonly Regex table_regex = new Regex(
+            "^\\s*table\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s,]*))",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase
+        );
+
         private const string stddefines_file_name = "stddefines.txt";
         private const string stddefines_tag = "stddefines";
 
@@ -118,17 +123,26 @@ namespace LunarHelper.Resolvers
                     {
                         TryResolveDependency(vertex, match, ref dependency_id);
                     }
+                    else
+                    {
+                        match = table_regex.Match(line);
+
+                        if (match.Success)
+                        {
+                            TryResolveDependency(vertex, match, ref dependency_id, true);
+                        }
+                    }
                 }
             }
         }
 
-        private void TryResolveDependency(FileVertex vertex, Match match, ref int dependency_id)
+        private void TryResolveDependency(FileVertex vertex, Match match, ref int dependency_id, bool is_table_include = false)
         {
             (var resolve_result, var attempted_paths, var found_path) = TryResolveInclude(vertex, match);
 
             Vertex dependency = null;
-            bool is_binary_dependency = match.Groups["method"].Value == "incbin";
-            string tag = is_binary_dependency ? "binary" : "source";
+            bool is_binary_dependency = is_table_include || match.Groups["method"].Value == "incbin";
+            string tag = is_table_include ? "table" : (is_binary_dependency ? "binary" : "source");
 
             switch (resolve_result)
             {
