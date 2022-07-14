@@ -134,9 +134,9 @@ namespace LunarHelper
                 else if (str.Contains('='))
                 {
                     // var
-                    var sp = str.Split('=');
-                    if (sp.Length != 2)
-                        throw new Exception("Malformed assignment");
+                    var sp = str.Split('=', 2);
+                    // if (sp.Length != 2)
+                    //    throw new Exception("Malformed assignment");
 
                     var key = sp[0].Trim();
                     if (vars.ContainsKey(key))
