@@ -234,5 +234,10 @@ namespace LunarHelper
 
             return (first_mismatch == null, first_mismatch);
         }
+
+        public static IEnumerable<Vertex> GetDependents(DependencyGraph graph, Vertex vertex)
+        {
+            return graph.dependency_graph.InEdges(vertex).Select(e => e.Source);
+        }
     }
 }

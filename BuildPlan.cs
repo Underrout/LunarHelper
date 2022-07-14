@@ -416,7 +416,7 @@ namespace LunarHelper
             return $"{resource_name} must be (re)inserted due to the following dependency:\n{dependency_chain_string} ({ResultAsString(result)})";
         }
 
-        private static string ResultAsString(DependencyGraphAnalyzer.Result result)
+        public static string ResultAsString(DependencyGraphAnalyzer.Result result)
         {
             switch (result)
             {
@@ -441,7 +441,7 @@ namespace LunarHelper
             }
         }
 
-        private static string DependencyChainAsString(Uri base_directory, IEnumerable<Vertex> dependency_chain)
+        public static string DependencyChainAsString(Uri base_directory, IEnumerable<Vertex> dependency_chain)
         {
             StringBuilder builder = new StringBuilder();
 
