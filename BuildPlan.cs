@@ -233,23 +233,33 @@ namespace LunarHelper
             bool no_reinsertions = true;
             Program.Log("Analyzing patch dependencies...", ConsoleColor.Cyan);
 
-            foreach ((var patch_root, (var result, var dependency_chain)) in results)
+            if (config.AsarOptions != report.asar_options)
             {
-                if (result != DependencyGraphAnalyzer.Result.Identical)
+                Program.Log($"asar command line options changed from \"{report.asar_options}\" to \"{config.AsarOptions}\", all patches will be reinserted...\n",
+                    ConsoleColor.Yellow);
+                plan.patches_to_apply = patch_roots.Select(p => p.normalized_relative_patch_path).ToList();
+                plan.uptodate = false;
+            }
+            else
+            {
+                foreach ((var patch_root, (var result, var dependency_chain)) in results)
                 {
-                    no_reinsertions = false;
-                    Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
-                        ConsoleColor.Yellow);
-                    plan.patches_to_apply.Add(patch_root.normalized_relative_patch_path);
-                    plan.uptodate = false;
+                    if (result != DependencyGraphAnalyzer.Result.Identical)
+                    {
+                        no_reinsertions = false;
+                        Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
+                            ConsoleColor.Yellow);
+                        Console.WriteLine();
+                        plan.patches_to_apply.Add(patch_root.normalized_relative_patch_path);
+                        plan.uptodate = false;
+                    }
+                }
+
+                if (no_reinsertions)
+                {
+                    Program.Log("Patches already up-to-date!", ConsoleColor.Green);
                     Console.WriteLine();
                 }
-            }
-
-            if (no_reinsertions)
-            {
-                Program.Log("Patches already up-to-date!", ConsoleColor.Green);
-                Console.WriteLine();
             }
 
             // check resources
