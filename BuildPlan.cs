@@ -260,6 +260,31 @@ namespace LunarHelper
             return plan;
         }
 
+        private static string ResultAsString(DependencyGraphAnalyzer.Result result)
+        {
+            switch (result)
+            {
+                case DependencyGraphAnalyzer.Result.NewRoot:
+                    return "New dependency";
+
+                case DependencyGraphAnalyzer.Result.Missing:
+                    return "Missing dependency";
+
+                case DependencyGraphAnalyzer.Result.Arbitrary:
+                    return "Arbitrary dependency";
+
+                case DependencyGraphAnalyzer.Result.Identical:
+                    return "Unchanged dependency";
+
+                case DependencyGraphAnalyzer.Result.Modified:
+                    return "Modified dependency";
+
+                default:
+                    // not reachable
+                    return "Unknown dependency";
+            }
+        }
+
         private static string DependencyChainAsString(string base_directory, IEnumerable<Vertex> dependency_chain)
         {
             Uri base_uri = new Uri(base_directory);
