@@ -26,6 +26,7 @@ Lunar Helper also offers convenient functionality for
 
 - Opening the built ROM in Lunar Magic
 - Running it inside an emulator of your choice
+- Updating your ROM with new changes rather than building it from scratch
 
 
 ## Source code ##
@@ -305,12 +306,12 @@ since that is the name of the folder.
 
 # command line options
 
-You can pass command line options for PIXI, GPS, AddmusicK and Lunar Magic 
+You can pass command line options for PIXI, GPS, AddmusicK, UberASM Tool and Lunar Magic 
 that will be used during the build process, if you need additional functionality 
 from these tools. 
 
-To specify these, you can use the "pixi_options", "gps_options", "addmusick_options" 
-and "lm_level_import_flags" config variables respectively. 
+To specify these, you can use the "pixi_options", "gps_options", "addmusick_options", 
+"uberasm_options" and "lm_level_import_flags" config variables respectively. 
 
 The text you specify is inserted into the command issued to the respective tool 
 verbatim, so for example in order to pass the "-d" flag to PIXI to enable debug output, 
