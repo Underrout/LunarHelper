@@ -1310,7 +1310,7 @@ namespace LunarHelper
                 var list = Path.Combine(dir, "list.txt");
                 Console.ForegroundColor = ConsoleColor.Yellow;
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"-l \"{list}\" {Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
+                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"{Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
                 psi.RedirectStandardInput = true;
 
                 var p = Process.Start(psi);
