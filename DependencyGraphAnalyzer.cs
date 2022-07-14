@@ -18,6 +18,13 @@ namespace LunarHelper
             // indicates that no old root was found and thus the new root is very new indeed
             NewRoot,
 
+            // indicates no old or new root were found, i.e. the tool was not previously declared
+            // and still isn't
+            NoRoots,
+
+            // indicates that an old root was present, but no new one
+            OldRoot,
+
             // indicates that a modified file/modified files was/were found in the subgraph
             Modified,
 
@@ -82,16 +89,28 @@ namespace LunarHelper
             return (false, results);
         }
 
-        public static (Result, IEnumerable<Vertex>) Analyze(DependencyGraph new_graph, ToolRootVertex tool_root_vertex, List<JsonVertex> old_graph)
+        public static (Result, IEnumerable<Vertex>) Analyze(DependencyGraph new_graph, ToolRootVertex.Tool tool, ToolRootVertex new_root, List<JsonVertex> old_graph)
         {
-            var old_root = old_graph.SingleOrDefault(v => v is JsonToolRootVertex && ((JsonToolRootVertex)v).tool == tool_root_vertex.type);
+            var old_root = old_graph.SingleOrDefault(v => v is JsonToolRootVertex && ((JsonToolRootVertex)v).tool == tool);
 
             if (old_root == null)
             {
-                return (Result.NewRoot, new List<Vertex> { tool_root_vertex });
+                if (new_root != null)
+                {
+                    return (Result.NewRoot, new List<Vertex> { new_root });
+                }
+                else
+                {
+                    return (Result.NoRoots, null);
+                }
             }
 
-            return CompareSubgraphs(new_graph, tool_root_vertex, old_root, old_graph);
+            if (new_root == null)
+            {
+                return (Result.OldRoot, null);
+            }
+
+            return CompareSubgraphs(new_graph, new_root, old_root, old_graph);
         }
 
         private static (Result, IEnumerable<Vertex>) CompareSubgraphs(DependencyGraph new_graph, Vertex current_new_vertex, JsonVertex current_old_vertex,

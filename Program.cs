@@ -113,8 +113,17 @@ namespace LunarHelper
         static private bool QuickBuild()
         {
             dependency_graph = new DependencyGraph(Config);
+            BuildPlan plan;
 
-            BuildPlan plan = BuildPlan.PlanBuild(Config, dependency_graph);
+            try 
+            {
+                plan = BuildPlan.PlanBuild(Config, dependency_graph);
+            }
+            catch (BuildPlan.CannotBuildException)
+            {
+                Log("Quick Build failed!\n", ConsoleColor.Red);
+                return false;
+            }
             
             if (plan.uptodate)
             {
@@ -168,6 +177,7 @@ namespace LunarHelper
 
             if (plan.apply_pixi)
             {
+                Log("PIXI", ConsoleColor.Cyan);
                 var res = ApplyPixi();
 
                 if (res == Result.Error)
