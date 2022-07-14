@@ -155,7 +155,10 @@ namespace LunarHelper
 
             if (!are_identical)
             {
-                return (Result.Modified, new List<Vertex> { current_new_vertex, differing_vertex });
+                return (
+                    differing_vertex is MissingFileOrDirectoryVertex ? Result.Missing : Result.Modified, 
+                    new List<Vertex> { current_new_vertex, differing_vertex }
+                );
             }
 
             // filtering out the generated vertices
