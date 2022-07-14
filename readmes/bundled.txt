@@ -410,25 +410,6 @@ I would write
     human_readable_map16_directory_path = other/all_map16
 
 
-# shared_folder
-
-This variable can be used to optionally specify the location of a folder that contains 
-code and/or data that is included into various different resources within the project. 
-
-Think among the lines of a shared macro library or .bin files that are used in multiple 
-patches. 
-
-This variable is only useful if you're using this tool's Quick Build function. In this 
-case, any change within this folder will trigger all tools and patches to be re-inserted 
-when you run a Quick Build. This is done to ensure that all tools and patches that may 
-use resources from this shared folder are updated in the ROM when you change the shared 
-resource.
-
-If you don't have any resources that are shared like this or you don't use the Quick 
-Build function, you don't have to worry about this variable at all and can leave it 
-unspecified.
-
-
 # title_moves
 
 This variable specifies where you would like Lunar Helper to retrieve your 

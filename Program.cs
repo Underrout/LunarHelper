@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Text.Json;
+using Newtonsoft.Json;
 using System.Text;
 
 using LunarHelper;
+using System.Linq;
 
-namespace SMWPatcher
+namespace LunarHelper
 {
     class Program
     {
@@ -19,6 +20,8 @@ namespace SMWPatcher
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process RetroArchProcess;
         static private Process LunarMagicProcess;
+
+        static private DependencyGraph dependency_graph;
 
         private enum Result
         {
@@ -47,15 +50,19 @@ namespace SMWPatcher
                 {
                     case ConsoleKey.Q:
                         if (Init())
+                        {
                             if (!QuickBuild())
                             {
                                 Log("Your ROM has not been altered!", ConsoleColor.Cyan);
                             }
+                        }
                         break;
 
                     case ConsoleKey.B:
                         if (Init())
+                        {
                             Build();
+                        }
                         break;
 
                     case ConsoleKey.T:
@@ -105,8 +112,19 @@ namespace SMWPatcher
 
         static private bool QuickBuild()
         {
-            BuildPlan plan = BuildPlan.PlanBuild(Config);
+            dependency_graph = new DependencyGraph(Config);
+            BuildPlan plan;
 
+            try 
+            {
+                plan = BuildPlan.PlanBuild(Config, dependency_graph);
+            }
+            catch (BuildPlan.CannotBuildException)
+            {
+                Log("Quick Build failed!\n", ConsoleColor.Red);
+                return false;
+            }
+            
             if (plan.uptodate)
             {
                 return true;
@@ -159,6 +177,7 @@ namespace SMWPatcher
 
             if (plan.apply_pixi)
             {
+                Log("PIXI", ConsoleColor.Cyan);
                 var res = ApplyPixi();
 
                 if (res == Result.Error)
@@ -417,17 +436,116 @@ namespace SMWPatcher
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
 
+            WarnAboutProblematicDependencies();
+
             return true;
+        }
+
+        static private void WarnAboutProblematicDependencies()
+        {
+            IEnumerable<(MissingFileOrDirectoryVertex, IEnumerable<Vertex>)> missing_dependencies = new List<(MissingFileOrDirectoryVertex, IEnumerable<Vertex>)>();
+
+            foreach (var missing_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is MissingFileOrDirectoryVertex))
+            {
+                missing_dependencies = missing_dependencies.Append(
+                    ((MissingFileOrDirectoryVertex)missing_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, missing_vertex)));
+            }
+
+            IEnumerable<(ArbitraryFileVertex, IEnumerable<Vertex>)> arbitrary_dependencies = new List<(ArbitraryFileVertex, IEnumerable<Vertex>)>();
+
+            foreach (var arbitrary_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is ArbitraryFileVertex))
+            {
+                arbitrary_dependencies = arbitrary_dependencies.Append(
+                    ((ArbitraryFileVertex)arbitrary_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, arbitrary_vertex)));
+            }
+
+            if (!missing_dependencies.Any() && !arbitrary_dependencies.Any())
+            {
+                return;
+            }
+
+            var builder = new StringBuilder("WARNING: Build succeeded, but Lunar Helper found ");
+
+            if (missing_dependencies.Any())
+            {
+                builder.Append($"{missing_dependencies.Count()} missing dependencies");
+            }
+
+            if (arbitrary_dependencies.Any())
+            {
+                if (missing_dependencies.Any())
+                {
+                    builder.Append(" and ");
+                }
+                builder.Append($"{arbitrary_dependencies.Count()} arbitrary dependencies");
+            }
+
+            builder.Append("\n");
+
+            if (missing_dependencies.Any())
+            {
+                builder.Append("\nMissing dependencies may indicate that you are relying on an asar bug that existed at least until version 1.81 " +
+                    "(see https://github.com/RPGHacker/asar/issues/253 for details).\n" +
+                    "Please ensure the left file in the following list correctly includes the file on the right side or Quick Build may not " +
+                    "behave correctly for you in the future. " +
+                    "If you are sure that you are not relying on this asar bug and you are not doing anything else weird (like including " +
+                    "files generated by a different tool from another tool) this may instead indicate a bug in Lunar Helper. If so, please " +
+                    "open an issue at https://github.com/Underrout/LunarHelper/issues/new\n\nPotentially \"missing\" dependencies:\n");
+
+                foreach ((var missing_dependency, var parents) in missing_dependencies)
+                {
+                    foreach (var parent in parents)
+                    {
+                        builder.Append(BuildPlan.DependencyChainAsString(Util.GetUri(Directory.GetCurrentDirectory()),
+                            new List<Vertex> { parent, missing_dependency }));
+
+                        builder.Append("\n");
+                    }
+                }
+            }
+
+            if (arbitrary_dependencies.Any())
+            {
+                builder.Append("\nArbitrary dependencies are dependencies that Lunar Helper is not currently capable of resolving. " +
+                    "Examples include 'incsrc \"../<file>\"' and 'incsrc \"../!some_define\"'.\nIf a tool or patch relies on such " +
+                    "arbitrary includes, Lunar Helper has to assume that the tool's or patch's dependencies may change between builds " +
+                    "without it being aware of it and thus Lunar Helper will always reinsert the tool or patch in question.\n" +
+                    "If you can replace or remove these arbitrary includes from the affected files, you may consider doing so in order to speed up the " +
+                    "build process and get rid of this message. The files containing arbitrary includes are listed below.\n\nArbitrary dependencies:\n");
+
+                foreach ((var arbitrary_dependency, var parents) in arbitrary_dependencies)
+                {
+                    foreach (var parent in parents)
+                    {
+                        builder.Append(BuildPlan.DependencyChainAsString(Util.GetUri(Directory.GetCurrentDirectory()),
+                            new List<Vertex> { parent, arbitrary_dependency }));
+
+                        builder.Append("\n");
+                    }
+                }
+            }
+
+            Log(builder.ToString(), ConsoleColor.Yellow);
         }
 
         static private void WriteReport()
         {
             var report = GetBuildReport();
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonString = JsonSerializer.Serialize(report, options);
+
+            var serializer = new JsonSerializer();
+            serializer.Formatting = Formatting.Indented;
+            serializer.TypeNameHandling = TypeNameHandling.Objects;
+
+            StringWriter sw = new StringWriter();
+
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, report);
+            }
+
             Directory.CreateDirectory(".lunar_helper");
             File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
-            File.WriteAllText(".lunar_helper\\build_report.json", jsonString);
+            File.WriteAllText(".lunar_helper\\build_report.json", sw.ToString());
         }
 
         static private Report GetBuildReport()
@@ -435,6 +553,8 @@ namespace SMWPatcher
             var report = new Report();
 
             report.build_time = DateTime.Now;
+
+            report.dependency_graph = DependencyGraphSerializer.SerializeGraph(dependency_graph).ToList();
 
             report.levels = GetLevelReport();
             report.graphics = Report.HashFolder("Graphics");
@@ -462,18 +582,8 @@ namespace SMWPatcher
                 }
             }
 
-            report.patches = GetPatchReport();
-
-            report.pixi_folders = Report.HashFolder(Path.GetDirectoryName(Config.PixiPath));
-            report.gps_folders = Report.HashFolder(Path.GetDirectoryName(Config.GPSPath));
-            report.uberasm_folders = Report.HashFolder(Path.GetDirectoryName(Config.UberASMPath));
-            report.addmusick_folders = Report.HashFolder(Path.GetDirectoryName(Config.AddMusicKPath));
-
-            report.shared_folders = Report.HashFolder(Config.SharedFolder);
-
             report.rom_hash = Report.HashFile(Config.OutputPath);
 
-            report.asar = Report.HashFile(Config.AsarPath);
             report.flips = Report.HashFile(Config.FlipsPath);
             report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
@@ -486,23 +596,6 @@ namespace SMWPatcher
             report.lunar_magic_level_import_flags = Config.LunarMagicLevelImportFlags;
 
             return report;
-        }
-
-        static public Dictionary<string, string> GetPatchReport()
-        {
-            if (Config.Patches == null)
-            {
-                return null;
-            }
-
-            var dict = new Dictionary<string, string>();
-
-            foreach (var patch in Config.Patches)
-            {
-                dict[patch] = Report.HashFile(patch);
-            }
-
-            return dict;
         }
 
         static public Dictionary<string, string> GetLevelReport()
@@ -738,10 +831,11 @@ namespace SMWPatcher
             }
 
             FinalizeOutputROM();
-            WriteReport();
-
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
             Console.WriteLine();
+
+            dependency_graph = new DependencyGraph(Config);
+            WriteReport();
 
             return true;
         }
@@ -1215,7 +1309,7 @@ namespace SMWPatcher
                 var list = Path.Combine(dir, "list.txt");
                 Console.ForegroundColor = ConsoleColor.Yellow;
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"-l \"{list}\" {Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
+                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"{Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
                 psi.RedirectStandardInput = true;
 
                 var p = Process.Start(psi);

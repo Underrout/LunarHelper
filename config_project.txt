@@ -22,6 +22,7 @@ patches
 -- tools
 gps_path = Tools/GPS (V1.4.21)/gps.exe
 pixi_path = Tools/pixi_v1.32/pixi.exe
+pixi_options = -l Tools/pixi_v1.32/list.txt
 addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
 uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 
@@ -30,14 +31,10 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 -- human_readable_map16_directory_path = Other/all_map16
 
 -- Optional config variables if you want to pass command line options to tools
--- pixi_options = -d
 -- gps_options = -d
 -- addmusick_options = -v
 -- uberasm_options = my_list.txt
 -- lm_level_import_flags = 0
-
--- Optional config variable for a folder containing resources shared between multiple tools/patches
--- shared_folder = Shared
 
 -- content
 levels = Levels
