@@ -678,8 +678,6 @@ namespace LunarHelper
                 return false;
             }
 
-            dependency_graph = new DependencyGraph(Config);
-
             // delete existing temp ROM
             if (File.Exists(Config.TempPath))
                 File.Delete(Config.TempPath);
@@ -833,10 +831,11 @@ namespace LunarHelper
             }
 
             FinalizeOutputROM();
-            WriteReport();
-
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
             Console.WriteLine();
+
+            dependency_graph = new DependencyGraph(Config);
+            WriteReport();
 
             return true;
         }
