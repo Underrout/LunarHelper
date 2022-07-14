@@ -12,7 +12,7 @@ namespace LunarHelper
     {
         [JsonIgnore]
         public const int REPORT_FORMAT_VERSION = 2;
-        public int report_format_version { get; set; } = REPORT_FORMAT_VERSION;
+        public int report_format_version { get; set; }
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
         public Dictionary<string, string> levels { get; set; }

@@ -554,6 +554,8 @@ namespace LunarHelper
         {
             var report = new Report();
 
+            report.report_format_version = Report.REPORT_FORMAT_VERSION;
+
             report.build_time = DateTime.Now;
 
             report.dependency_graph = DependencyGraphSerializer.SerializeGraph(dependency_graph).ToList();
