@@ -36,9 +36,6 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 -- uberasm_options = my_list.txt
 -- lm_level_import_flags = 0
 
--- Optional config variable for a folder containing resources shared between multiple tools/patches
--- shared_folder = Shared
-
 -- content
 levels = Levels
 shared_palette = Other/shared.pal
