@@ -48,8 +48,8 @@ namespace LunarHelper
 
         public string TestLevel;
         public string TestLevelDest;
-        public string RetroArchPath;
-        public string RetroArchCore;
+        public string EmulatorPath;
+        public string EmulatorOptions;
 
         #region load
 
@@ -111,8 +111,8 @@ namespace LunarHelper
 
             vars.TryGetValue("test_level", out config.TestLevel);
             vars.TryGetValue("test_level_dest", out config.TestLevelDest);
-            vars.TryGetValue("retroarch_path", out config.RetroArchPath);
-            vars.TryGetValue("retroarch_core", out config.RetroArchCore);
+            vars.TryGetValue("emulator_path", out config.EmulatorPath);
+            vars.TryGetValue("emulator_options", out config.EmulatorOptions);
 
             return config;
         }

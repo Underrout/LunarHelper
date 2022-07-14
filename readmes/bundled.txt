@@ -623,29 +623,28 @@ I would write
     flips_path = ../tools/flips/flips.exe
 
 
-# retroarch_path 
+# emulator_path 
 
-This variable lets you specify the path to your retroarch emulator if you want 
+This variable lets you specify the path to your emulator of choice if you want 
 to be able to run the built ROM in it from Lunar Helper's menu via the Run 
 and/or Test menu options.
 
-In contrast to the other variables I believe this one is actually an absolute 
-path rather than a relative one.
-
 Example:
 
-If I had retroarch installed at 
+If my emulator were installed at 
 
     C:/Program Files/retroarch/retroarch.exe 
     
 I would thus write 
 
-    retroarch_path = C:/Program Files/retroarch/retroarch.exe
+    emulator_path = C:/Program Files/retroarch/retroarch.exe
 
 
-# retroarch_core
+# emulator_options
 
-Same as retroarch_path but for the retroarch core you want to use. 
+Allows you to specify command line arguments to pass to your emulator 
+when Lunar Helper starts it up. Useful to specify a core for retroarch, 
+for example. 
 
 Example: 
 
@@ -655,7 +654,7 @@ If I had a snes9x libretro core at
     
 I would write 
 
-    retroarch_core = C:/Program Files/retroarch/cores/snes9x_libretro.dll
+    emulator_options = -L C:/Program Files/retroarch/cores/snes9x_libretro.dll
 
 
 ### Finishing up ###

@@ -18,7 +18,7 @@ namespace LunarHelper
         static private string uberasm_success_string = "Codes inserted successfully.";
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
-        static private Process RetroArchProcess;
+        static private Process EmulatorProcess;
         static private Process LunarMagicProcess;
 
         static private DependencyGraph dependency_graph;
@@ -878,18 +878,18 @@ namespace LunarHelper
                 }
             }
 
-            // retroarch
-            if (!string.IsNullOrWhiteSpace(Config.RetroArchPath))
+            // emulator
+            if (!string.IsNullOrWhiteSpace(Config.EmulatorPath))
             {
-                Log("Launching RetroArch...", ConsoleColor.Yellow);
+                Log("Launching emulator...", ConsoleColor.Yellow);
                 var fullRom = Path.GetFullPath(Config.OutputPath);
 
-                if (RetroArchProcess != null && !RetroArchProcess.HasExited)
-                    RetroArchProcess.Kill(true);
+                if (EmulatorProcess != null && !EmulatorProcess.HasExited)
+                    EmulatorProcess.Kill(true);
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.RetroArchPath,
-                    $"-L \"{Config.RetroArchCore}\" \"{fullRom}\"");
-                RetroArchProcess = Process.Start(psi);
+                ProcessStartInfo psi = new ProcessStartInfo(Config.EmulatorPath,
+                    $"\"{Config.EmulatorOptions}\" \"{fullRom}\"");
+                EmulatorProcess = Process.Start(psi);
             }
 
             Log("Test routine complete!", ConsoleColor.Magenta);
