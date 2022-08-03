@@ -442,7 +442,7 @@ namespace LunarHelper
 
             WarnAboutProblematicDependencies();
 
-            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null & !EmulatorProcess.HasExited)
+            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null && !EmulatorProcess.HasExited)
             {
                 Log("Attempting to auto-relaunch your emulator...", ConsoleColor.Cyan);
                 TryLaunchEmulator();
@@ -852,7 +852,7 @@ namespace LunarHelper
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
 
-            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null & !EmulatorProcess.HasExited)
+            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null && !EmulatorProcess.HasExited)
             {
                 Log("Attempting to auto-relaunch your emulator...", ConsoleColor.Cyan);
                 TryLaunchEmulator();
