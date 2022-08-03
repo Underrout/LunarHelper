@@ -62,6 +62,9 @@ namespace LunarHelper
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
                      .OrderBy(p => p).ToList();
 
+            if (files.Count() == 0)
+                return null;
+
             MD5 md5 = MD5.Create();
 
             for (int i = 0; i < files.Count; i++)
