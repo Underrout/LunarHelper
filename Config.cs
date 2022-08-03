@@ -51,6 +51,8 @@ namespace LunarHelper
         public string EmulatorPath;
         public string EmulatorOptions;
 
+        public bool ReloadEmulatorAfterBuild;
+
         #region load
 
         static public Config Load(out string error)
@@ -113,6 +115,9 @@ namespace LunarHelper
             vars.TryGetValue("test_level_dest", out config.TestLevelDest);
             vars.TryGetValue("emulator_path", out config.EmulatorPath);
             vars.TryGetValue("emulator_options", out config.EmulatorOptions);
+
+            vars.TryGetValue("reload_emulator_after_build", out string reload_emulator);
+            config.ReloadEmulatorAfterBuild = reload_emulator != null ? (new[] { "yes", "true" }).AsSpan().Contains(reload_emulator.Trim()) : false;
 
             return config;
         }

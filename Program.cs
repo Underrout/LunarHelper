@@ -72,7 +72,7 @@ namespace LunarHelper
 
                     case ConsoleKey.R:
                         if (Init())
-                            Test();
+                            TryLaunchEmulator();
                         break;
 
                     case ConsoleKey.E:
@@ -112,6 +112,7 @@ namespace LunarHelper
 
         static private bool QuickBuild()
         {
+            Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
             BuildPlan plan;
 
@@ -432,13 +433,20 @@ namespace LunarHelper
                 }
             }
 
-            FinalizeOutputROM();
+            Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
 
+            FinalizeOutputROM();
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
 
             WarnAboutProblematicDependencies();
+
+            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null & !EmulatorProcess.HasExited)
+            {
+                Log("Attempting to auto-relaunch your emulator...", ConsoleColor.Cyan);
+                TryLaunchEmulator();
+            }
 
             return true;
         }
@@ -834,12 +842,21 @@ namespace LunarHelper
                 Console.WriteLine();
             }
 
+            Log("Building dependency graph...\n", ConsoleColor.Cyan);
+            dependency_graph = new DependencyGraph(Config);
+
+            Log("Writing build report...\n", ConsoleColor.Cyan);
+            WriteReport();
+
             FinalizeOutputROM();
-            Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Cyan);
+            Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
 
-            dependency_graph = new DependencyGraph(Config);
-            WriteReport();
+            if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null & !EmulatorProcess.HasExited)
+            {
+                Log("Attempting to auto-relaunch your emulator...", ConsoleColor.Cyan);
+                TryLaunchEmulator();
+            }
 
             return true;
         }
@@ -882,6 +899,16 @@ namespace LunarHelper
                 }
             }
 
+            TryLaunchEmulator();
+
+            Log("Test routine complete!", ConsoleColor.Magenta);
+            Console.WriteLine();
+
+            return true;
+        }
+
+        static private void TryLaunchEmulator()
+        {
             // emulator
             if (!string.IsNullOrWhiteSpace(Config.EmulatorPath))
             {
@@ -893,13 +920,22 @@ namespace LunarHelper
 
                 ProcessStartInfo psi = new ProcessStartInfo(Config.EmulatorPath,
                     $"\"{Config.EmulatorOptions}\" \"{fullRom}\"");
+
                 EmulatorProcess = Process.Start(psi);
+
+                if (EmulatorProcess != null)
+                {
+                    Log("Emulator launched!", ConsoleColor.Green);
+                }
+                else
+                {
+                    Error("Emulator launch failed");
+                }
             }
-
-            Log("Test routine complete!", ConsoleColor.Magenta);
-            Console.WriteLine();
-
-            return true;
+            else
+            {
+                Log("No emulator specified!", ConsoleColor.Red);
+            }
         }
 
         static private void FinalizeOutputROM()
