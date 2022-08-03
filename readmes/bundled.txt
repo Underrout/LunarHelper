@@ -658,6 +658,26 @@ I would write
     emulator_options = -L C:/Program Files/retroarch/cores/snes9x_libretro.dll
 
 
+# reload_emulator_after_build
+
+Allows you to specify whether you would like Lunar Helper to automatically 
+relaunch your emulator if a (Quick) Build succeeds while you have the emulator open.
+Setting this variable to "true" or "yes" will cause Lunar Helper to do this,
+using any other string or omitting this variable will cause Lunar Helper not
+to reluanch your emulator automatically.
+
+Note that for this to work, you have to launch your emulator using 
+Lunar Helper's Run or Test functions, it won't work if your emulator was 
+launched from outside Lunar Helper.
+
+This can be useful if you're prototyping something and frequently have to 
+check whether it's actually working in-game.
+
+To make Lunar Helper reload the emulator after a successful build, I would write
+
+    reload_emulator_after_build = yes
+
+
 ### Finishing up ###
 
 Before trying to use Lunar Helper, please get the included Lunar Monitor set 
