@@ -783,7 +783,9 @@ namespace LunarHelper
             if (lunarMagicInfo.FileMajorPart >= 3 && lunarMagicInfo.FileMinorPart >= 31)
             {
                 Log("PIXI (Second pass for Lunar Magic version >= 3.31)", ConsoleColor.Cyan);
-                if (ApplyPixi() != Result.Success)
+                var res = ApplyPixi();
+
+                if (res == Result.Error)
                 {
                     return false;
                 }
@@ -1333,12 +1335,12 @@ namespace LunarHelper
         {
             if (string.IsNullOrWhiteSpace(Config.PixiPath))
             {
-                Log("No path to Pixi provided, no sprites will be inserted.", ConsoleColor.Red);
+                Log("No path to Pixi provided, no sprites will be inserted.\n", ConsoleColor.Red);
                 return Result.NotSpecified;
             }
             else if (!File.Exists(Config.PixiPath))
             {
-                Log("Pixi not found at provided path, no sprites will be inserted.", ConsoleColor.Red);
+                Log("Pixi not found at provided path, no sprites will be inserted.\n", ConsoleColor.Red);
                 return Result.NotFound;
             }
             else
