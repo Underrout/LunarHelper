@@ -18,7 +18,7 @@ namespace LunarHelper
         static private string uberasm_success_string = "Codes inserted successfully.";
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
-        static private Process EmulatorProcess;
+        static private Process EmulatorProcess = null;
         static private Process LunarMagicProcess;
 
         static private DependencyGraph dependency_graph;
