@@ -463,10 +463,13 @@ namespace LunarHelper
 
             IEnumerable<(ArbitraryFileVertex, IEnumerable<Vertex>)> arbitrary_dependencies = new List<(ArbitraryFileVertex, IEnumerable<Vertex>)>();
 
-            foreach (var arbitrary_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is ArbitraryFileVertex))
+            if (!Config.SuppressArbitraryDepsWarning)  // don't need to discover arbitrary dependencies if warning is disabled anyway, just disregard them
             {
-                arbitrary_dependencies = arbitrary_dependencies.Append(
-                    ((ArbitraryFileVertex)arbitrary_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, arbitrary_vertex)));
+                foreach (var arbitrary_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is ArbitraryFileVertex))
+                {
+                    arbitrary_dependencies = arbitrary_dependencies.Append(
+                        ((ArbitraryFileVertex)arbitrary_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, arbitrary_vertex)));
+                }
             }
 
             if (!missing_dependencies.Any() && !arbitrary_dependencies.Any())

@@ -52,6 +52,7 @@ namespace LunarHelper
         public string EmulatorOptions;
 
         public bool ReloadEmulatorAfterBuild;
+        public bool SuppressArbitraryDepsWarning;
 
         #region load
 
@@ -118,6 +119,9 @@ namespace LunarHelper
 
             vars.TryGetValue("reload_emulator_after_build", out string reload_emulator);
             config.ReloadEmulatorAfterBuild = reload_emulator != null ? (new[] { "yes", "true" }).AsSpan().Contains(reload_emulator.Trim()) : false;
+
+            vars.TryGetValue("suppress_arbitrary_dependency_warning", out string suppress_arbitrary_deps_warning);
+            config.SuppressArbitraryDepsWarning = suppress_arbitrary_deps_warning != null ? (new[] { "yes", "true" }).AsSpan().Contains(suppress_arbitrary_deps_warning.Trim()) : false;
 
             return config;
         }
