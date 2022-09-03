@@ -10,13 +10,13 @@ Step by step, what it does is
 
 - Taking a clean SMW ROM
 - Applying an initial .bps patch to it (more on this later)
-- Running GPS and PIXI on it
-- Applying your patches to it
-- Running UberASM Tool on it
+- Inserting Graphics, Map16, title moves and global data (overworld, title screen, credits, etc.)
+- Running PIXI on it
+- Inserting levels
 - Running AddmusicK on it
-- Inserting various SMW data (graphics, map16, overworld, title screen,  
-  title screen moves etc.) into it
-- Inserting level files into it
+- Running GPS on it
+- Running UberASM Tool on it
+- Applying patches to it
 
 As you can see, it basically takes a bunch of resources stored as individual files 
 (i.e. all of your blocks, sprites, patches, graphics, levels, etc.) and creates a 
@@ -175,6 +175,7 @@ Personally, I would recommend you
 - Expand the ROM to 2 MB
 - Apply FastROM or SA-1 (if you want to use them)
 - Change the compression options to whatever you prefer
+- Reapply SA-1 if you applied in step 3
 - Expand the ROM to 4 MB
 - Save a level
 - Extract GFX and ExGFX
