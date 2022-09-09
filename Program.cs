@@ -433,10 +433,11 @@ namespace LunarHelper
                 }
             }
 
+            FinalizeOutputROM();
+
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
 
-            FinalizeOutputROM();
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
 
@@ -845,10 +846,11 @@ namespace LunarHelper
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
 
+            FinalizeOutputROM();
+
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
 
-            FinalizeOutputROM();
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
 
