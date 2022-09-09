@@ -919,7 +919,7 @@ namespace LunarHelper
                     EmulatorProcess.Kill(true);
 
                 ProcessStartInfo psi = new ProcessStartInfo(Config.EmulatorPath,
-                    $"\"{Config.EmulatorOptions}\" \"{fullRom}\"");
+                    $"{Config.EmulatorOptions} \"{fullRom}\"");
 
                 EmulatorProcess = Process.Start(psi);
 
