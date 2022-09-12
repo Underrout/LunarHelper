@@ -21,7 +21,18 @@ namespace LunarHelper
         static private Process EmulatorProcess = null;
         static private Process LunarMagicProcess;
 
+        static private ConsoleColor[] profile_colors = { 
+            ConsoleColor.Gray, ConsoleColor.Cyan, ConsoleColor.Green,
+            ConsoleColor.Red, ConsoleColor.Magenta, ConsoleColor.Yellow,
+            ConsoleColor.Blue, ConsoleColor.DarkCyan, ConsoleColor.DarkGreen,
+            ConsoleColor.DarkMagenta
+        };
+
+        static ConsoleColor curr_profile_color = ConsoleColor.Gray;
+
         static private DependencyGraph dependency_graph;
+
+        static private ProfileManager profile_manager;
 
         private enum Result
         {
@@ -31,14 +42,37 @@ namespace LunarHelper
             Success
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
+
+            if (args.Length > 0)
+                return HandleCommandLineInvocation(args);
+
+            profile_manager = new ProfileManager();
+            if (profile_manager.current_profile != null)
+                curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
+
             bool running = true;
             while (running)
             {
+                bool show_profiles = profile_manager.current_profile != null;
+
                 Log("Welcome to Lunar Helper ^_^", ConsoleColor.Cyan);
+
+                if (show_profiles)
+                {
+                    Lognl("Current profile: ");
+                    Lognl(profile_manager.current_profile ?? "Default", ConsoleColor.Black, curr_profile_color);
+                    Log("");
+                }
+
                 Log("B - (Re)Build, Q - Quick Build, R - Run");
-                Log("T - Test (Build -> Run)");
+                Log("T - Test (Quick Build -> Run)");
+
+                if (show_profiles)
+                    Log("S - Switch profile");
+
                 Log("E - Edit (in Lunar Magic)");
                 Log("P - Package, H - Help, ESC - Exit");
                 Console.WriteLine();
@@ -66,8 +100,18 @@ namespace LunarHelper
                         break;
 
                     case ConsoleKey.T:
-                        if (Init() && Build())
+                        if (Init() && QuickBuild())
                             Test();
+                        break;
+
+                    case ConsoleKey.S:
+                        if (show_profiles)
+                        {
+                            SwitchProfile();
+                            Console.Clear();
+                        }
+                        else
+                            goto default;
                         break;
 
                     case ConsoleKey.R:
@@ -92,6 +136,7 @@ namespace LunarHelper
                     case ConsoleKey.Escape:
                         running = false;
                         Log("Have a nice day!", ConsoleColor.Cyan);
+                        Console.BackgroundColor = ConsoleColor.Black;
                         Console.ForegroundColor = ConsoleColor.White;
                         break;
 
@@ -108,10 +153,164 @@ namespace LunarHelper
                 while (Console.KeyAvailable)
                     Console.ReadKey(true);
             }
+            return 0;
+        }
+
+        static private int HandleCommandLineInvocation(string[] args)
+        {
+            profile_manager = new ProfileManager();
+            if (profile_manager.current_profile != null)
+                curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
+            
+            if (args.Length > 2)
+            {
+                ShowCommandLineHelp();
+                return -1;
+            }
+            else if (args[0] == "--help" || args[0] == "-h")
+            {
+                ShowCommandLineHelp();
+                return 0;
+            }
+
+            if (args.Length == 2)
+            {
+                if (ProfileManager.GetAllProfiles().Contains(args[1]))
+                {
+                    profile_manager.SwitchProfile(args[1]);
+                    curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
+                }
+                else
+                {
+                    Error($"Profile '{args[1]}' not found");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    return -1;
+                }
+            }
+
+            if (args[0] == "--build")
+            {
+                var succeeded = Init() && Build();
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.White;
+
+                if (succeeded)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+            else if (args[0] == "--quickbuild")
+            {
+                var succeeded = Init() && QuickBuild();
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.White;
+
+                if (succeeded)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+            else if (args[0] == "--package")
+            {
+                var succeeded = Init() && Build() && Package();
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.White;
+
+                if (succeeded)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+
+            Error($"Invalid option '{args[0]}', view usage with --help or -h");
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.White;
+            return -1;
+        }
+
+        static private void ShowCommandLineHelp()
+        {
+            Log("Usage:\n\tLunarHelper.exe --build [profile to use]\n\tLunarHelper.exe --quickbuild [profile to use]\n\t" +
+                "LunarHelper.exe --package [profile to use]");
+        }
+
+        static private void SwitchProfile()
+        {
+            Console.Clear();
+
+            while (true)
+            {
+                var all_profiles = ProfileManager.GetAllProfiles();
+
+                Log("Choose profile to switch to:", ConsoleColor.Cyan);
+                int i = 0;
+                foreach (var profile in all_profiles)
+                {
+                    var profile_string = profile;
+                    if (profile == profile_manager.current_profile)
+                        profile_string += " (Current profile)";
+
+                    Log($"{i++} - {profile_string}");
+                }
+                Log("ESC - Back");
+
+                var key = Console.ReadKey(true);
+                Console.Clear();
+
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    return;
+                }
+
+                if (char.IsDigit(key.KeyChar))
+                {
+                    var num = int.Parse(key.KeyChar.ToString());
+
+                    if (num >= 0 && num < all_profiles.Count())
+                    {
+                        profile_manager.SwitchProfile(all_profiles.ElementAt(num));
+                        curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
+                        return;
+                    }
+                }
+
+                string str = char.ToUpperInvariant(key.KeyChar).ToString().Trim();
+                if (str.Length > 0)
+                    Log($"Key '{str}' is not a recognized option!", ConsoleColor.Red);
+                else
+                    Log($"Key is not a recognized option!", ConsoleColor.Red);
+                Console.WriteLine();
+            }
         }
 
         static private bool QuickBuild()
         {
+            if (profile_manager.current_profile != null)
+                profile_manager.WriteCurrentProfileToFile();
+            else
+                profile_manager.DeleteCurrentProfileFile();
+
+            Lognl("Starting Quick Build");
+            if (profile_manager.current_profile != null)
+            {
+                Lognl(" using profile ");
+                Lognl(profile_manager.current_profile, ConsoleColor.Black, curr_profile_color);
+            }
+            Log("\n");
+
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
             BuildPlan plan;
@@ -630,13 +829,18 @@ namespace LunarHelper
         {
             Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
 
-            // load config
-            Config = Config.Load(out var err);
-            if (Config == null)
+            if (profile_manager.current_profile != null && !ProfileManager.GetAllProfiles().Contains(profile_manager.current_profile))
             {
-                Error($"Could not parse config.txt file(s)\n{err}");
+                // if profile no longer exists, throw error
+                Error("The configured profile seems to no longer exist");
+                profile_manager.SwitchProfile(profile_manager.DetermineCurrentProfile());
+                if (profile_manager.current_profile != null)
+                    curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
                 return false;
             }
+
+            // load config
+            Config = profile_manager.DetermineConfig();
 
             // set the working directory
             if (!string.IsNullOrWhiteSpace(Config.WorkingDirectory))
@@ -677,6 +881,19 @@ namespace LunarHelper
 
         static private bool Build()
         {
+            if (profile_manager.current_profile != null)
+                profile_manager.WriteCurrentProfileToFile();
+            else
+                profile_manager.DeleteCurrentProfileFile();
+
+            Lognl("Starting Build");
+            if (profile_manager.current_profile != null)
+            {
+                Lognl(" using profile ");
+                Lognl(profile_manager.current_profile, ConsoleColor.Black, curr_profile_color);
+            }
+            Log("\n");
+
             // Lunar Magic required
             if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
             {
@@ -1518,20 +1735,23 @@ namespace LunarHelper
                 return false;
         }
 
-        static public void Error(string error)
+        static public void Error(string error, ConsoleColor background_color = ConsoleColor.Black)
         {
+            Console.BackgroundColor = background_color;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"ERROR: {error}\n");
         }
 
-        static public void Log(string msg, ConsoleColor color = ConsoleColor.White)
+        static public void Log(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor background_color = ConsoleColor.Black)
         {
+            Console.BackgroundColor = background_color;
             Console.ForegroundColor = color;
             Console.WriteLine($"{msg}");
         }
 
-        static public void Lognl(string msg, ConsoleColor color = ConsoleColor.White)
+        static public void Lognl(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor background_color = ConsoleColor.Black)
         {
+            Console.BackgroundColor = background_color;
             Console.ForegroundColor = color;
             Console.Write($"{msg}");
         }

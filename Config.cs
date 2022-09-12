@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace LunarHelper
@@ -56,16 +57,16 @@ namespace LunarHelper
 
         #region load
 
-        static public Config Load(out string error)
+        static public Config Load(out string error, Config config = null, string search_path_prefix = "")
         {
             error = "";
 
             try
             {
                 var data = new List<string>();
-                foreach (var file in Directory.EnumerateFiles(Directory.GetCurrentDirectory(), "config*.txt", SearchOption.TopDirectoryOnly))
+                foreach (var file in Directory.EnumerateFiles(Directory.GetCurrentDirectory(), search_path_prefix + "config*.txt", SearchOption.TopDirectoryOnly))
                     data.Add(File.ReadAllText(file));
-                return Load(data);
+                return Load(data, config);
             }
             catch (Exception e)
             {
@@ -74,59 +75,71 @@ namespace LunarHelper
             }
         }
 
-        static private Config Load(List<string> data)
+        static private Config Load(List<string> data, Config config)
         {
-            Config config = new Config();
+            if (config == null)
+                config = new Config();
 
-            HashSet<string> flags = new HashSet<string>();
+            var common_patches = new List<string>(config.Patches);
+
             Dictionary<string, string> vars = new Dictionary<string, string>();
             Dictionary<string, List<string>> lists = new Dictionary<string, List<string>>();
             foreach (var d in data)
-                Parse(d, flags, vars, lists);
+                Parse(d, vars, lists);
 
-            vars.TryGetValue("dir", out config.WorkingDirectory);
-            vars.TryGetValue("output", out config.OutputPath);
-            vars.TryGetValue("temp", out config.TempPath);
-            vars.TryGetValue("clean", out config.CleanPath);
-            vars.TryGetValue("package", out config.PackagePath);
-            vars.TryGetValue("asar_path", out config.AsarPath);
-            vars.TryGetValue("asar_options", out config.AsarOptions);
-            vars.TryGetValue("uberasm_path", out config.UberASMPath);
-            vars.TryGetValue("uberasm_options", out config.UberASMOptions);
-            vars.TryGetValue("gps_path", out config.GPSPath);
-            vars.TryGetValue("gps_options", out config.GPSOptions);
-            vars.TryGetValue("pixi_path", out config.PixiPath);
-            vars.TryGetValue("pixi_options", out config.PixiOptions);
-            vars.TryGetValue("addmusick_path", out config.AddMusicKPath);
-            vars.TryGetValue("addmusick_options", out config.AddmusicKOptions);
-            vars.TryGetValue("lm_path", out config.LunarMagicPath);
-            vars.TryGetValue("lm_level_import_flags", out config.LunarMagicLevelImportFlags);
-            vars.TryGetValue("flips_path", out config.FlipsPath);
-            vars.TryGetValue("human_readable_map16_cli_path", out config.HumanReadableMap16CLI);
-            vars.TryGetValue("human_readable_map16_directory_path", out config.HumanReadableMap16Directory);
-            vars.TryGetValue("levels", out config.LevelsPath);
-            vars.TryGetValue("map16", out config.Map16Path);
-            vars.TryGetValue("shared_palette", out config.SharedPalettePath);
-            vars.TryGetValue("global_data", out config.GlobalDataPath);
-            vars.TryGetValue("title_moves", out config.TitleMovesPath);
-            vars.TryGetValue("initial_patch", out config.InitialPatch);
-            lists.TryGetValue("patches", out config.Patches);
+            config.WorkingDirectory = vars.GetValueOrDefault("dir", config.WorkingDirectory);
+            config.OutputPath = vars.GetValueOrDefault("output", config.OutputPath);
+            config.TempPath = vars.GetValueOrDefault("temp", config.TempPath);
+            config.CleanPath = vars.GetValueOrDefault("clean", config.CleanPath);
+            config.PackagePath = vars.GetValueOrDefault("package", config.PackagePath);
+            config.AsarPath = vars.GetValueOrDefault("asar_path", config.AsarPath);
+            config.AsarOptions = vars.GetValueOrDefault("asar_options", config.AsarOptions);
+            config.UberASMPath = vars.GetValueOrDefault("uberasm_path", config.UberASMPath);
+            config.UberASMOptions = vars.GetValueOrDefault("uberasm_options", config.UberASMOptions);
+            config.GPSPath = vars.GetValueOrDefault("gps_path", config.GPSPath);
+            config.GPSOptions = vars.GetValueOrDefault("gps_options", config.GPSOptions);
+            config.PixiPath = vars.GetValueOrDefault("pixi_path", config.PixiPath);
+            config.PixiOptions = vars.GetValueOrDefault("pixi_options", config.PixiOptions);
+            config.AddMusicKPath = vars.GetValueOrDefault("addmusick_path", config.AddMusicKPath);
+            config.AddmusicKOptions = vars.GetValueOrDefault("addmusick_options", config.AddmusicKOptions);
+            config.LunarMagicPath = vars.GetValueOrDefault("lm_path", config.LunarMagicPath);
+            config.LunarMagicLevelImportFlags = vars.GetValueOrDefault("lm_level_import_flags", config.LunarMagicLevelImportFlags);
+            config.FlipsPath = vars.GetValueOrDefault("flips_path", config.FlipsPath);
+            config.HumanReadableMap16CLI = vars.GetValueOrDefault("human_readable_map16_cli_path", config.HumanReadableMap16CLI);
+            config.HumanReadableMap16Directory = vars.GetValueOrDefault("human_readable_map16_directory_path", config.HumanReadableMap16Directory);
+            config.LevelsPath = vars.GetValueOrDefault("levels", config.LevelsPath);
+            config.Map16Path = vars.GetValueOrDefault("map16", config.Map16Path);
+            config.SharedPalettePath = vars.GetValueOrDefault("shared_palette", config.SharedPalettePath);
+            config.GlobalDataPath = vars.GetValueOrDefault("global_data", config.GlobalDataPath);
+            config.TitleMovesPath = vars.GetValueOrDefault("title_moves", config.TitleMovesPath);
+            config.InitialPatch = vars.GetValueOrDefault("initial_patch", config.InitialPatch);
 
-            vars.TryGetValue("test_level", out config.TestLevel);
-            vars.TryGetValue("test_level_dest", out config.TestLevelDest);
-            vars.TryGetValue("emulator_path", out config.EmulatorPath);
-            vars.TryGetValue("emulator_options", out config.EmulatorOptions);
+            if (lists.ContainsKey("patches"))
+            {
+                config.Patches = common_patches.Concat(lists.GetValueOrDefault("patches")).ToList();
+            }
 
-            vars.TryGetValue("reload_emulator_after_build", out string reload_emulator);
-            config.ReloadEmulatorAfterBuild = reload_emulator != null ? (new[] { "yes", "true" }).AsSpan().Contains(reload_emulator.Trim()) : false;
+            config.TestLevel = vars.GetValueOrDefault("test_level", config.TestLevel);
+            config.TestLevelDest = vars.GetValueOrDefault("test_level_dest", config.TestLevelDest);
+            config.EmulatorPath = vars.GetValueOrDefault("emulator_path", config.EmulatorPath);
+            config.EmulatorOptions = vars.GetValueOrDefault("emulator_options", config.EmulatorOptions);
 
-            vars.TryGetValue("suppress_arbitrary_dependency_warning", out string suppress_arbitrary_deps_warning);
-            config.SuppressArbitraryDepsWarning = suppress_arbitrary_deps_warning != null ? (new[] { "yes", "true" }).AsSpan().Contains(suppress_arbitrary_deps_warning.Trim()) : false;
+            if (vars.ContainsKey("reload_emulator_after_build"))
+            {
+                vars.TryGetValue("reload_emulator_after_build", out string reload_emulator);
+                config.ReloadEmulatorAfterBuild = reload_emulator != null ? (new[] { "yes", "true" }).AsSpan().Contains(reload_emulator.Trim()) : false;
+            }
+
+            if (vars.ContainsKey("suppress_arbitrary_dependency_warning"))
+            {
+                vars.TryGetValue("suppress_arbitrary_dependency_warning", out string suppress_arbitrary_deps_warning);
+                config.SuppressArbitraryDepsWarning = suppress_arbitrary_deps_warning != null ? (new[] { "yes", "true" }).AsSpan().Contains(suppress_arbitrary_deps_warning.Trim()) : false;
+            }
 
             return config;
         }
 
-        static private void Parse(string data, HashSet<string> flags, Dictionary<string, string> vars, Dictionary<string, List<string>> lists)
+        static private void Parse(string data, Dictionary<string, string> vars, Dictionary<string, List<string>> lists)
         {
             var lines = data.Split('\n');
             for (int i = 0; i < lines.Length; i++)
@@ -172,11 +185,6 @@ namespace LunarHelper
 
                         i++;
                     }
-                }
-                else if (!string.IsNullOrWhiteSpace(str))
-                {
-                    // flag
-                    flags.Add(str.Trim());
                 }
             }
         }
