@@ -1,4 +1,5 @@
 using System;
+using FluentArgs;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +17,12 @@ namespace LunarHelper
         static public Config Config { get; private set; }
 
         static private string uberasm_success_string = "Codes inserted successfully.";
+
+        static private int COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
+        static private int COMMENT_FIELD_SMC_ROM_OFFSET = 0x7F320;
+        static private int COMMENT_FIELD_LENGTH = 0x20;
+        static private string DEFAULT_COMMENT = "I am Naaall, and I love fiiiish!";
+        static private string ALTERED_COMMENT = "   Mario says     TRANS RIGHTS  ";
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process EmulatorProcess = null;
@@ -158,106 +165,100 @@ namespace LunarHelper
 
         static private int HandleCommandLineInvocation(string[] args)
         {
+            var profile_list = ProfileManager.GetAllProfiles().ToList();
             profile_manager = new ProfileManager();
             if (profile_manager.current_profile != null)
-                curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
-            
-            if (args.Length > 2)
-            {
-                ShowCommandLineHelp();
-                return -1;
-            }
-            else if (args[0] == "--help" || args[0] == "-h")
-            {
-                ShowCommandLineHelp();
-                return 0;
-            }
-            else if (args[0] == "--profiles")
-            {
-                var profiles = ProfileManager.GetAllProfiles();
-                var output = profiles.Count() != 0 ? string.Join(" ", profiles) : "";
-                Console.WriteLine(output);
-                return 0;
-            }
+                curr_profile_color = profile_colors[profile_list.IndexOf(profile_manager.current_profile)];
 
-            if (args.Length == 2)
-            {
-                if (ProfileManager.GetAllProfiles().Contains(args[1]))
-                {
-                    profile_manager.SwitchProfile(args[1]);
-                    curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile_manager.current_profile)];
-                }
-                else
-                {
-                    Error($"Profile '{args[1]}' not found");
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    Console.ForegroundColor = ConsoleColor.White;
-                    return -1;
-                }
-            }
+            int return_code = 0;
 
-            if (args[0] == "--build")
-            {
-                var succeeded = Init() && Build();
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.White;
+            FluentArgsBuilder.New()
+                .Given.Flag("-h", "--help")
+                    .Then(() => ShowCommandLineHelp())
+                .Given.Flag("--profiles").Then(() =>
+                {
+                    var output = profile_list.Count() != 0 ? string.Join(" ", profile_list) : "";
+                    Log(output);
+                })
+                .Given.Flag("-b", "--build")
+                    .Then(b => b
+                    .Parameter<char>("-v", "--volatile-resource-pref")
+                        .WithDescription("Preference for handling of volatile resources in pre-existing ROM, " +
+                        "valid options: Y (export & build), N (build without export), C (cancel build)")
+                        .WithValidation(v => new[] {'Y', 'N', 'C'}.Contains(v), "Valid volatile resource handling options are 'Y', 'N', 'C'") 
+                        .IsOptionalWithDefault('C')
+                    .PositionalArgument<string>()
+                        .WithDescription("Profile to use during build")
+                        .WithValidation(profile => profile_list.Contains(profile), "Profile not found")
+                        .IsOptional()
+                    .Call(profile => volatile_pref =>
+                    {
+                        if (profile != null)
+                            SwitchToProfile(profile);
+                        var success = Init() && Build(true, volatile_pref);
+                        return_code = success ? 0 : 1;
+                    }))
+                .Given.Flag("-q", "--quickbuild").Then(b => b
+                    .Parameter<char>("-v", "--volatile-resource-pref")
+                        .WithDescription("Preference for handling of volatile resources in pre-existing ROM, " +
+                        "valid options: Y (export & build), N (build without export), C (cancel build)")
+                        .WithValidation(v => new[] { 'Y', 'N', 'C' }.Contains(v), "Valid volatile resource handling options are 'Y', 'N', 'C'")
+                        .IsOptionalWithDefault('C')
+                    .PositionalArgument<string>()
+                        .WithDescription("Profile to use during quick build")
+                        .WithValidation(profile => profile_list.Contains(profile), "Profile not found")
+                        .IsOptional()
+                    .Call(profile => volatile_pref =>
+                    {
+                        if (profile != null)
+                            SwitchToProfile(profile);
+                        var success = Init() && QuickBuild(true, volatile_pref);
+                        return_code = success ? 0 : 1;
+                    }))
+                .Given.Flag("-p", "--package").Then(b => b
+                    .Parameter<char>("-v", "--volatile-resource-pref")
+                        .WithDescription("Preference for handling of volatile resources in pre-existing ROM, " +
+                        "valid options: Y (export & build), N (build without export), C (cancel build)")
+                        .WithValidation(v => new[] { 'Y', 'N', 'C' }.Contains(v), "Valid volatile resource handling options are 'Y', 'N', 'C'")
+                        .IsOptionalWithDefault('C')
+                    .PositionalArgument<string>()
+                        .WithDescription("Profile to use during quick build")
+                        .WithValidation(profile => profile_list.Contains(profile), "Profile not found")
+                        .IsOptional()
+                    .Call(profile => volatile_pref =>
+                    {
+                        if (profile != null)
+                            SwitchToProfile(profile);
+                        var success = Init() && Build(true, volatile_pref) && Package();
+                        return_code = success ? 0 : 1;
+                    }))
+                .Invalid()
+                .Parse(args);
 
-                if (succeeded)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-            else if (args[0] == "--quickbuild")
-            {
-                var succeeded = Init() && QuickBuild();
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.White;
-
-                if (succeeded)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-            else if (args[0] == "--package")
-            {
-                var succeeded = Init() && Build() && Package();
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.White;
-
-                if (succeeded)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-
-            Error($"Invalid option '{args[0]}', view usage with --help or -h");
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.White;
-            return -1;
+            return return_code;
         }
 
         static private void ShowCommandLineHelp()
         {
-            Log("Usage:\nBuild ROM from scratch with given profile (uses default profile if second argument omitted)\n" + 
-                "\tLunarHelper.exe --build [profile to use]\n\n" + 
-                "Attempt to update pre-existing ROM in-place with given profile (uses default profile if second argument omitted)\n" +
-                "\tLunarHelper.exe --quickbuild [profile to use]\n\n" +
-                "Attempt to build and package ROM into BPS with given profile (uses default profile if second argument omitted)\n" +
-                "\tLunarHelper.exe --package [profile to use]\n\n" + 
-                "List names of available profiles separated by spaces, will output an empty string if no profiles are found" +
-                "\tLunarHelper.exe --profiles");
+            Log("Usage:\n\n" +
+                "LunarHelper.exe --build [profile to use] [-v volatile resource handling preference]\n" +
+                "\tBuild ROM from scratch with given profile (uses default profile if second argument omitted)\n\n" +
+                "LunarHelper.exe --quickbuild [profile to use] [-v volatile resource handling preference]\n" +
+                "\tAttempt to update pre-existing ROM in-place with given profile (uses default profile if second argument omitted)\n\n" +
+                "LunarHelper.exe --package [profile to use] [-v volatile resource handling preference]\n" +
+                "\tAttempt to build and package ROM into BPS with given profile (uses default profile if second argument omitted)\n\n" +
+                "LunarHelper.exe --profiles\n" +
+                "\tList names of available profiles separated by spaces, will output an empty string if no profiles are found\n\n" +
+                "Valid volatile resource handling preferences:\n\n" +
+                "'Y': Export all resources and continue build (recommended)\n" +
+                "'N': Don't export resources and continue build (NOT RECOMMENDED)\n" +
+                "'C': Cancel build (default)");
+        }
+
+        static private void SwitchToProfile(string profile)
+        {
+            profile_manager.SwitchProfile(profile);
+            curr_profile_color = profile_colors[ProfileManager.GetAllProfiles().ToList().IndexOf(profile)];
         }
 
         static private void SwitchProfile()
@@ -309,12 +310,17 @@ namespace LunarHelper
             }
         }
 
-        static private bool QuickBuild()
+        static private bool QuickBuild(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ')
         {
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile();
             else
                 profile_manager.DeleteCurrentProfileFile();
+
+            if (!HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
+            {
+                return false;
+            }
 
             Lognl("Starting Quick Build");
             if (profile_manager.current_profile != null)
@@ -650,6 +656,17 @@ namespace LunarHelper
                 }
             }
 
+            Log("Marking ROM as non-volatile...", ConsoleColor.Yellow);
+            if (WriteAlteredCommentToRom(Config.TempPath))
+            {
+                Log("Successfully marked ROM as non-volatile!", ConsoleColor.Green);
+            }
+            else
+            {
+                Log("WARNING: Failed to mark ROM as non-volatile, your ROM may be corrupted!", ConsoleColor.Red);
+            }
+            Console.WriteLine();
+
             FinalizeOutputROM();
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
@@ -897,12 +914,152 @@ namespace LunarHelper
             return true;
         }
 
-        static private bool Build()
+        static bool PotentiallyVolatileResourcesInRom(string rom_path)
+        {
+            try
+            {
+                using (BinaryReader br = new BinaryReader(File.OpenRead(rom_path)))
+                {
+                    var offset = Config.OutputPath.EndsWith(".smc") ? COMMENT_FIELD_SMC_ROM_OFFSET : COMMENT_FIELD_SFC_ROM_OFFSET;
+
+                    br.BaseStream.Seek(offset, SeekOrigin.Begin);
+                    byte[] comment_bytes = br.ReadBytes(COMMENT_FIELD_LENGTH);
+                    string comment = Encoding.ASCII.GetString(comment_bytes);
+
+                    // if the comment is unaltered, the last edit was made by an uninjected Lunar Magic, which means
+                    // we could have volatile resources!
+                    return comment == DEFAULT_COMMENT;
+                }
+            }
+            catch (Exception)
+            {
+                // if we failed to read the comment string from the ROM we probably
+                // have a corrupt ROM, which means even if there are volatile resources, we
+                // probably can't really get them out anyway...
+                return false;
+            }
+        }
+
+        static bool WriteAlteredCommentToRom(string rom_path)
+        {
+            try
+            {
+                using (Stream stream = File.Open(rom_path, FileMode.Open))
+                {
+                    stream.Position = Config.OutputPath.EndsWith(".smc") ? COMMENT_FIELD_SMC_ROM_OFFSET : COMMENT_FIELD_SFC_ROM_OFFSET;
+                    stream.Write(Encoding.ASCII.GetBytes(ALTERED_COMMENT), 0, COMMENT_FIELD_LENGTH);
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // bool returned is true if it's ok to continue with build, false if it should be cancelled
+        // defaults to cancelling the build if invoked from the command line without specifying a preference
+        static bool HandleVolatileResources(bool cli_invoked = false, char cli_decision = 'C')
+        {
+            if (!File.Exists(Config.OutputPath))
+            {
+                return true;
+            }
+
+            Log("Checking for potentially unexported resources in pre-existing ROM...", ConsoleColor.Yellow);
+
+            if (!PotentiallyVolatileResourcesInRom(Config.OutputPath))
+            {
+                Log("No potentially unexported resources detected in ROM!\n", ConsoleColor.Green);
+                return true;
+            }
+
+            if (cli_invoked)
+            {
+                Log("Potentially unexported resources detected in ROM!", ConsoleColor.Red);
+
+                switch (cli_decision)
+                {
+                    case 'Y':
+                        Log("Attempting to export all resources and continue with build...", ConsoleColor.Yellow);
+                        if (Save())
+                        {
+                            Console.WriteLine();
+                            return true;
+                        }
+                        else
+                        {
+                            Log("Failed to export at least one potentially volatile resource, please fix any errors shown " +
+                                "and attempt this process again!", ConsoleColor.Yellow);
+                            return false;
+                        }
+
+                    case 'N':
+                        Log("Continuing with build as user has specified to ignore volatile resources via command line\n", ConsoleColor.Yellow);
+                        return true;
+
+                    case 'C':
+                        Error("Cancelling build due to potentially volatile resources in ROM\n");
+                        return false;
+                }
+            }
+
+            while (true)
+            {
+                Console.Clear();
+                Log("WARNING: Potentially unexported resources detected", ConsoleColor.Red);
+                Log($"There may be unexported resources present in ROM '{Config.OutputPath}'.\n" +
+                    "It is recommended that all resources are exported from the ROM prior to building at " +
+                    "this point, as it could potentially be overwritten during the build process.\n\nWould you " +
+                    "like to export all resources now?\n\nY - Yes, export resources and build afterwards (recommended)\n" +
+                    "N - No, build anyway (use at your own risk, any unexported resources in the ROM will be LOST!)\n" +
+                    "C - Cancel build, do not export resources", ConsoleColor.Yellow);
+
+                var key = Console.ReadKey(true);
+                Console.Clear();
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.Y:
+                        if (Save())
+                        {
+                            Console.WriteLine();
+                            return true;
+                        }
+                        else
+                        {
+                            Log("Failed to export at least one potentially volatile resource, please fix any errors shown " +
+                                "and attempt this process again!", ConsoleColor.Yellow);
+                            return false;
+                        }
+
+                    case ConsoleKey.N:
+                        return true;
+
+                    case ConsoleKey.C:
+                        return false;
+                }
+
+                string str = char.ToUpperInvariant(key.KeyChar).ToString().Trim();
+                if (str.Length > 0)
+                    Log($"Key '{str}' is not a recognized option!", ConsoleColor.Red);
+                else
+                    Log($"Key is not a recognized option!", ConsoleColor.Red);
+                Console.WriteLine();
+            }
+        }
+
+        static private bool Build(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ')
         {
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile();
             else
                 profile_manager.DeleteCurrentProfileFile();
+
+            if (!HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
+            {
+                return false;
+            }
 
             Lognl("Starting Build");
             if (profile_manager.current_profile != null)
@@ -1049,11 +1206,11 @@ namespace LunarHelper
             // asar patches
             Log("Patches", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(Config.AsarPath))
-                Log("No path to Asar provided, not applying any patches.", ConsoleColor.Red);
+                Log("No path to Asar provided, not applying any patches.\n", ConsoleColor.Red);
             else if (!File.Exists(Config.AsarPath))
-                Log("Asar not found at provided path, not applying any patches.", ConsoleColor.Red);
+                Log("Asar not found at provided path, not applying any patches.\n", ConsoleColor.Red);
             else if (Config.Patches.Count == 0)
-                Log("Path to Asar provided, but no patches were registerd to be applied.", ConsoleColor.Red);
+                Log("Path to Asar provided, but no patches were registerd to be applied.\n", ConsoleColor.Red);
             else
             {
                 foreach (var patch in Config.Patches)
@@ -1077,6 +1234,17 @@ namespace LunarHelper
                 Log("Patching Success!", ConsoleColor.Green);
                 Console.WriteLine();
             }
+
+            Log("Marking ROM as non-volatile...", ConsoleColor.Yellow);
+            if (WriteAlteredCommentToRom(Config.TempPath))
+            {
+                Log("Successfully marked ROM as non-volatile!", ConsoleColor.Green);
+            }
+            else
+            {
+                Log("WARNING: Failed to mark ROM as non-volatile, your ROM may be corrupted!", ConsoleColor.Red);
+            }
+            Console.WriteLine();
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
@@ -1769,6 +1937,184 @@ namespace LunarHelper
                 return true;
             else
                 return false;
+        }
+
+        static private bool Save()
+        {
+            if (!File.Exists(Config.OutputPath))
+            {
+                Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
+                return false;
+            }
+
+            // save global data
+            Log("Saving Global Data BPS...", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.GlobalDataPath))
+                Log("No path for GlobalData BPS provided!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.CleanPath))
+                Log("No path for Clean ROM provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.CleanPath))
+                Log("Clean ROM does not exist!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.FlipsPath))
+                Log("No path to Flips provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.FlipsPath))
+                Log("Flips not found at the provided path!", ConsoleColor.Red);
+            else
+            {
+                if (File.Exists(Config.GlobalDataPath))
+                    File.Delete(Config.GlobalDataPath);
+
+                var fullCleanPath = Path.GetFullPath(Config.CleanPath);
+                var fullOutputPath = Path.GetFullPath(Config.OutputPath);
+                var fullPackagePath = Path.GetFullPath(Config.GlobalDataPath);
+                if (CreatePatch(fullCleanPath, fullOutputPath, fullPackagePath))
+                    Log("Global Data Patch Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Global Data Patch Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // export map16
+            Log("Exporting Map16...", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.Map16Path))
+                Log("No path for Map16 provided!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.LunarMagicPath))
+                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-ExportAllMap16 \"{Config.OutputPath}\" \"{Config.Map16Path}\"");
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Map16 Export Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Map16 Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
+                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+                else
+                {
+                    string humanReadableDirectory;
+                    if (!string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
+                        humanReadableDirectory = Config.HumanReadableMap16Directory;
+                    else
+                        humanReadableDirectory = Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path));
+
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
+                                $"--from-map16 \"{Config.Map16Path}\" \"{humanReadableDirectory}\"");
+                    var proc = Process.Start(process);
+                    proc.WaitForExit();
+
+                    if (proc.ExitCode == 0)
+                        Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
+                    else
+                    {
+                        Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
+                        return false;
+                    }
+                }
+            }
+
+            // export shared palette
+            Log("Exporting Shared Palette...", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.SharedPalettePath))
+                Log("No path for Shared Palette provided!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.LunarMagicPath))
+                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-ExportSharedPalette \"{Config.OutputPath}\" \"{Config.SharedPalettePath}\"");
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Shared Palette Export Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Shared Palette Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // export title moves
+            Log("Exporting Title Moves...", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.TitleMovesPath))
+                Log("No path for Title Moves provided!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.LunarMagicPath))
+                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-ExportTitleMoves \"{Config.OutputPath}\" \"{Config.TitleMovesPath}\"");
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Title Moves Export Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Title Moves Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // save levels
+            if (!ExportLevels())
+                return false;
+
+            Console.WriteLine();
+            return true;
+        }
+
+        static private bool ExportLevels()
+        {
+            Log("Exporting All Levels...", ConsoleColor.Cyan);
+            if (string.IsNullOrWhiteSpace(Config.LevelsPath))
+                Log("No path for Levels provided!", ConsoleColor.Red);
+            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+            else if (!File.Exists(Config.LunarMagicPath))
+                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+            else if (!File.Exists(Config.OutputPath))
+                Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-ExportMultLevels \"{Config.OutputPath}\" \"{Config.LevelsPath}{Path.DirectorySeparatorChar}level\"");
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                {
+                    Log("Levels Export Success!", ConsoleColor.Green);
+                    return true;
+                }
+                else
+                {
+                    Log("Levels Export Failure!", ConsoleColor.Red);
+                }
+            }
+
+            return false;
         }
 
         static public void Error(string error, ConsoleColor? background_color = null)
