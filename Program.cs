@@ -324,6 +324,11 @@ namespace LunarHelper
                 Log("Quick Build failed!\n", ConsoleColor.Red);
                 return false;
             }
+            catch (Exception e)
+            {
+                Log($"Encountered exception: '{e.Message}' while planning quick build, falling back to full rebuild...", ConsoleColor.Yellow);
+                return Build();
+            }
             
             if (plan.uptodate)
             {
