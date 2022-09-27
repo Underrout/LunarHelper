@@ -1758,25 +1758,31 @@ namespace LunarHelper
                 return false;
         }
 
-        static public void Error(string error, ConsoleColor background_color = ConsoleColor.Black)
+        static public void Error(string error, ConsoleColor? background_color = null)
         {
-            Console.BackgroundColor = background_color;
+            if (background_color != null)
+                Console.BackgroundColor = (ConsoleColor)background_color;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"ERROR: {error}\n");
+            Console.ResetColor();
         }
 
-        static public void Log(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor background_color = ConsoleColor.Black)
+        static public void Log(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor? background_color = null)
         {
-            Console.BackgroundColor = background_color;
+            if (background_color != null)
+                Console.BackgroundColor = (ConsoleColor)background_color;
             Console.ForegroundColor = color;
             Console.WriteLine($"{msg}");
+            Console.ResetColor();
         }
 
-        static public void Lognl(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor background_color = ConsoleColor.Black)
+        static public void Lognl(string msg, ConsoleColor color = ConsoleColor.White, ConsoleColor? background_color = null)
         {
-            Console.BackgroundColor = background_color;
+            if (background_color != null)
+                Console.BackgroundColor = (ConsoleColor)background_color;
             Console.ForegroundColor = color;
             Console.Write($"{msg}");
+            Console.ResetColor();
         }
     }
 }
