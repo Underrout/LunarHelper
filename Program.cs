@@ -172,6 +172,13 @@ namespace LunarHelper
                 ShowCommandLineHelp();
                 return 0;
             }
+            else if (args[0] == "--profiles")
+            {
+                var profiles = ProfileManager.GetAllProfiles();
+                var output = profiles.Count() != 0 ? string.Join(" ", profiles) : "";
+                Console.WriteLine(output);
+                return 0;
+            }
 
             if (args.Length == 2)
             {
@@ -243,8 +250,14 @@ namespace LunarHelper
 
         static private void ShowCommandLineHelp()
         {
-            Log("Usage:\n\tLunarHelper.exe --build [profile to use]\n\tLunarHelper.exe --quickbuild [profile to use]\n\t" +
-                "LunarHelper.exe --package [profile to use]");
+            Log("Usage:\nBuild ROM from scratch with given profile (uses default profile if second argument omitted)\n" + 
+                "\tLunarHelper.exe --build [profile to use]\n\n" + 
+                "Attempt to update pre-existing ROM in-place with given profile (uses default profile if second argument omitted)\n" +
+                "\tLunarHelper.exe --quickbuild [profile to use]\n\n" +
+                "Attempt to build and package ROM into BPS with given profile (uses default profile if second argument omitted)\n" +
+                "\tLunarHelper.exe --package [profile to use]\n\n" + 
+                "List names of available profiles separated by spaces, will output an empty string if no profiles are found" +
+                "\tLunarHelper.exe --profiles");
         }
 
         static private void SwitchProfile()
