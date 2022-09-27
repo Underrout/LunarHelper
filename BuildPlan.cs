@@ -73,6 +73,11 @@ namespace LunarHelper
                 {
                     report = (Report)serializer.Deserialize(reader, typeof(Report));
                 }
+
+                if (report == null)
+                {
+                    throw new Exception();
+                }
             }
             catch(Exception)
             {
