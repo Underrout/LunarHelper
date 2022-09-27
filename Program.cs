@@ -1624,6 +1624,15 @@ namespace LunarHelper
             return true;
         }
 
+        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr handle);
+        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        private static extern bool ShowWindow(IntPtr handle, int nCmdShow);
+        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        private static extern bool IsIconic(IntPtr handle);
+
+        const int SW_RESTORE = 9;
+
         static private void Edit()
         {
             if (!File.Exists(Config.OutputPath))
@@ -1635,7 +1644,16 @@ namespace LunarHelper
             else
             {
                 if (LunarMagicProcess != null && !LunarMagicProcess.HasExited)
-                    LunarMagicProcess.Kill(true);
+                {
+                    IntPtr handle = LunarMagicProcess.MainWindowHandle;
+                    if (IsIconic(handle))
+                    {
+                        ShowWindow(handle, SW_RESTORE);
+                    }
+
+                    SetForegroundWindow(handle);
+                    return;
+                }
 
                 ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
                             $"\"{Config.OutputPath}\"");
