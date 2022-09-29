@@ -984,6 +984,7 @@ namespace LunarHelper
                         Log("Attempting to export all resources and continue with build...", ConsoleColor.Yellow);
                         if (Save())
                         {
+                            WriteAlteredCommentToRom(Config.OutputPath);  // save to mark as non-volatile since export succeeded
                             Console.WriteLine();
                             return true;
                         }
