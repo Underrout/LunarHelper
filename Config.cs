@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -84,8 +86,11 @@ namespace LunarHelper
 
             Dictionary<string, string> vars = new Dictionary<string, string>();
             Dictionary<string, List<string>> lists = new Dictionary<string, List<string>>();
+            List<Insertable> build_order = new List<Insertable>();
+            List<(Insertable, List <Insertable>)> quick_build_triggers = new List<(Insertable, List<Insertable>)>();
+
             foreach (var d in data)
-                Parse(d, vars, lists);
+                Parse(d, vars, lists, build_order, quick_build_triggers);
 
             config.WorkingDirectory = vars.GetValueOrDefault("dir", config.WorkingDirectory);
             config.OutputPath = vars.GetValueOrDefault("output", config.OutputPath);
@@ -136,10 +141,16 @@ namespace LunarHelper
                 config.SuppressArbitraryDepsWarning = suppress_arbitrary_deps_warning != null ? (new[] { "yes", "true" }).AsSpan().Contains(suppress_arbitrary_deps_warning.Trim()) : false;
             }
 
+            if (build_order.Count() == 0)
+            {
+                throw new Exception("'build_order' list must be specified");
+            }
+
             return config;
         }
 
-        static private void Parse(string data, Dictionary<string, string> vars, Dictionary<string, List<string>> lists)
+        static private void Parse(string data, Dictionary<string, string> vars, Dictionary<string, 
+            List<string>> lists, List<Insertable> build_order, List<(Insertable, List<Insertable>)> quick_build_triggers)
         {
             var lines = data.Split('\n');
             for (int i = 0; i < lines.Length; i++)
@@ -167,6 +178,11 @@ namespace LunarHelper
                 }
                 else if (peek != null && peek.Trim() == "[")
                 {
+                    if (new[] {"quick_build_triggers", "build_order"}.Contains(str))
+                    {
+                        ParseDependencyList(str, build_order, quick_build_triggers, lines, i + 2);
+                        continue;
+                    }
                     // list
                     var list = new List<string>();
                     lists.Add(str.Trim(), list);
@@ -186,6 +202,70 @@ namespace LunarHelper
                         i++;
                     }
                 }
+            }
+        }
+
+        static private void ParseDependencyList(string list_name, List<Insertable> build_order, 
+            List<(Insertable, List<Insertable>)> quick_build_triggers, string[] lines, int line_idx)
+        {
+            while (true)
+            {
+                if (line_idx >= lines.Length)
+                    throw new Exception("Malformed list");
+
+                string str = lines[line_idx];
+                if (str.Trim() == "]")
+                    break;
+                else
+                {
+                    if (list_name == "build_order")
+                    {
+                        build_order.Append(ParseInsertable(str));
+                    }
+                    else
+                    {
+                        (var trigger, var insertables) = ParseQuickBuildTriggers(str);
+                        quick_build_triggers.Add((trigger, insertables));
+                    }
+                }
+
+                line_idx++;
+            }
+        }
+
+        static private (Insertable, List<Insertable>) ParseQuickBuildTriggers(string line)
+        {
+            string trimmed_line = line.Trim();
+
+            int arrow_idx = trimmed_line.IndexOf(" -> ");
+
+            if (arrow_idx == -1)
+            {
+                throw new Exception($"Malformed quick build trigger, missing '->': '{line}'");
+            }
+
+            Insertable trigger = ParseInsertable(trimmed_line.Substring(0, arrow_idx).Trim());
+
+            var to_insert = trimmed_line.Substring(arrow_idx + 4).Split(", ")
+                .Select(i => ParseInsertable(i.Trim()));
+
+            return (trigger, to_insert.ToList());
+        }
+
+        static private Insertable ParseInsertable(string insertable_string)
+        {
+            string trimmed = insertable_string.Trim();
+
+            InsertableType insertable_type;
+            bool success = Enum.TryParse(trimmed, true, out insertable_type);
+
+            if (success && insertable_type != InsertableType.SinglePatch)
+            {
+                return new Insertable(insertable_type);
+            }
+            else
+            {
+                return new Insertable(InsertableType.SinglePatch, trimmed);
             }
         }
 
