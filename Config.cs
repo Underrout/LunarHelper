@@ -366,7 +366,7 @@ namespace LunarHelper
                 throw new Exception($"Patch '{patch_path}' not found");
 
             if (!config.Patches.Contains(patch_path))
-                throw new Exception($"Patch '{patch_path}' specified in build order but not found in patch list");
+                throw new Exception($"Patch '{patch_path}' not found");
         }
 
         private static void VerifyPatches(Config config)

@@ -355,9 +355,11 @@ namespace LunarHelper
             return DetermineQuickBuildInsertionOrder(require_insertion, config.QuickBuildTriggerGraph);
         }
 
-        private static List<Insertable> DetermineQuickBuildInsertionOrder(List<Insertable> detected_changes, 
+        private static List<Insertable> DetermineQuickBuildInsertionOrder(List<Insertable> detected_changes,
             BidirectionalGraph<Insertable, Edge<Insertable>> trigger_graph)
         {
+            Program.Log("Checking Quick Build triggers...\n", ConsoleColor.Cyan);
+
             var graph_copy = trigger_graph.Clone();
 
             List<Insertable> insertion_order = new List<Insertable>();
@@ -386,9 +388,17 @@ namespace LunarHelper
                     // our vertex has no changes of its own but was triggered by some previous source
                     // vertex having had changes in its subtree, reinsert our vertex and also trigger
                     // reinsertion of our neighboring vertices
+                    var as_string = source.type == InsertableType.SinglePatch ? $"Patch '{source.normalized_relative_path}'" :
+                        source.type.ToString();
+                    Program.Lognl(as_string, ConsoleColor.Cyan);
+                    Program.Log($" must be (re)inserted due to Quick Build triggers specification", ConsoleColor.Yellow);
+
                     insertion_order.Add(source);
                     triggered_insertions = triggered_insertions.Concat(graph_copy.OutEdges(source).Select(e => e.Target)).ToHashSet();
                     triggered_insertions.Remove(source);
+
+                    if (triggered_insertions.Count() == 0)
+                        Program.Log("");
                 }
 
                 // remove our current vertex so that we can find a new source vertex in the next iteration
@@ -402,6 +412,7 @@ namespace LunarHelper
 
             return insertion_order;
         }
+
 
         private static List<Insertable> GatherInsertables(Insertable insertable, List<Insertable> insertables)
         {
