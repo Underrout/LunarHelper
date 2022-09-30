@@ -360,6 +360,8 @@ namespace LunarHelper
         {
             Program.Log("Checking Quick Build triggers...\n", ConsoleColor.Cyan);
 
+            bool any_triggered = false;
+
             var graph_copy = trigger_graph.Clone();
 
             List<Insertable> insertion_order = new List<Insertable>();
@@ -397,13 +399,15 @@ namespace LunarHelper
                     triggered_insertions = triggered_insertions.Concat(graph_copy.OutEdges(source).Select(e => e.Target)).ToHashSet();
                     triggered_insertions.Remove(source);
 
-                    if (triggered_insertions.Count() == 0)
-                        Program.Log("");
+                    any_triggered = true;
                 }
 
                 // remove our current vertex so that we can find a new source vertex in the next iteration
                 graph_copy.RemoveVertex(source);
             }
+
+            if (any_triggered)
+                Program.Log("");
 
             foreach (var non_trigger_change in detected_changes)
             {

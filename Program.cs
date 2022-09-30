@@ -1430,7 +1430,7 @@ namespace LunarHelper
 
         static private bool ApplyAsarPatch(string patch_path)
         {
-            Lognl($"- Applying patch '{patch_path}'...  ", ConsoleColor.Yellow);
+            Log($"Patch '{patch_path}'", ConsoleColor.Cyan);
 
             ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch_path}\" \"{Config.TempPath}\"");
 
@@ -1439,12 +1439,12 @@ namespace LunarHelper
 
             if (p.ExitCode == 0)
             {
-                Log("Success!\n", ConsoleColor.Green);
+                Log("Patch Success!\n", ConsoleColor.Green);
                 return true;
             }
             else
             {
-                Log("Failure!\n", ConsoleColor.Red);
+                Log("Patch Failure!\n", ConsoleColor.Red);
                 return false;
             }
         }
