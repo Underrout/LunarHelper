@@ -1,10 +1,15 @@
-﻿using System;
+﻿using QuickGraph;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+
+using QuickGraph.Algorithms;
+using QuickGraph.Algorithms.Search;
+using QuickGraph.Algorithms.ConnectedComponents;
 
 namespace LunarHelper
 {
@@ -57,6 +62,10 @@ namespace LunarHelper
         public bool ReloadEmulatorAfterBuild;
         public bool SuppressArbitraryDepsWarning;
 
+        public List<Insertable> BuildOrder = null;
+        List<(Insertable, Insertable)> QuickBuildTriggers = new List<(Insertable, Insertable)>();
+        public BidirectionalGraph<Insertable, Edge<Insertable>> QuickBuildTriggerGraph = null;
+
         #region load
 
         static public Config Load(out string error, Config config = null, string search_path_prefix = "")
@@ -87,7 +96,7 @@ namespace LunarHelper
             Dictionary<string, string> vars = new Dictionary<string, string>();
             Dictionary<string, List<string>> lists = new Dictionary<string, List<string>>();
             List<Insertable> build_order = new List<Insertable>();
-            List<(Insertable, List <Insertable>)> quick_build_triggers = new List<(Insertable, List<Insertable>)>();
+            List<(Insertable, Insertable)> quick_build_triggers = new List<(Insertable, Insertable)>();
 
             foreach (var d in data)
                 Parse(d, vars, lists, build_order, quick_build_triggers);
@@ -141,16 +150,21 @@ namespace LunarHelper
                 config.SuppressArbitraryDepsWarning = suppress_arbitrary_deps_warning != null ? (new[] { "yes", "true" }).AsSpan().Contains(suppress_arbitrary_deps_warning.Trim()) : false;
             }
 
-            if (build_order.Count() == 0)
+            if (build_order.Count() != 0)
             {
-                throw new Exception("'build_order' list must be specified");
+                config.BuildOrder = build_order;
+            }
+
+            if (quick_build_triggers.Count() != 0)
+            {
+                config.QuickBuildTriggers = quick_build_triggers;
             }
 
             return config;
         }
 
         static private void Parse(string data, Dictionary<string, string> vars, Dictionary<string, 
-            List<string>> lists, List<Insertable> build_order, List<(Insertable, List<Insertable>)> quick_build_triggers)
+            List<string>> lists, List<Insertable> build_order, List<(Insertable, Insertable)> quick_build_triggers)
         {
             var lines = data.Split('\n');
             for (int i = 0; i < lines.Length; i++)
@@ -178,14 +192,15 @@ namespace LunarHelper
                 }
                 else if (peek != null && peek.Trim() == "[")
                 {
-                    if (new[] {"quick_build_triggers", "build_order"}.Contains(str))
+                    var trimmed = str.Trim();
+                    if (new[] {"quick_build_triggers", "build_order"}.Contains(trimmed))
                     {
-                        ParseDependencyList(str, build_order, quick_build_triggers, lines, i + 2);
+                        ParseDependencyList(trimmed, build_order, quick_build_triggers, lines, i + 2);
                         continue;
                     }
                     // list
                     var list = new List<string>();
-                    lists.Add(str.Trim(), list);
+                    lists.Add(trimmed, list);
                     i += 2;
 
                     while (true)
@@ -197,7 +212,8 @@ namespace LunarHelper
                         if (str.Trim() == "]")
                             break;
                         else
-                            list.Add(str.Trim().Replace("\\", "/"));
+                            list.Add(str.Trim().Replace('/', '\\').TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                                .ToLowerInvariant());
 
                         i++;
                     }
@@ -206,7 +222,7 @@ namespace LunarHelper
         }
 
         static private void ParseDependencyList(string list_name, List<Insertable> build_order, 
-            List<(Insertable, List<Insertable>)> quick_build_triggers, string[] lines, int line_idx)
+            List<(Insertable, Insertable)> quick_build_triggers, string[] lines, int line_idx)
         {
             while (true)
             {
@@ -220,12 +236,12 @@ namespace LunarHelper
                 {
                     if (list_name == "build_order")
                     {
-                        build_order.Append(ParseInsertable(str));
+                        build_order.Add(ParseInsertable(str));
                     }
                     else
                     {
-                        (var trigger, var insertables) = ParseQuickBuildTriggers(str);
-                        quick_build_triggers.Add((trigger, insertables));
+                        (var trigger, var insertable) = ParseQuickBuildTrigger(str);
+                        quick_build_triggers.Add((trigger, insertable));
                     }
                 }
 
@@ -233,33 +249,31 @@ namespace LunarHelper
             }
         }
 
-        static private (Insertable, List<Insertable>) ParseQuickBuildTriggers(string line)
+        static private (Insertable, Insertable) ParseQuickBuildTrigger(string line)
         {
             string trimmed_line = line.Trim();
 
-            int arrow_idx = trimmed_line.IndexOf(" -> ");
+            var split = trimmed_line.Split(" -> ");
 
-            if (arrow_idx == -1)
-            {
-                throw new Exception($"Malformed quick build trigger, missing '->': '{line}'");
-            }
+            if (split.Length != 2)
+                throw new Exception($"Malformed Quick Build trigger: '{line}'");
 
-            Insertable trigger = ParseInsertable(trimmed_line.Substring(0, arrow_idx).Trim());
-
-            var to_insert = trimmed_line.Substring(arrow_idx + 4).Split(", ")
-                .Select(i => ParseInsertable(i.Trim()));
-
-            return (trigger, to_insert.ToList());
+            return (ParseInsertable(split[0], true), ParseInsertable(split[1], true));
         }
 
-        static private Insertable ParseInsertable(string insertable_string)
+        static private Insertable ParseInsertable(string insertable_string, bool is_quickbuild = false)
         {
             string trimmed = insertable_string.Trim();
 
             InsertableType insertable_type;
             bool success = Enum.TryParse(trimmed, true, out insertable_type);
 
-            if (success && insertable_type != InsertableType.SinglePatch)
+            if (is_quickbuild && insertable_type == InsertableType.Patches)
+            {
+                throw new Exception("'Patches' cannot be used in Quick Build triggers, please specify individual patches instead");
+            }
+
+            if (success && insertable_type != InsertableType.SinglePatch && insertable_type != InsertableType.SingleLevel)
             {
                 return new Insertable(insertable_type);
             }
@@ -267,6 +281,184 @@ namespace LunarHelper
             {
                 return new Insertable(InsertableType.SinglePatch, trimmed);
             }
+        }
+
+        static private Dictionary<InsertableType, Action<Config>> verifications = new Dictionary<InsertableType, Action<Config>>()
+        {
+            { InsertableType.Pixi, VerifyPixi },
+            { InsertableType.AddMusicK, VerifyAmk },
+            { InsertableType.Gps, VerifyGps },
+            { InsertableType.UberAsm, VerifyUberAsm },
+            { InsertableType.Graphics, NoVerify },
+            { InsertableType.ExGraphics, NoVerify },
+            { InsertableType.Map16, VerifyMap16 },
+            { InsertableType.SharedPalettes, VerifySharedPalettes },
+            { InsertableType.GlobalData, VerifyGlobalData },
+            { InsertableType.TitleMoves, VerifyTitleMoves },
+            { InsertableType.Levels, VerifyLevels },
+            { InsertableType.Patches, VerifyPatches }
+        };
+
+        private static void VerifyInsertable(Config config, Insertable insertable)
+        {
+            var type = insertable.type;
+
+            if (type == InsertableType.SinglePatch)
+                VerifyPatch(config, insertable.normalized_relative_path);
+            else
+                verifications[type](config);
+        }
+
+        public static void VerifyConfig(Config config)
+        {
+            if (config.BuildOrder == null)
+            {
+                throw new Exception("'build_order' list must be specified");
+            }
+            if (config.QuickBuildTriggers == null)
+            {
+                throw new Exception("'quick_build_triggers' list must be specified");
+            }
+
+            foreach (var item in config.BuildOrder)
+                VerifyInsertable(config, item);
+
+            BidirectionalGraph<Insertable, Edge<Insertable>> trigger_graph = new BidirectionalGraph<Insertable, Edge<Insertable>>();
+
+            foreach ((var trigger, var insertable) in config.QuickBuildTriggers)
+            {
+                trigger_graph.AddVertex(trigger);
+                trigger_graph.AddVertex(insertable);
+                trigger_graph.AddEdge(new Edge<Insertable>(trigger, insertable));
+            }
+
+            if (trigger_graph.Edges.Any(e => e.Source.Equals(e.Target)))
+                throw new Exception("Cyclic triggers detected in Quick Build trigger list");
+
+            var ssc = new StronglyConnectedComponentsAlgorithm<Insertable, Edge<Insertable>>(trigger_graph);
+
+            ssc.Compute();
+
+            bool cycles_present = ssc.ComponentCount != trigger_graph.VertexCount;  // if all strongly connected components are
+                                                                                    // single vertices, our graph is acyclic
+
+            if (cycles_present)
+                throw new Exception("Cyclic triggers detected in Quick Build trigger list");
+
+            config.QuickBuildTriggerGraph = trigger_graph;
+
+            foreach ((var trigger, var insertable) in config.QuickBuildTriggers)
+            {
+                VerifyInsertable(config, trigger);
+                VerifyInsertable(config, insertable);
+            }
+        }
+
+        private static void VerifyPatch(Config config, string patch_path)
+        {
+            if (string.IsNullOrEmpty(config.AsarPath))
+                throw new Exception($"No path to asar specified, but patch '{patch_path}' must be inserted");
+
+            if (!File.Exists(config.AsarPath))
+                throw new Exception($"Asar not found at path '{config.AsarPath}'");
+
+            if (!File.Exists(patch_path))
+                throw new Exception($"Patch '{patch_path}' not found");
+
+            if (!config.Patches.Contains(patch_path))
+                throw new Exception($"Patch '{patch_path}' specified in build order but not found in patch list");
+        }
+
+        private static void VerifyPatches(Config config)
+        {
+            foreach (var patch in config.Patches)
+            {
+                VerifyPatch(config, patch);
+            }
+        }
+
+        private static void VerifyUnspecifiedOrExists(Config config, InsertableType insertable_type, 
+            string corresponding_variable, string tool_name, string tool_path)
+        {
+            if (string.IsNullOrWhiteSpace(tool_path))
+                VerifyNotInBuildOrQuickTriggers(config, insertable_type, corresponding_variable);
+
+            if (!File.Exists(tool_path))
+                throw new Exception($"{tool_name} not found at path '{tool_path}'");
+        }
+
+        private static void VerifyNotInBuildOrQuickTriggers(Config config, InsertableType type, string corresponding_variable)
+        {
+            if (config.BuildOrder.Any(i => i.type == type))
+            {
+                throw new Exception($"{corresponding_variable} not specified, but {type} found in build_order list");
+            }
+
+            if (config.QuickBuildTriggerGraph.Vertices.Any(i => i.type == type))
+            {
+                throw new Exception($"{corresponding_variable} not specified, but {type} found in quick_build_triggers list");
+            }
+        }
+
+        private static void VerifyPixi(Config config)
+        {
+            VerifyUnspecifiedOrExists(config, InsertableType.Pixi, "pixi_path", "PIXI", config.PixiPath);
+        }
+
+        private static void VerifyAmk(Config config)
+        {
+            VerifyUnspecifiedOrExists(config, InsertableType.AddMusicK, "addmusick_path", "AddMusicK", config.AddMusicKPath);
+        }
+
+        private static void VerifyGps(Config config)
+        {
+            VerifyUnspecifiedOrExists(config, InsertableType.Gps, "gps_path", "GPS", config.GPSPath);
+        }
+
+        private static void VerifyUberAsm(Config config)
+        {
+            VerifyUnspecifiedOrExists(config, InsertableType.UberAsm, "uberasm_path", "UberASM Tool", config.UberASMPath);
+        }
+
+        private static void NoVerify(Config config)
+        {
+            // nothing to verify
+        }
+
+        private static void VerifyMap16(Config config)
+        {
+            if (string.IsNullOrWhiteSpace(config.Map16Path))
+                VerifyNotInBuildOrQuickTriggers(config, InsertableType.Map16, "map16");
+
+            if (string.IsNullOrWhiteSpace(config.HumanReadableMap16CLI))
+                return;
+
+            if (!File.Exists(config.HumanReadableMap16CLI))
+                throw new Exception($"Human Readable Map16 CLI not found at path '{config.HumanReadableMap16CLI}'");
+        }
+
+        private static void VerifyTitleMoves(Config config)
+        {
+            if (string.IsNullOrWhiteSpace(config.TitleMovesPath))
+                VerifyNotInBuildOrQuickTriggers(config, InsertableType.TitleMoves, "title_moves");
+        }
+
+        private static void VerifySharedPalettes(Config config)
+        {
+            if (string.IsNullOrWhiteSpace(config.SharedPalettePath))
+                VerifyNotInBuildOrQuickTriggers(config, InsertableType.SharedPalettes, "shared_palette");
+        }
+
+        private static void VerifyLevels(Config config)
+        {
+            if (string.IsNullOrWhiteSpace(config.LevelsPath))
+                VerifyNotInBuildOrQuickTriggers(config, InsertableType.Levels, "levels");
+        }
+
+        private static void VerifyGlobalData(Config config)
+        {
+            if (string.IsNullOrWhiteSpace(config.GlobalDataPath))
+                VerifyNotInBuildOrQuickTriggers(config, InsertableType.GlobalData, "global_data");
         }
 
         #endregion

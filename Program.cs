@@ -9,6 +9,7 @@ using System.Text;
 
 using LunarHelper;
 using System.Linq;
+using System.Numerics;
 
 namespace LunarHelper
 {
@@ -48,6 +49,21 @@ namespace LunarHelper
             Error,
             Success
         }
+
+        static private Dictionary<InsertableType, Func<bool>> insertion_functions = new Dictionary<InsertableType, Func<bool>>()
+        {
+            { InsertableType.Pixi, ApplyPixi },
+            { InsertableType.AddMusicK, ApplyAddmusicK },
+            { InsertableType.Gps, ApplyGPS },
+            { InsertableType.UberAsm, ApplyUberASM },
+            { InsertableType.Graphics, ImportGraphics },
+            { InsertableType.ExGraphics, ImportExGraphics },
+            { InsertableType.Map16, ImportMap16 },
+            { InsertableType.SharedPalettes, ImportSharedPalettes },
+            { InsertableType.GlobalData, ImportGlobalData },
+            { InsertableType.TitleMoves, ImportTitleMoves },
+            { InsertableType.Levels, ImportLevels }
+        };
 
         static int Main(string[] args)
         {
@@ -332,16 +348,20 @@ namespace LunarHelper
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
-            BuildPlan plan;
+            List<Insertable> plan;
 
             try 
             {
-                plan = BuildPlan.PlanBuild(Config, dependency_graph);
+                plan = BuildPlan.PlanQuickBuild(Config, dependency_graph);
             }
             catch (BuildPlan.CannotBuildException)
             {
                 Log("Quick Build failed!\n", ConsoleColor.Red);
                 return false;
+            }
+            catch (BuildPlan.MustRebuildException)
+            {
+                return Build();
             }
             catch (Exception e)
             {
@@ -349,14 +369,10 @@ namespace LunarHelper
                 return Build();
             }
             
-            if (plan.uptodate)
+            if (plan.Count == 0)
             {
+                // nothing to insert, we're up to date
                 return true;
-            }
-
-            if (plan.rebuild)
-            {
-                return Build();
             }
 
             // Actually doing quick build below
@@ -379,281 +395,27 @@ namespace LunarHelper
 
             File.Copy(Config.OutputPath, Config.TempPath);
 
-            if (plan.insert_gfx)
+            foreach (var insertable in plan)
             {
-                // import gfx
-                Log("Graphics", ConsoleColor.Cyan);
+                bool result = false;
+
+                switch (insertable.type)
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-ImportGFX \"{Config.TempPath}\"");
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
+                    case InsertableType.SingleLevel:
+                        result = ImportSingleLevel(insertable.normalized_relative_path);
+                        break;
 
-                    if (p.ExitCode == 0)
-                        Log("Import Graphics Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Import Graphics Failure!", ConsoleColor.Red);
-                        return false;
-                    }
+                    case InsertableType.SinglePatch:
+                        result = ApplyAsarPatch(insertable.normalized_relative_path);
+                        break;
 
-                    Console.WriteLine();
+                    default:
+                        result = insertion_functions[insertable.type]();
+                        break;
                 }
-            }
 
-            if (plan.insert_exgfx)
-            {
-                // import exgfx
-                Log("ExGraphics", ConsoleColor.Cyan);
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-ImportExGFX \"{Config.TempPath}\"");
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Import ExGraphics Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Import ExGraphics Failure!", ConsoleColor.Red);
-                        return false;
-                    }
-
-                    Console.WriteLine();
-                }
-            }
-
-            if (plan.insert_map16)
-            {
-                var res = ImportMap16();
-
-                if (res == Result.Error)
-                {
+                if (!result)
                     return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("Map16 was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the previously imported data. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.insert_title_moves)
-            {
-                var res = ImportTitleMoves();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("Title screen moves were either not specified or not found, but were used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the previously imported data. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.insert_shared_palettes)
-            {
-                var res = ImportSharedPalettes();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("Shared palettes were either not specified or not found, but were used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the previously imported data. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.insert_global_patch)
-            {
-                var res = ImportGlobalData();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("Global data patch was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the previously imported data. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // PIXI
-
-            if (plan.apply_pixi)
-            {
-                Log("PIXI", ConsoleColor.Cyan);
-                var res = ApplyPixi();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("PIXI was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.insert_all_levels)
-            {
-                if (!ImportLevels(false))
-                {
-                    return false;
-                }
-            }
-            else if (plan.levels_to_insert.Count != 0)
-            {
-                Log("Levels", ConsoleColor.Cyan);
-
-                foreach (var levelPath in plan.levels_to_insert)
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-ImportLevel \"{Config.TempPath}\" \"{levelPath}\"");
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode != 0)
-                    {
-                        Log($"Level import failure on '{levelPath}'!", ConsoleColor.Red);
-                        return false;
-                    }
-                }
-                Log("Levels Import Success!", ConsoleColor.Green);
-                Console.WriteLine();
-            }
-
-            if (plan.apply_pixi && plan.may_need_two_pixi_passes)
-            {
-                FileVersionInfo lunarMagicInfo = FileVersionInfo.GetVersionInfo(Config.LunarMagicPath);
-
-                if (lunarMagicInfo.FileMajorPart >= 3 && lunarMagicInfo.FileMinorPart >= 31)
-                {
-                    Log("PIXI (Second pass for Lunar Magic version >= 3.31)", ConsoleColor.Cyan);
-                    var res = ApplyPixi();
-
-                    // really we should never get anything but Result.Success here since we already succeeded earlier,
-                    // but I'll still check just in case
-                    if (res == Result.Error)
-                    {
-                        return false;
-                    }
-                    else if (res == Result.NotFound || res == Result.NotSpecified)
-                    {
-                        Log("PIXI was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                            "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                        return false;
-                    }
-                }
-            }
-
-            // AddmusicK
-
-            if (plan.apply_addmusick)
-            {
-                var res = ApplyAddmusicK();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("AddmusicK was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // GPS
-
-            if (plan.apply_gps)
-            {
-                var res = ApplyGPS();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("GPS was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            if (plan.apply_uberasm)
-            {
-                var res = ApplyUberASM();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-                else if (res == Result.NotFound || res == Result.NotSpecified)
-                {
-                    Log("UberASMTool was either not specified or not found, but was used to build previous ROM. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the tool's code. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-            }
-
-            // patches
-
-            if (plan.patches_to_apply.Count != 0)
-            {
-                // asar patches
-                Log("Patches", ConsoleColor.Cyan);
-                if (string.IsNullOrWhiteSpace(Config.AsarPath))
-                {
-                    Log("No path to Asar provided, but was used to insert patches previously. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-                else if (!File.Exists(Config.AsarPath))
-                {
-                    Log("Asar not found at provided path. If this is not a mistake, " +
-                        "please rebuild the ROM from scratch to remove the old patches. Aborting.", ConsoleColor.Red);
-                    return false;
-                }
-                else
-                {
-                    foreach (var patch in plan.patches_to_apply)
-                    {
-                        Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
-
-                        ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
-
-                        var p = Process.Start(psi);
-                        p.WaitForExit();
-
-                        if (p.ExitCode == 0)
-                            Log("Success!", ConsoleColor.Green);
-                        else
-                        {
-                            Log("Failure!", ConsoleColor.Red);
-                            return false;
-                        }
-                    }
-
-                    Log("Patching Success!", ConsoleColor.Green);
-                    Console.WriteLine();
-                }
             }
 
             Log("Marking ROM as non-volatile...", ConsoleColor.Yellow);
@@ -877,6 +639,9 @@ namespace LunarHelper
             // load config
             Config = profile_manager.DetermineConfig();
 
+            if (Config == null)
+                return false;
+
             // set the working directory
             if (!string.IsNullOrWhiteSpace(Config.WorkingDirectory))
             {
@@ -908,6 +673,16 @@ namespace LunarHelper
             else if (string.IsNullOrWhiteSpace(Config.TempPath))
             {
                 Error("No Temp ROM path provided");
+                return false;
+            }
+
+            try
+            {
+                Config.VerifyConfig(Config);
+            }
+            catch (Exception e)
+            {
+                Error(e.Message);
                 return false;
             }
 
@@ -1062,6 +837,8 @@ namespace LunarHelper
                 return false;
             }
 
+            List<Insertable> plan = BuildPlan.PlanBuild(Config);
+
             Lognl("Starting Build");
             if (profile_manager.current_profile != null)
             {
@@ -1109,131 +886,27 @@ namespace LunarHelper
                 File.Copy(Config.CleanPath, Config.TempPath);
             }
 
-            // import gfx
-            Log("Graphics", ConsoleColor.Cyan);
+            foreach (var insertable in plan)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ImportAllGraphics \"{Config.TempPath}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
+                bool result = false;
 
-                if (p.ExitCode == 0)
-                    Log("Import Graphics Success!", ConsoleColor.Green);
-                else
+                switch (insertable.type)
                 {
-                    Log("Import Graphics Failure!", ConsoleColor.Red);
+                    case InsertableType.SingleLevel:
+                        result = ImportSingleLevel(insertable.normalized_relative_path);
+                        break;
+
+                    case InsertableType.SinglePatch:
+                        result = ApplyAsarPatch(insertable.normalized_relative_path);
+                        break;
+
+                    default:
+                        result = insertion_functions[insertable.type]();
+                        break;
+                }
+
+                if (!result)
                     return false;
-                }
-
-                Console.WriteLine();
-            }
-
-            // import map16
-
-            if (ImportMap16() == Result.Error)
-            {
-                return false;
-            }
-
-            // import title moves
-
-            if (ImportTitleMoves() == Result.Error)
-            {
-                return false;
-            }
-
-            // import shared palette
-
-            if (ImportSharedPalettes() == Result.Error)
-            {
-                return false;
-            }
-
-            // import global data
-
-            if (ImportGlobalData() == Result.Error)
-            {
-                return false;
-            }
-
-            // run PIXI
-            Log("PIXI", ConsoleColor.Cyan);
-            if (ApplyPixi() == Result.Error)
-            {
-                return false;
-            }
-
-            // import levels
-            if (!ImportLevels(false))
-            {
-                return false;
-            }
-
-            FileVersionInfo lunarMagicInfo = FileVersionInfo.GetVersionInfo(Config.LunarMagicPath);
-
-            if (lunarMagicInfo.FileMajorPart >= 3 && lunarMagicInfo.FileMinorPart >= 31)
-            {
-                Log("PIXI (Second pass for Lunar Magic version >= 3.31)", ConsoleColor.Cyan);
-                var res = ApplyPixi();
-
-                if (res == Result.Error)
-                {
-                    return false;
-                }
-            }
-
-            // run AddMusicK
-
-            if (ApplyAddmusicK() == Result.Error)
-            {
-                return false;
-            }
-
-            // run GPS
-
-            if (ApplyGPS() == Result.Error)
-            {
-                return false;
-            }
-
-            // uber ASM
-
-            if (ApplyUberASM() == Result.Error)
-            {
-                return false;
-            }
-
-            // asar patches
-            Log("Patches", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.AsarPath))
-                Log("No path to Asar provided, not applying any patches.\n", ConsoleColor.Red);
-            else if (!File.Exists(Config.AsarPath))
-                Log("Asar not found at provided path, not applying any patches.\n", ConsoleColor.Red);
-            else if (Config.Patches.Count == 0)
-                Log("Path to Asar provided, but no patches were registerd to be applied.\n", ConsoleColor.Red);
-            else
-            {
-                foreach (var patch in Config.Patches)
-                {
-                    Lognl($"- Applying patch '{patch}'...  ", ConsoleColor.Yellow);
-
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch}\" \"{Config.TempPath}\"");
-
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Failure!", ConsoleColor.Red);
-                        return false;
-                    }
-                }
-
-                Log("Patching Success!", ConsoleColor.Green);
-                Console.WriteLine();
             }
 
             Log("Marking ROM as non-volatile...", ConsoleColor.Yellow);
@@ -1358,450 +1031,443 @@ namespace LunarHelper
             }
         }
 
-        static private Result ImportGlobalData()
+        static private bool ImportGlobalData()
         {
             Log("Global Data", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.GlobalDataPath))
+
+            ProcessStartInfo psi;
+            Process p;
+            string globalDataROMPath = Path.Combine(
+                Path.GetFullPath(Path.GetDirectoryName(Config.GlobalDataPath)),
+                Path.GetFileNameWithoutExtension(Config.GlobalDataPath) + ".smc");
+
+            //Apply patch to clean ROM
             {
-                Log("No path to Global Data BPS provided, no global data will be imported.", ConsoleColor.Red);
-                return Result.NotSpecified;
+                var fullPatchPath = Path.GetFullPath(Config.GlobalDataPath);
+                var fullCleanPath = Path.GetFullPath(Config.CleanPath);
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                psi = new ProcessStartInfo(Config.FlipsPath,
+                        $"--apply \"{fullPatchPath}\" \"{fullCleanPath}\" \"{globalDataROMPath}\"");
+                p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Global Data Patch Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Global Data Patch Failure!", ConsoleColor.Red);
+                    return false;
+                }
             }
-            else if (!File.Exists(Config.GlobalDataPath))
+
+            //Overworld
             {
-                Log("No path to Global Data BPS file found at the path provided, no global data will be imported.", ConsoleColor.Red);
-                return Result.NotFound;
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-TransferOverworld \"{Config.TempPath}\" \"{globalDataROMPath}\"");
+                p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Overworld Import Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Overworld Import Failure!", ConsoleColor.Red);
+                    return false;
+                }
             }
-            else
+
+            //Global EX Animations
             {
-                ProcessStartInfo psi;
-                Process p;
-                string globalDataROMPath = Path.Combine(
-                    Path.GetFullPath(Path.GetDirectoryName(Config.GlobalDataPath)),
-                    Path.GetFileNameWithoutExtension(Config.GlobalDataPath) + ".smc");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-TransferLevelGlobalExAnim \"{Config.TempPath}\" \"{globalDataROMPath}\"");
+                p = Process.Start(psi);
+                p.WaitForExit();
 
-                //Apply patch to clean ROM
+                if (p.ExitCode == 0)
+                    Log("Global EX Animation Import Success!", ConsoleColor.Green);
+                else
                 {
-                    var fullPatchPath = Path.GetFullPath(Config.GlobalDataPath);
-                    var fullCleanPath = Path.GetFullPath(Config.CleanPath);
-
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    psi = new ProcessStartInfo(Config.FlipsPath,
-                            $"--apply \"{fullPatchPath}\" \"{fullCleanPath}\" \"{globalDataROMPath}\"");
-                    p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Global Data Patch Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Global Data Patch Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
+                    Log("Global EX Animation Import Failure!", ConsoleColor.Red);
+                    return false;
                 }
-
-                //Overworld
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-TransferOverworld \"{Config.TempPath}\" \"{globalDataROMPath}\"");
-                    p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Overworld Import Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Overworld Import Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
-                }
-
-                //Global EX Animations
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-TransferLevelGlobalExAnim \"{Config.TempPath}\" \"{globalDataROMPath}\"");
-                    p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Global EX Animation Import Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Global EX Animation Import Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
-                }
-
-                //Title Screen
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-TransferTitleScreen \"{Config.TempPath}\" \"{globalDataROMPath}\"");
-                    p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Title Screen Import Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Title Screen Import Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
-                }
-
-                //Credits
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-TransferCredits \"{Config.TempPath}\" \"{globalDataROMPath}\"");
-                    p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Credits Import Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Credits Import Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
-                }
-
-                if (File.Exists(globalDataROMPath))
-                    File.Delete(globalDataROMPath);
-
-                Log("All Global Data Imported!", ConsoleColor.Green);
-                Console.WriteLine();
             }
-            return Result.Success;
+
+            //Title Screen
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-TransferTitleScreen \"{Config.TempPath}\" \"{globalDataROMPath}\"");
+                p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Title Screen Import Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Title Screen Import Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            //Credits
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-TransferCredits \"{Config.TempPath}\" \"{globalDataROMPath}\"");
+                p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                    Log("Credits Import Success!", ConsoleColor.Green);
+                else
+                {
+                    Log("Credits Import Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            if (File.Exists(globalDataROMPath))
+                File.Delete(globalDataROMPath);
+
+            Log("All Global Data Imported!", ConsoleColor.Green);
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ImportSharedPalettes()
+        static private bool ImportSharedPalettes()
         {
             Log("Shared Palette", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.SharedPalettePath))
-            {
-                Log("No path to Shared Palette provided, no palette will be imported.", ConsoleColor.Red);
-                return Result.NotSpecified;
-            }
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportSharedPalette \"{Config.TempPath}\" \"{Config.SharedPalettePath}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("Shared Palette Import Success!", ConsoleColor.Green);
             else
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ImportSharedPalette \"{Config.TempPath}\" \"{Config.SharedPalettePath}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Shared Palette Import Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Shared Palette Import Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
-                Console.WriteLine();
+                Log("Shared Palette Import Failure!", ConsoleColor.Red);
+                return false;
             }
-            return Result.Success;
+
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ImportTitleMoves()
+        static private bool ImportTitleMoves()
         {
             Log("Title Moves", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.TitleMovesPath))
-            {
-                Log("No path to Title Moves provided, no title moves will be imported.", ConsoleColor.Red);
-                return Result.NotSpecified;
-            }
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportTitleMoves \"{Config.TempPath}\" \"{Config.TitleMovesPath}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("Title Moves Import Success!", ConsoleColor.Green);
             else
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ImportTitleMoves \"{Config.TempPath}\" \"{Config.TitleMovesPath}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("Title Moves Import Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("Title Moves Import Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
-                Console.WriteLine();
+                Log("Title Moves Import Failure!", ConsoleColor.Red);
+                return false;
             }
-            return Result.Success;
+
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ImportMap16()
+        static private bool ImportMap16()
         {
             Log("Map16", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.Map16Path))
+
+            if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
+                Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+            else
             {
-                Log("No path to map16 provided, no map16 will be imported.", ConsoleColor.Red);
-                return Result.NotSpecified;
+                string humanReadableDirectory;
+                if (!string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
+                    humanReadableDirectory = Config.HumanReadableMap16Directory;
+                else
+                    humanReadableDirectory = Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path));
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
+                            $"--to-map16 \"{humanReadableDirectory}\" \"{Config.Map16Path}\"");
+                var proc = Process.Start(process);
+                proc.WaitForExit();
+
+                if (proc.ExitCode == 0)
+                {
+                    Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
+                }
+                else
+                {
+                    Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportAllMap16 \"{Config.TempPath}\" \"{Config.Map16Path}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+            {
+                Log("Map16 Import Success!", ConsoleColor.Green);
+                Console.WriteLine();
+                return true;
             }
             else
             {
-                if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
-                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
-                else
-                {
-                    string humanReadableDirectory;
-                    if (!string.IsNullOrWhiteSpace(Config.HumanReadableMap16Directory))
-                        humanReadableDirectory = Config.HumanReadableMap16Directory;
-                    else
-                        humanReadableDirectory = Path.Combine(Path.GetDirectoryName(Config.Map16Path), Path.GetFileNameWithoutExtension(Config.Map16Path));
-
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo process = new ProcessStartInfo(Config.HumanReadableMap16CLI,
-                                $"--to-map16 \"{humanReadableDirectory}\" \"{Config.Map16Path}\"");
-                    var proc = Process.Start(process);
-                    proc.WaitForExit();
-
-                    if (proc.ExitCode == 0)
-                    {
-                        Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
-                    }
-                    else
-                    {
-                        Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
-                        return Result.Error;
-                    }
-                }
-
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                            $"-ImportAllMap16 \"{Config.TempPath}\" \"{Config.Map16Path}\"");
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                {
-                    Log("Map16 Import Success!", ConsoleColor.Green);
-                    Console.WriteLine();
-                    return Result.Success;
-                }
-                else
-                {
-                    Log("Map16 Import Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
+                Log("Map16 Import Failure!", ConsoleColor.Red);
+                return false;
             }
         }
 
-        static private Result ApplyGPS()
+        static private bool ApplyGPS()
         {
             Log("GPS", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.GPSPath))
-            {
-                Log("No path to GPS provided, no blocks will be inserted.", ConsoleColor.Red);
-                return Result.NotSpecified;
-            }
-            else if (!File.Exists(Config.GPSPath))
-            {
-                Log("GPS not found at provided path, no blocks will be inserted.", ConsoleColor.Red);
-                return Result.NotFound;
-            }
+
+            var dir = Path.GetFullPath(Path.GetDirectoryName(Config.GPSPath));
+            var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+
+            ProcessStartInfo psi = new ProcessStartInfo(Config.GPSPath, $"-l \"{dir}/list.txt\" {Config.GPSOptions ?? ""} \"{rom}\"");
+            psi.RedirectStandardInput = true;
+            psi.WorkingDirectory = dir;
+
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("GPS Success!", ConsoleColor.Green);
             else
             {
-                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.GPSPath));
-                var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
-                Console.ForegroundColor = ConsoleColor.Yellow;
-
-                ProcessStartInfo psi = new ProcessStartInfo(Config.GPSPath, $"-l \"{dir}/list.txt\" {Config.GPSOptions ?? ""} \"{rom}\"");
-                psi.RedirectStandardInput = true;
-                psi.WorkingDirectory = dir;
-
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("GPS Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("GPS Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
-                Console.WriteLine();
+                Log("GPS Failure!", ConsoleColor.Red);
+                return false;
             }
-            return Result.Success;
+
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ApplyAddmusicK()
+        static private bool ApplyAddmusicK()
         {
             Log("AddmusicK", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.AddMusicKPath))
+            var dir = Path.GetFullPath(Path.GetDirectoryName(Config.AddMusicKPath));
+
+            // create bin folder if missing
             {
-                Log("No path to AddmusicK provided, no music will be inserted.", ConsoleColor.Red);
-                return Result.NotSpecified;
+                string bin = Path.Combine(dir, "asm", "SNES", "bin");
+                if (!Directory.Exists(bin))
+                    Directory.CreateDirectory(bin);
             }
-            else if (!File.Exists(Config.AddMusicKPath))
-            {
-                Log("AddmusicK not found at provided path, no music will be inserted.", ConsoleColor.Red);
-                return Result.NotFound;
-            }
+
+            var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+
+            ProcessStartInfo psi = new ProcessStartInfo(Config.AddMusicKPath, $" -noblock {Config.AddmusicKOptions ?? ""} \"{rom}\"");
+            psi.RedirectStandardInput = true;
+            psi.WorkingDirectory = dir;
+
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("AddmusicK Success!", ConsoleColor.Green);
             else
             {
-                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.AddMusicKPath));
-
-                // create bin folder if missing
-                {
-                    string bin = Path.Combine(dir, "asm", "SNES", "bin");
-                    if (!Directory.Exists(bin))
-                        Directory.CreateDirectory(bin);
-                }
-
-                var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
-                Console.ForegroundColor = ConsoleColor.Yellow;
-
-                ProcessStartInfo psi = new ProcessStartInfo(Config.AddMusicKPath, $" -noblock {Config.AddmusicKOptions ?? ""} \"{rom}\"");
-                psi.RedirectStandardInput = true;
-                psi.WorkingDirectory = dir;
-
-                var p = Process.Start(psi);
-                p.WaitForExit();
-
-                if (p.ExitCode == 0)
-                    Log("AddmusicK Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("AddmusicK Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
-                Console.WriteLine();
+                Log("AddmusicK Failure!", ConsoleColor.Red);
+                return false;
             }
-            return Result.Success;
+
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ApplyUberASM()
+        static private bool ApplyUberASM()
         {
             Log("UberASM", ConsoleColor.Cyan);
-            if (string.IsNullOrWhiteSpace(Config.UberASMPath))
+            var dir = Path.GetFullPath(Path.GetDirectoryName(Config.UberASMPath));
+
+            // create work folder if missing
             {
-                Log("No path to UberASM Tool provided, no UberASM will be inserted.", ConsoleColor.Red);
-                return Result.NotSpecified;
+                string bin = Path.Combine(dir, "asm", "work");
+                if (!Directory.Exists(bin))
+                    Directory.CreateDirectory(bin);
             }
-            else if (!File.Exists(Config.UberASMPath))
-            {
-                Log("UberASM Tool not found at provided path, no UberASM will be inserted.", ConsoleColor.Red);
-                return Result.NotFound;
-            }
+
+            var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+
+            ProcessStartInfo psi = new ProcessStartInfo(Config.UberASMPath, $"{Config.UberASMOptions ?? "list.txt"} \"{rom}\"");
+            psi.RedirectStandardInput = true;
+            psi.RedirectStandardOutput = true;
+            psi.WorkingDirectory = dir;
+
+            StringBuilder uberasm_output = new StringBuilder();
+
+            var p = Process.Start(psi);
+            p.OutputDataReceived += (sender, args) => { 
+                uberasm_output.AppendLine(args.Data); 
+                Log(args.Data, ConsoleColor.Yellow); 
+            };
+            p.BeginOutputReadLine();
+            p.WaitForExit();
+
+            string output = uberasm_output.ToString();
+
+            if (output.Contains(uberasm_success_string))
+                Log("UberASM Success!", ConsoleColor.Green);
             else
             {
-                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.UberASMPath));
-
-                // create work folder if missing
-                {
-                    string bin = Path.Combine(dir, "asm", "work");
-                    if (!Directory.Exists(bin))
-                        Directory.CreateDirectory(bin);
-                }
-
-                var rom = Path.GetRelativePath(dir, Path.GetFullPath(Config.TempPath));
-                Console.ForegroundColor = ConsoleColor.Yellow;
-
-                ProcessStartInfo psi = new ProcessStartInfo(Config.UberASMPath, $"{Config.UberASMOptions ?? "list.txt"} \"{rom}\"");
-                psi.RedirectStandardInput = true;
-                psi.RedirectStandardOutput = true;
-                psi.WorkingDirectory = dir;
-
-                StringBuilder uberasm_output = new StringBuilder();
-
-                var p = Process.Start(psi);
-                p.OutputDataReceived += (sender, args) => { 
-                    uberasm_output.AppendLine(args.Data); 
-                    Log(args.Data, ConsoleColor.Yellow); 
-                };
-                p.BeginOutputReadLine();
-                p.WaitForExit();
-
-                string output = uberasm_output.ToString();
-
-                if (output.Contains(uberasm_success_string))
-                    Log("UberASM Success!", ConsoleColor.Green);
-                else
-                {
-                    Log("UberASM Failure!", ConsoleColor.Red);
-                    return Result.Error;
-                }
-
-                Console.WriteLine();
+                Log("UberASM Failure!", ConsoleColor.Red);
+                return false;
             }
-            return Result.Success;
+
+            Console.WriteLine();
+
+            return true;
         }
 
-        static private Result ApplyPixi()
+        static private bool ApplyPixi()
         {
-            if (string.IsNullOrWhiteSpace(Config.PixiPath))
-            {
-                Log("No path to Pixi provided, no sprites will be inserted.\n", ConsoleColor.Red);
-                return Result.NotSpecified;
-            }
-            else if (!File.Exists(Config.PixiPath))
-            {
-                Log("Pixi not found at provided path, no sprites will be inserted.\n", ConsoleColor.Red);
-                return Result.NotFound;
-            }
+            Log("PIXI", ConsoleColor.Cyan);
+
+            var dir = Path.GetFullPath(Path.GetDirectoryName(Config.PixiPath));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+
+            ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"{Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
+            psi.RedirectStandardInput = true;
+
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("Pixi Success!", ConsoleColor.Green);
             else
             {
-                var dir = Path.GetFullPath(Path.GetDirectoryName(Config.PixiPath));
-                var list = Path.Combine(dir, "list.txt");
+                Log("Pixi Failure!", ConsoleColor.Red);
+                return false;
+            }
+
+            Console.WriteLine();
+            return true;
+        }
+
+        static private bool ImportGraphics()
+        {
+            Log("Graphics", ConsoleColor.Cyan);
+            {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-
-                ProcessStartInfo psi = new ProcessStartInfo(Config.PixiPath, $"{Config.PixiOptions ?? ""} \"{Config.TempPath}\"");
-                psi.RedirectStandardInput = true;
-
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                            $"-ImportGFX \"{Config.TempPath}\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
 
                 if (p.ExitCode == 0)
-                    Log("Pixi Success!", ConsoleColor.Green);
+                    Log("Import Graphics Success!", ConsoleColor.Green);
                 else
                 {
-                    Log("Pixi Failure!", ConsoleColor.Red);
-                    return Result.Error;
+                    Log("Import Graphics Failure!", ConsoleColor.Red);
+                    return false;
                 }
 
                 Console.WriteLine();
+                return true;
             }
-            return Result.Success;
         }
 
-        static private bool ImportLevels(bool reinsert)
+        static private bool ImportSingleLevel(string level_path)
         {
-            var romPath = (reinsert ? Config.OutputPath : Config.TempPath);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportLevel \"{Config.TempPath}\" \"{level_path}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
 
-            Log("Levels", ConsoleColor.Cyan);
-            if (reinsert && !File.Exists(romPath))
-                Log("Output ROM does not exist! Build first.", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(Config.LevelsPath))
-                Log("No path to Levels provided, no levels will be imported.", ConsoleColor.Red);
+            if (p.ExitCode != 0)
+            {
+                Log($"Level import failure on '{level_path}'!", ConsoleColor.Red);
+                return false;
+            }
+
+            return true;
+        }
+
+        static private bool ImportExGraphics()
+        {
+            Log("ExGraphics", ConsoleColor.Cyan);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportExGFX \"{Config.TempPath}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("Import ExGraphics Success!", ConsoleColor.Green);
             else
             {
-                // import levels
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
-                                $"-ImportMultLevels \"{romPath}\" \"{Config.LevelsPath}\" {Config.LunarMagicLevelImportFlags ?? ""}");
-                    var p = Process.Start(psi);
-                    p.WaitForExit();
-
-                    if (p.ExitCode == 0)
-                        Log("Levels Import Success!", ConsoleColor.Green);
-                    else
-                    {
-                        Log("Levels Import Failure!", ConsoleColor.Red);
-                        return false;
-                    }
-
-                    Console.WriteLine();
-                }
+                Log("Import ExGraphics Failure!", ConsoleColor.Red);
+                return false;
             }
+
+            Console.WriteLine();
+            return true;
+        }
+
+        static private bool ApplyAsarPatch(string patch_path)
+        {
+            Lognl($"- Applying patch '{patch_path}'...  ", ConsoleColor.Yellow);
+
+            ProcessStartInfo psi = new ProcessStartInfo(Config.AsarPath, $"{Config.AsarOptions ?? ""} \"{patch_path}\" \"{Config.TempPath}\"");
+
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+            {
+                Log("Success!\n", ConsoleColor.Green);
+                return true;
+            }
+            else
+            {
+                Log("Failure!\n", ConsoleColor.Red);
+                return false;
+            }
+        }
+
+        static private bool ImportLevels()
+        {
+            Log("Levels", ConsoleColor.Cyan);
+            // import levels
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                        $"-ImportMultLevels \"{Config.TempPath}\" \"{Config.LevelsPath}\" {Config.LunarMagicLevelImportFlags ?? ""}");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+                Log("Levels Import Success!", ConsoleColor.Green);
+            else
+            {
+                Log("Levels Import Failure!", ConsoleColor.Red);
+                return false;
+            }
+
+            Console.WriteLine();
 
             return true;
         }

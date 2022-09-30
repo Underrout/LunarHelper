@@ -4,27 +4,24 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using QuickGraph;
 
 namespace LunarHelper
 {
     class BuildPlan
     {
-        public bool uptodate { get; set; } = true;
-        public bool rebuild { get; set; } = false;
-        public bool apply_gps { get; set; } = false;
-        public bool apply_pixi { get; set; } = false;
-        public bool may_need_two_pixi_passes { get; set; } = false;
-        public bool apply_uberasm { get; set; } = false;
-        public bool apply_addmusick { get; set; } = false;
-        public bool insert_map16 { get; set; } = false;
-        public bool insert_gfx { get; set; } = false;
-        public bool insert_exgfx { get; set; } = false;
-        public bool insert_shared_palettes { get; set; } = false;
-        public bool insert_global_patch { get; set; } = false;
-        public bool insert_title_moves { get; set; } = false;
-        public IList<string> patches_to_apply { get; set; } = new List<string>();
-        public IList<string> levels_to_insert { get; set; } = new List<string>();
-        public bool insert_all_levels { get; set; } = false;
+        public class MustRebuildException : Exception
+        {
+            public MustRebuildException() : base()
+            {
+
+            }
+
+            public MustRebuildException(string message) : base(message)
+            {
+
+            }
+        }
 
         public class CannotBuildException : Exception
         {
@@ -34,10 +31,8 @@ namespace LunarHelper
             }
         }
 
-        public static BuildPlan PlanBuild(Config config, DependencyGraph dependency_graph)
+        public static List<Insertable> PlanQuickBuild(Config config, DependencyGraph dependency_graph)
         {
-            var plan = new BuildPlan();
-
             // check whether we need to rebuild completely
 
             Program.Log("Analyzing previous build result", ConsoleColor.Cyan);
@@ -45,9 +40,7 @@ namespace LunarHelper
             if (!File.Exists(config.OutputPath))
             {
                 Program.Log("No previously built ROM found, rebuilding ROM...", ConsoleColor.Yellow);
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
+                throw new MustRebuildException();
             }
 
             Program.Log($"Previously built ROM found at '{config.OutputPath}'!", ConsoleColor.Green);
@@ -57,9 +50,7 @@ namespace LunarHelper
             {
                 Program.Log("No previous build report found, rebuilding ROM...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
+                throw new MustRebuildException();
             }
 
             Report report;
@@ -83,28 +74,14 @@ namespace LunarHelper
             {
                 Program.Log("Previous build report was found but corrupted, rebuilding ROM...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
+                throw new MustRebuildException();
             }
 
             if (report.report_format_version != Report.REPORT_FORMAT_VERSION)
             {
                 Program.Log("Previous build report found but used old format, rebuilding ROM...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
-            }
-
-            foreach (var patch_root in dependency_graph.patch_roots)
-            {
-                if (patch_root is not PatchRootVertex)
-                {
-                    var exception = new CannotBuildException($"Patch \"{((MissingFileOrDirectoryVertex)patch_root).uri.LocalPath}\" could not be found!");
-                    Program.Error(exception.Message);
-                    throw exception;
-                }
+                throw new MustRebuildException();
             }
 
             IEnumerable<PatchRootVertex> patch_roots = dependency_graph.patch_roots.Cast<PatchRootVertex>();
@@ -113,9 +90,7 @@ namespace LunarHelper
             if (need_rebuild)
             {
                 Program.Log("Previously built ROM contains patches that need to be removed, rebuilding ROM...", ConsoleColor.Yellow);
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
+                throw new MustRebuildException();
             }
 
             Dictionary<string, string> oldLevels = report.levels;
@@ -131,9 +106,7 @@ namespace LunarHelper
                 {
                     Program.Log("Previously built ROM contains levels that need to be removed, rebuilding ROM...", ConsoleColor.Yellow);
                     Console.WriteLine();
-                    plan.rebuild = true;
-                    plan.uptodate = false;
-                    return plan;
+                    throw new MustRebuildException();
                 }
             }
 
@@ -141,23 +114,23 @@ namespace LunarHelper
             {
                 Program.Log("Change in initial patch detected, rebuilding ROM...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.rebuild = true;
-                plan.uptodate = false;
-                return plan;
+                throw new MustRebuildException();
             }
 
             Program.Log("Attempting to reuse previously built ROM...", ConsoleColor.Cyan);
             Console.WriteLine();
 
             var tools = new[]
-{
-                ("GPS", ToolRootVertex.Tool.Gps, dependency_graph.gps_root, config.GPSOptions, report.gps_options),
-                ("PIXI", ToolRootVertex.Tool.Pixi, dependency_graph.pixi_root, config.PixiOptions, report.pixi_options),
-                ("AddmusicK", ToolRootVertex.Tool.Amk, dependency_graph.amk_root, config.AddmusicKOptions, report.addmusick_options),
-                ("UberASM Tool", ToolRootVertex.Tool.UberAsm, dependency_graph.uberasm_root, config.UberASMOptions, report.uberasm_options)
+            {           
+                ("GPS", InsertableType.Gps, ToolRootVertex.Tool.Gps, dependency_graph.gps_root, config.GPSOptions, report.gps_options),
+                ("PIXI", InsertableType.Pixi, ToolRootVertex.Tool.Pixi, dependency_graph.pixi_root, config.PixiOptions, report.pixi_options),
+                ("AddmusicK", InsertableType.AddMusicK, ToolRootVertex.Tool.Amk, dependency_graph.amk_root, config.AddmusicKOptions, report.addmusick_options),
+                ("UberASM Tool", InsertableType.UberAsm, ToolRootVertex.Tool.UberAsm, dependency_graph.uberasm_root, config.UberASMOptions, report.uberasm_options)
             };
 
-            foreach ((var tool_name, var tool_type, ToolRootVertex tool_root, string new_options, string old_options) in tools)
+            var require_insertion = new List<Insertable>();
+
+            foreach ((var tool_name, var insertable_type, var tool_type, ToolRootVertex tool_root, string new_options, string old_options) in tools)
             {
                 Program.Log($"Analyzing {tool_name} dependencies...", ConsoleColor.Cyan);
 
@@ -165,26 +138,8 @@ namespace LunarHelper
                 {
                     Program.Log($"{tool_name} command line options changed from \"{old_options}\" to \"{new_options}\", {tool_name} will be reinserted...",
                         ConsoleColor.Yellow);
-                    plan.uptodate = false;
 
-                    switch (tool_type)
-                    {
-                        case ToolRootVertex.Tool.Gps:
-                            plan.apply_gps = true;
-                            break;
-
-                        case ToolRootVertex.Tool.Pixi:
-                            plan.apply_pixi = true;
-                            break;
-
-                        case ToolRootVertex.Tool.Amk:
-                            plan.apply_addmusick = true;
-                            break;
-
-                        case ToolRootVertex.Tool.UberAsm:
-                            plan.apply_uberasm = true;
-                            break;
-                    }
+                    require_insertion.Add(new Insertable(insertable_type));
                     Console.WriteLine();
                     continue;
                 }
@@ -198,7 +153,8 @@ namespace LunarHelper
                 {
                     if (result == DependencyGraphAnalyzer.Result.NoRoots)
                     {
-                        Program.Log($"No old or new {tool_name} dependencies found, tool will not be inserted", ConsoleColor.Red);
+                        Program.Log($"No old or new {tool_name} dependencies found, tool will not be inserted", ConsoleColor.Yellow);
+                        Console.WriteLine();
                         continue;
                     }
                     else if (result == DependencyGraphAnalyzer.Result.OldRoot)
@@ -211,26 +167,7 @@ namespace LunarHelper
 
                     Program.Log(GetQuickBuildReasonString(config, tool_name, result, dependency_chain), ConsoleColor.Yellow);
 
-                    plan.uptodate = false;
-
-                    switch (tool_type)
-                    {
-                        case ToolRootVertex.Tool.Gps:
-                            plan.apply_gps = true;
-                            break;
-
-                        case ToolRootVertex.Tool.Pixi:
-                            plan.apply_pixi = true;
-                            break;
-
-                        case ToolRootVertex.Tool.Amk:
-                            plan.apply_addmusick = true;
-                            break;
-
-                        case ToolRootVertex.Tool.UberAsm:
-                            plan.apply_uberasm = true;
-                            break;
-                    }
+                    require_insertion.Add(new Insertable(insertable_type));
                 }
                 Console.WriteLine();
             }
@@ -242,8 +179,7 @@ namespace LunarHelper
             {
                 Program.Log($"asar command line options changed from \"{report.asar_options}\" to \"{config.AsarOptions}\", all patches will be reinserted...\n",
                     ConsoleColor.Yellow);
-                plan.patches_to_apply = patch_roots.Select(p => p.normalized_relative_patch_path).ToList();
-                plan.uptodate = false;
+                require_insertion.AddRange(patch_roots.Select(p => new Insertable(InsertableType.SinglePatch, p.normalized_relative_patch_path)));
             }
             else
             {
@@ -255,8 +191,7 @@ namespace LunarHelper
                         Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
                             ConsoleColor.Yellow);
                         Console.WriteLine();
-                        plan.patches_to_apply.Add(patch_root.normalized_relative_patch_path);
-                        plan.uptodate = false;
+                        require_insertion.Add(new Insertable(InsertableType.SinglePatch, patch_root.normalized_relative_patch_path));
                     }
                 }
 
@@ -278,8 +213,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in GFX detected, will insert GFX...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_gfx = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.Graphics));
             }
             else
             {
@@ -293,8 +227,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in ExGFX detected, will insert ExGFX...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_exgfx = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.ExGraphics));
             }
             else
             {
@@ -327,8 +260,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in map16 detected, will insert map16...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_map16 = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.Map16));
             }
             else
             {
@@ -342,8 +274,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in title moves detected, will insert title moves...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_title_moves = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.TitleMoves));
             }
             else
             {
@@ -357,8 +288,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in shared palettes detected, will insert shared palettes...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_shared_palettes = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.SharedPalettes));
             }
             else
             {
@@ -371,8 +301,7 @@ namespace LunarHelper
             {
                 Program.Log("Change in global data detected, will insert global data...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_global_patch = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.GlobalData));
             }
             else
             {
@@ -383,25 +312,27 @@ namespace LunarHelper
             Program.Log("Checking for level changes...", ConsoleColor.Cyan);
             if (report.lunar_magic_level_import_flags == config.LunarMagicLevelImportFlags)
             {
+                bool any_levels_changed = false;
+
                 foreach (var (level, hash) in newLevels)
                 {
                     if (!oldLevels.ContainsKey(level))
                     {
+                        any_levels_changed = true;
                         Program.Log($"New level '{level}' detected, will be inserted...", ConsoleColor.Yellow);
                         Console.WriteLine();
-                        plan.levels_to_insert.Add(level);
-                        plan.uptodate = false;
+                        require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
                     }
                     else if (oldLevels[level] != hash)
                     {
+                        any_levels_changed = true;
                         Program.Log($"Changed level '{level}' detected, will be reinserted...", ConsoleColor.Yellow);
                         Console.WriteLine();
-                        plan.levels_to_insert.Add(level);
-                        plan.uptodate = false;
+                        require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
                     }
                 }
 
-                if (plan.levels_to_insert.Count == 0)
+                if (!any_levels_changed)
                 {
                     Program.Log("Levels already up-to-date!\n", ConsoleColor.Green);
                 }
@@ -410,19 +341,82 @@ namespace LunarHelper
             {
                 Program.Log("Change in Lunar Magic level import flags detected, reinserting all levels...", ConsoleColor.Yellow);
                 Console.WriteLine();
-                plan.insert_all_levels = true;
-                plan.uptodate = false;
+                require_insertion.Add(new Insertable(InsertableType.Levels));
             }
 
             // log whether already up to date
 
-            if (plan.uptodate)
+            if (require_insertion.Count == 0)
             {
                 Program.Log("Previously built ROM should already be up to date!", ConsoleColor.Green);
                 Console.WriteLine();
             }
 
-            return plan;
+            return DetermineQuickBuildInsertionOrder(require_insertion, config.QuickBuildTriggerGraph);
+        }
+
+        private static List<Insertable> DetermineQuickBuildInsertionOrder(List<Insertable> detected_changes, 
+            BidirectionalGraph<Insertable, Edge<Insertable>> trigger_graph)
+        {
+            var graph_copy = trigger_graph.Clone();
+
+            List<Insertable> insertion_order = new List<Insertable>();
+
+            HashSet<Insertable> triggered_insertions = new HashSet<Insertable>();
+
+            while (graph_copy.VertexCount != 0)
+            {
+                // find vertex with no in-edges, we know one must exist whil there is at least one
+                // vertex in the graph, since the graph is acyclic
+                var source = graph_copy.Vertices.First(v => graph_copy.InDegree(v) == 0);
+
+                var corresponding_changes = GatherInsertables(source, detected_changes);
+                detected_changes.RemoveAll(x => corresponding_changes.Contains(x));
+
+                if (corresponding_changes.Count != 0)
+                {
+                    insertion_order.AddRange(corresponding_changes);
+
+                    // our source had a change, this should trigger reinsertion of all neighbors of 
+                    // this vertex
+                    triggered_insertions = triggered_insertions.Concat(graph_copy.OutEdges(source).Select(e => e.Target)).ToHashSet();
+                }
+                else if (triggered_insertions.Contains(source))
+                {
+                    // our vertex has no changes of its own but was triggered by some previous source
+                    // vertex having had changes in its subtree, reinsert our vertex and also trigger
+                    // reinsertion of our neighboring vertices
+                    insertion_order.Add(source);
+                    triggered_insertions = triggered_insertions.Concat(graph_copy.OutEdges(source).Select(e => e.Target)).ToHashSet();
+                    triggered_insertions.Remove(source);
+                }
+
+                // remove our current vertex so that we can find a new source vertex in the next iteration
+                graph_copy.RemoveVertex(source);
+            }
+
+            foreach (var non_trigger_change in detected_changes)
+            {
+                insertion_order.Add(non_trigger_change);
+            }
+
+            return insertion_order;
+        }
+
+        private static List<Insertable> GatherInsertables(Insertable insertable, List<Insertable> insertables)
+        {
+            switch (insertable.type)
+            {
+                case InsertableType.Levels:
+                    return insertables.FindAll(i => i.type == InsertableType.Levels || i.type == InsertableType.SingleLevel);
+
+                case InsertableType.SinglePatch:
+                    return insertables.FindAll(i => i.type == InsertableType.SinglePatch
+                        && i.normalized_relative_path == insertable.normalized_relative_path);
+
+                default:
+                    return insertables.FindAll(i => i.type == insertable.type);
+            }
         }
 
         private static string GetQuickBuildReasonString(Config config, string resource_name, DependencyGraphAnalyzer.Result result, IEnumerable<Vertex> dependency_chain)
@@ -491,6 +485,28 @@ namespace LunarHelper
             }
 
             return builder.ToString();
+        }
+
+        public static List<Insertable> PlanBuild(Config config)
+        {
+            List<Insertable> plan = new List<Insertable>();
+
+            foreach (var insertable in config.BuildOrder)
+            {
+                if (insertable.type == InsertableType.Patches)
+                {
+                    plan.AddRange(
+                        config.Patches.Select(p => new Insertable(InsertableType.SinglePatch, p)).ToList()
+                        .FindAll(i => !config.BuildOrder.Contains(i))
+                    );  // add all patches from the list that are not otherwise mentioned in the build order 
+                }
+                else
+                {
+                    plan.Add(insertable);
+                }
+            }
+
+            return plan;
         }
     }
 }
