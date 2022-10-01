@@ -1,4 +1,4 @@
-using QuickGraph;
+﻿using QuickGraph;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -333,6 +333,9 @@ namespace LunarHelper
 
             foreach ((var trigger, var insertable) in config.QuickBuildTriggers)
             {
+                if (!config.BuildOrder.Contains(trigger) || !config.BuildOrder.Contains(insertable))
+                    throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");
+
                 trigger_graph.AddVertex(trigger);
                 trigger_graph.AddVertex(insertable);
                 trigger_graph.AddEdge(new Edge<Insertable>(trigger, insertable));
