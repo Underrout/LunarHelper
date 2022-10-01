@@ -364,12 +364,12 @@ namespace LunarHelper
             }
             catch (BuildPlan.MustRebuildException)
             {
-                return Build();
+                return Build(invoked_from_cli, volatile_resource_handling_preference, true);
             }
             catch (Exception e)
             {
                 Log($"Encountered exception: '{e.Message}' while planning quick build, falling back to full rebuild...", ConsoleColor.Yellow);
-                return Build();
+                return Build(invoked_from_cli, volatile_resource_handling_preference, true);
             }
             
             if (plan.Count == 0)
@@ -832,14 +832,14 @@ namespace LunarHelper
             }
         }
 
-        static private bool Build(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ')
+        static private bool Build(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ', bool skip_volatile_check = false)
         {
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile();
             else
                 profile_manager.DeleteCurrentProfileFile();
 
-            if (!HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
+            if (!skip_volatile_check && !HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
             {
                 return false;
             }
