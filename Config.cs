@@ -352,8 +352,17 @@ namespace LunarHelper
 
             foreach ((var trigger, var insertable) in config.QuickBuildTriggers)
             {
-                if (!config.BuildOrder.Contains(trigger) || !config.BuildOrder.Contains(insertable))
-                    throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");
+                if (!config.BuildOrder.Contains(trigger))
+                {
+                    if (trigger.type != InsertableType.SinglePatch || !config.BuildOrder.Any(i => i.type == InsertableType.Patches))
+                        throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");
+                }
+
+                if (!config.BuildOrder.Contains(insertable))
+                {
+                    if (insertable.type != InsertableType.SinglePatch || !config.BuildOrder.Any(i => i.type == InsertableType.Patches))
+                        throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");
+                }
 
                 trigger_graph.AddVertex(trigger);
                 trigger_graph.AddVertex(insertable);
