@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using QuickGraph;
+using System.Reflection;
 
 namespace LunarHelper
 {
@@ -77,15 +78,25 @@ namespace LunarHelper
             }
             catch(Exception)
             {
-                Program.Log("Previous build report was found but corrupted, rebuilding ROM...", ConsoleColor.Yellow);
-                Console.WriteLine();
+                Program.Log("Previous build report was found but corrupted, rebuilding ROM...\n", ConsoleColor.Yellow);
                 throw new MustRebuildException();
             }
 
             if (report.report_format_version != Report.REPORT_FORMAT_VERSION)
             {
-                Program.Log("Previous build report found but used old format, rebuilding ROM...", ConsoleColor.Yellow);
-                Console.WriteLine();
+                Program.Log("Previous build report found but used old format, rebuilding ROM...\n", ConsoleColor.Yellow);
+                throw new MustRebuildException();
+            }
+
+            if (report.build_order_hash != Report.HashList(config.BuildOrder))
+            {
+                Program.Log("'build_order' has changed, rebuilding ROM...\n", ConsoleColor.Yellow);
+                throw new MustRebuildException();
+            }
+
+            if (report.lunar_helper_version != Assembly.GetExecutingAssembly().GetName().Version.ToString())
+            {
+                Program.Log($"Previous ROM was built with Lunar Helper {report.lunar_helper_version}, rebuilding ROM...\n", ConsoleColor.Yellow);
                 throw new MustRebuildException();
             }
 

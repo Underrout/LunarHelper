@@ -10,6 +10,7 @@ using System.Text;
 using LunarHelper;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 
 namespace LunarHelper
 {
@@ -570,6 +571,10 @@ namespace LunarHelper
             report.init_bps = Report.HashFile(Config.InitialPatch);
             report.global_data = Report.HashFile(Config.GlobalDataPath);
             report.title_moves = Report.HashFile(Config.TitleMovesPath);
+
+            report.build_order_hash = Report.HashList(Config.BuildOrder);
+
+            report.lunar_helper_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
             if (string.IsNullOrWhiteSpace(Config.HumanReadableMap16CLI))
             {

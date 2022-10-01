@@ -11,7 +11,9 @@ namespace LunarHelper
     class Report
     {
         [JsonIgnore]
-        public const int REPORT_FORMAT_VERSION = 2;
+        public const int REPORT_FORMAT_VERSION = 3;
+
+        public string lunar_helper_version { get; set; }
         public int report_format_version { get; set; }
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
@@ -33,6 +35,7 @@ namespace LunarHelper
         public string lunar_magic_level_import_flags { get; set; }
         public string asar_options { get; set; }
         public string human_readable_map16 { get; set; }
+        public int build_order_hash { get; set; }
 
         public static string HashFile(string path)
         {
@@ -85,6 +88,26 @@ namespace LunarHelper
             }
 
             return BitConverter.ToString(md5.Hash).Replace("-", "").ToLower();
+        }
+        // SOURCE END
+
+
+        // SOURCE START
+        // Source: Stack Overflow
+        // Original question: https://stackoverflow.com/q/7278136/6875882
+        // Question asked by: Andrew Hare (https://stackoverflow.com/users/34211/andrew-hare)
+        // Code taken from answer: https://stackoverflow.com/a/30758270/6875882
+        // Author of answer: nathanchere (https://stackoverflow.com/users/243557/nathanchere)
+        public static int HashList<T>(IList<T> list)
+        {
+            const int seed = 487;
+            const int modifier = 31;
+
+            unchecked
+            {
+                return list.Aggregate(seed, (current, item) =>
+                    (current * modifier) + item.GetHashCode());
+            }
         }
         // SOURCE END
     }
