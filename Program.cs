@@ -82,7 +82,9 @@ namespace LunarHelper
             {
                 bool show_profiles = profile_manager.current_profile != null;
 
-                Log("Welcome to Lunar Helper ^_^", ConsoleColor.Cyan);
+                Lognl("Welcome to Lunar Helper v", ConsoleColor.Cyan);
+                Lognl(Assembly.GetExecutingAssembly().GetName().Version.ToString().Substring(0, 5), ConsoleColor.Cyan);
+                Log(" ^_^", ConsoleColor.Cyan);
 
                 if (show_profiles)
                 {
