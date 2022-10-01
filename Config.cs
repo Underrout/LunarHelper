@@ -1,4 +1,4 @@
-﻿using QuickGraph;
+using QuickGraph;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -318,6 +318,12 @@ namespace LunarHelper
             if (config.QuickBuildTriggers == null)
             {
                 throw new Exception("'quick_build_triggers' list must be specified");
+            }
+
+            if (config.Patches.Count() != 0 && !(config.BuildOrder.Any(i => i.type == InsertableType.Patches) ||
+                config.Patches.All(p => config.BuildOrder.Contains(new Insertable(InsertableType.SinglePatch, p)))))
+            {
+                throw new Exception("Not all patches listed in 'patches' appear in 'build_order'");
             }
 
             foreach (var item in config.BuildOrder)
