@@ -10,6 +10,7 @@
 -- if defined, the initial patch will be applied before any other steps
 -- It's good idea to open your clean ROM in Lunar Magic, save it to another location, and create a patch
 -- of that saved ROM. This lets Lunar Magic apply a VRAM patch that will be required for some things
+-- two initial patches with pretty standard setups are provided with this tool for your convenience
 initial_patch = Other/initial_patch.bps
 
 -- asar
@@ -25,6 +26,48 @@ pixi_path = Tools/pixi_v1.32/pixi.exe
 pixi_options = -l Tools/pixi_v1.32/list.txt
 addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
 uberasm_path = Tools/UberASMTool14/UberASMTool.exe
+
+-- Build Order
+
+-- Specifies the order in which resources are inserted
+-- into the ROM when you use the Build function, feel free to 
+-- move items around or remove them if you're not using them
+
+-- The same step can be specified multiple times if you require things
+-- to be inserted two or more times at different points
+
+-- You can also specify individual patches in this list by just 
+-- writing out their path as it appears in the patches list above, 
+-- this patch will then be inserted at that step instead of being
+-- applied at the same time as the other Patches
+
+-- The symbols used in the list are not case-sensitive, i.e.
+-- both GPS and Gps should work and refer to the same tool
+
+build_order
+[
+	Graphics				-- Insert standard GFX
+	ExGraphics				-- Insert ExGFX
+	Map16					-- Insert Map16
+
+--  TitleMoves  			-- Uncomment this if you're inserting title moves
+
+	GlobalData				-- Insert Overworld, Title Screen and Credits 
+
+	Patches					-- Insert all remaining patches from the patches list that 
+							-- are not explicitly mentioned in this build order
+
+	PIXI					-- Insert custom sprites
+	Levels					-- Insert all levels
+
+--	PIXI					-- Uncomment this if you're using Lunar Magic 3.31 or higher
+
+	AddMusicK				-- Insert custom music
+	GPS						-- Insert custom blocks
+	UberASM					-- Insert UberASM code
+
+--  Patches/some_patch.asm  -- Example of inserting a specific patch at a different time
+]
 
 -- Optional config variables if you want to use a human readble text-based map16 format
 -- human_readable_map16_cli_path = Tools/human-readable-map16-cli.exe
@@ -52,3 +95,45 @@ global_data = Other/global_data.bps
 -- specified by test_level_dest *only* when Lunar Helper's "T - Test" option is run
 test_level = 0A7
 test_level_dest = 105
+
+-- Triggers for Quick Build (optional and advanced)
+
+-- This lets you optionally trigger additional Quick Build behavior
+
+-- In general, this should not be necessary unless you have some kind of abstract
+-- dependency between resources that requires one to be re-inserted if the 
+-- other is re-inserted
+
+-- By default, Quick Build will re-insert any resource mentioned in build_order
+-- if it detects a change in it (i.e. if a sprite's code is changed or PIXI's list
+-- file is updated, Quick Build will re-insert PIXI)
+
+-- This list lets you add onto that behavior, an entry in this list takes the form
+-- "X -> Y", meaning "if resource X is re-inserted, also re-insert resource Y afterwards",
+-- for example, "PIXI -> GPS" would cause GPS to be re-inserted by Quick Build whenever
+-- it re-inserts PIXI
+
+-- Note that these triggers cascade, i.e. if we also have the trigger "GPS -> Map16", 
+-- when PIXI is re-inserted, GPS will be re-inserted at some point afterwards and then
+-- Map16 will be re-inserted at some pointer after that, even if no change in GPS was detected
+
+-- You can use any symbol mentioned in the build_order in to specify a trigger, with the 
+-- exception of the "Patches" symbol (individual patches are fine!)
+
+-- Any re-insertions that are not the cause or effect of a trigger will be handled after 
+-- all triggers/triggered insertions have taken place
+
+quick_build_triggers
+[
+-- 	Examples of triggers
+
+-- 	PIXI -> GPS  							-- Re-insert GPS after PIXI is re-inserted
+
+-- 	GPS -> Map16							-- Re-insert Map16 after GPS is re-inserted, 
+											-- combined with the first trigger, this means that if 
+											-- PIXI is re-inserted, GPS will be re-inserted at some
+											-- point afterwards and then Map16 will be re-inserted
+											-- at some point after that
+
+--  Patches/some_patch.asm -> UberASM		-- Re-insert UberASM whenever some_patch.asm is re-inserted
+]
