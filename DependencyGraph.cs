@@ -27,25 +27,25 @@ namespace LunarHelper
             dependency_graph = new BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>>();
             resolver = new DependencyResolver(this, config);
 
-            if (resolver.CanResolveAmk())
+            if (resolver.CanResolveAmk() && config.BuildOrder.Any(i => i.type == InsertableType.AddMusicK))
             {
                 amk_root = CreateToolRootVertex(ToolRootVertex.Tool.Amk);
                 resolver.ResolveToolRootDependencies(amk_root);
             }
 
-            if (resolver.CanResolvePixi())
+            if (resolver.CanResolvePixi() && config.BuildOrder.Any(i => i.type == InsertableType.Pixi))
             {
                 pixi_root = CreateToolRootVertex(ToolRootVertex.Tool.Pixi);
                 resolver.ResolveToolRootDependencies(pixi_root);
             }
 
-            if (resolver.CanResolveGps())
+            if (resolver.CanResolveGps() && config.BuildOrder.Any(i => i.type == InsertableType.Gps))
             {
                 gps_root = CreateToolRootVertex(ToolRootVertex.Tool.Gps);
                 resolver.ResolveToolRootDependencies(gps_root);
             }
 
-            if (resolver.CanResolveUberAsm())
+            if (resolver.CanResolveUberAsm() && config.BuildOrder.Any(i => i.type == InsertableType.UberAsm))
             {
                 uberasm_root = CreateToolRootVertex(ToolRootVertex.Tool.UberAsm);
                 resolver.ResolveToolRootDependencies(uberasm_root);
@@ -69,7 +69,7 @@ namespace LunarHelper
         {
             foreach (string user_specified_patch_path in config.Patches)
             {
-                Vertex patch_root = null;
+                Vertex patch_root;
 
                 try
                 {

@@ -31,6 +31,11 @@ namespace LunarHelper
             }
         }
 
+        private static bool IsInBuildOrder(List<Insertable> build_order, InsertableType type)
+        {
+            return build_order.Any(i => i.type == type);
+        }
+
         public static List<Insertable> PlanQuickBuild(Config config, DependencyGraph dependency_graph)
         {
             // check whether we need to rebuild completely
@@ -96,7 +101,7 @@ namespace LunarHelper
             Dictionary<string, string> oldLevels = report.levels;
             Dictionary<string, string> newLevels = Program.GetLevelReport();
 
-            if (report.levels != null)
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.Levels) || report.levels != null)
             {
                 var oldLevelPaths = new HashSet<string>(report.levels.Keys);
                 var newLevelPaths = (config.LevelsPath == null || !Directory.Exists(config.LevelsPath)) ? null : 
@@ -132,6 +137,9 @@ namespace LunarHelper
 
             foreach ((var tool_name, var insertable_type, var tool_type, ToolRootVertex tool_root, string new_options, string old_options) in tools)
             {
+                if (!IsInBuildOrder(config.BuildOrder, insertable_type))
+                    continue;  // tool is not in build order, ignore
+
                 Program.Log($"Analyzing {tool_name} dependencies...", ConsoleColor.Cyan);
 
                 if (new_options != old_options)
@@ -172,33 +180,36 @@ namespace LunarHelper
                 Console.WriteLine();
             }
 
-            bool no_reinsertions = true;
-            Program.Log("Analyzing patch dependencies...", ConsoleColor.Cyan);
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.SinglePatch) || IsInBuildOrder(config.BuildOrder, InsertableType.Patches))
+            {
+                bool no_reinsertions = true;
+                Program.Log("Analyzing patch dependencies...", ConsoleColor.Cyan);
 
-            if (config.AsarOptions != report.asar_options)
-            {
-                Program.Log($"asar command line options changed from \"{report.asar_options}\" to \"{config.AsarOptions}\", all patches will be reinserted...\n",
-                    ConsoleColor.Yellow);
-                require_insertion.AddRange(patch_roots.Select(p => new Insertable(InsertableType.SinglePatch, p.normalized_relative_patch_path)));
-            }
-            else
-            {
-                foreach ((var patch_root, (var result, var dependency_chain)) in results)
+                if (config.AsarOptions != report.asar_options)
                 {
-                    if (result != DependencyGraphAnalyzer.Result.Identical)
-                    {
-                        no_reinsertions = false;
-                        Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
-                            ConsoleColor.Yellow);
-                        Console.WriteLine();
-                        require_insertion.Add(new Insertable(InsertableType.SinglePatch, patch_root.normalized_relative_patch_path));
-                    }
+                    Program.Log($"asar command line options changed from \"{report.asar_options}\" to \"{config.AsarOptions}\", all patches will be reinserted...\n",
+                        ConsoleColor.Yellow);
+                    require_insertion.AddRange(patch_roots.Select(p => new Insertable(InsertableType.SinglePatch, p.normalized_relative_patch_path)));
                 }
-
-                if (no_reinsertions)
+                else
                 {
-                    Program.Log("Patches already up-to-date!", ConsoleColor.Green);
-                    Console.WriteLine();
+                    foreach ((var patch_root, (var result, var dependency_chain)) in results)
+                    {
+                        if (result != DependencyGraphAnalyzer.Result.Identical)
+                        {
+                            no_reinsertions = false;
+                            Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
+                                ConsoleColor.Yellow);
+                            Console.WriteLine();
+                            require_insertion.Add(new Insertable(InsertableType.SinglePatch, patch_root.normalized_relative_patch_path));
+                        }
+                    }
+
+                    if (no_reinsertions)
+                    {
+                        Program.Log("Patches already up-to-date!", ConsoleColor.Green);
+                        Console.WriteLine();
+                    }
                 }
             }
 
@@ -208,140 +219,161 @@ namespace LunarHelper
 
             // gfx
 
-            Program.Log("Checking for GFX changes...", ConsoleColor.Cyan);
-            if (Report.HashFolder("Graphics") != report.graphics)
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.Graphics))
             {
-                Program.Log("Change in GFX detected, will insert GFX...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.Graphics));
-            }
-            else
-            {
-                Program.Log("GFX already up-to-date!\n", ConsoleColor.Green);
-            }
-
-            // exgfx
-
-            Program.Log("Checking for ExGFX changes...", ConsoleColor.Cyan);
-            if (Report.HashFolder("ExGraphics") != report.exgraphics)
-            {
-                Program.Log("Change in ExGFX detected, will insert ExGFX...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.ExGraphics));
-            }
-            else
-            {
-                Program.Log("ExGFX already up-to-date!\n", ConsoleColor.Green);
-            }
-
-            // map16
-
-            Program.Log("Checking for map16 changes...", ConsoleColor.Cyan);
-            string map16hash;
-            if (config.HumanReadableMap16CLI == null)
-            {
-                map16hash = Report.HashFile(config.Map16Path);
-            }
-            else
-            {
-                if (config.HumanReadableMap16Directory == null)
+                Program.Log("Checking for GFX changes...", ConsoleColor.Cyan);
+                if (Report.HashFolder("Graphics") != report.graphics)
                 {
-                    map16hash = Report.HashFolder(Path.Combine(
-                        Path.GetDirectoryName(config.Map16Path), Path.GetFileNameWithoutExtension(config.Map16Path)
-                    ));
+                    Program.Log("Change in GFX detected, will insert GFX...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.Graphics));
                 }
                 else
                 {
-                    map16hash = Report.HashFolder(config.HumanReadableMap16Directory);
+                    Program.Log("GFX already up-to-date!\n", ConsoleColor.Green);
                 }
             }
 
-            if (map16hash != report.map16)
+            // exgfx
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.ExGraphics))
             {
-                Program.Log("Change in map16 detected, will insert map16...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.Map16));
+                Program.Log("Checking for ExGFX changes...", ConsoleColor.Cyan);
+                if (Report.HashFolder("ExGraphics") != report.exgraphics)
+                {
+                    Program.Log("Change in ExGFX detected, will insert ExGFX...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.ExGraphics));
+                }
+                else
+                {
+                    Program.Log("ExGFX already up-to-date!\n", ConsoleColor.Green);
+                }
             }
-            else
+
+            // map16
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.Map16))
             {
-                Program.Log("Map16 already up-to-date!\n", ConsoleColor.Green);
+                Program.Log("Checking for map16 changes...", ConsoleColor.Cyan);
+                string map16hash;
+                if (config.HumanReadableMap16CLI == null)
+                {
+                    map16hash = Report.HashFile(config.Map16Path);
+                }
+                else
+                {
+                    if (config.HumanReadableMap16Directory == null)
+                    {
+                        map16hash = Report.HashFolder(Path.Combine(
+                            Path.GetDirectoryName(config.Map16Path), Path.GetFileNameWithoutExtension(config.Map16Path)
+                        ));
+                    }
+                    else
+                    {
+                        map16hash = Report.HashFolder(config.HumanReadableMap16Directory);
+                    }
+                }
+
+                if (map16hash != report.map16)
+                {
+                    Program.Log("Change in map16 detected, will insert map16...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.Map16));
+                }
+                else
+                {
+                    Program.Log("Map16 already up-to-date!\n", ConsoleColor.Green);
+                }
             }
 
             // title moves
 
-            Program.Log("Checking for title moves changes...", ConsoleColor.Cyan);
-            if (Report.HashFile(config.TitleMovesPath) != report.title_moves)
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.TitleMoves))
             {
-                Program.Log("Change in title moves detected, will insert title moves...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.TitleMoves));
-            }
-            else
-            {
-                Program.Log("Title moves already up-to-date!\n", ConsoleColor.Green);
+                Program.Log("Checking for title moves changes...", ConsoleColor.Cyan);
+                if (Report.HashFile(config.TitleMovesPath) != report.title_moves)
+                {
+                    Program.Log("Change in title moves detected, will insert title moves...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.TitleMoves));
+                }
+                else
+                {
+                    Program.Log("Title moves already up-to-date!\n", ConsoleColor.Green);
+                }
             }
 
             // shared palettes
 
-            Program.Log("Checking for shared palettes changes...", ConsoleColor.Cyan);
-            if (Report.HashFile(config.SharedPalettePath) != report.shared_palettes)
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.SharedPalettes))
             {
-                Program.Log("Change in shared palettes detected, will insert shared palettes...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.SharedPalettes));
-            }
-            else
-            {
-                Program.Log("Shared palettes already up-to-date!\n", ConsoleColor.Green);
+                Program.Log("Checking for shared palettes changes...", ConsoleColor.Cyan);
+                if (Report.HashFile(config.SharedPalettePath) != report.shared_palettes)
+                {
+                    Program.Log("Change in shared palettes detected, will insert shared palettes...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.SharedPalettes));
+                }
+                else
+                {
+                    Program.Log("Shared palettes already up-to-date!\n", ConsoleColor.Green);
+                }
             }
 
             // global data
-            Program.Log("Checking for global data changes...", ConsoleColor.Cyan);
-            if (Report.HashFile(config.GlobalDataPath) != report.global_data)
+
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.GlobalData))
             {
-                Program.Log("Change in global data detected, will insert global data...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.GlobalData));
-            }
-            else
-            {
-                Program.Log("Global data already up-to-date!\n", ConsoleColor.Green);
+                Program.Log("Checking for global data changes...", ConsoleColor.Cyan);
+                if (Report.HashFile(config.GlobalDataPath) != report.global_data)
+                {
+                    Program.Log("Change in global data detected, will insert global data...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.GlobalData));
+                }
+                else
+                {
+                    Program.Log("Global data already up-to-date!\n", ConsoleColor.Green);
+                }
             }
 
             // check which levels to insert
-            Program.Log("Checking for level changes...", ConsoleColor.Cyan);
-            if (report.lunar_magic_level_import_flags == config.LunarMagicLevelImportFlags)
-            {
-                bool any_levels_changed = false;
 
-                foreach (var (level, hash) in newLevels)
+            if (IsInBuildOrder(config.BuildOrder, InsertableType.Levels))
+            {
+                Program.Log("Checking for level changes...", ConsoleColor.Cyan);
+                if (report.lunar_magic_level_import_flags == config.LunarMagicLevelImportFlags)
                 {
-                    if (!oldLevels.ContainsKey(level))
+                    bool any_levels_changed = false;
+
+                    foreach (var (level, hash) in newLevels)
                     {
-                        any_levels_changed = true;
-                        Program.Log($"New level '{level}' detected, will be inserted...", ConsoleColor.Yellow);
-                        Console.WriteLine();
-                        require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
+                        if (!oldLevels.ContainsKey(level))
+                        {
+                            any_levels_changed = true;
+                            Program.Log($"New level '{level}' detected, will be inserted...", ConsoleColor.Yellow);
+                            Console.WriteLine();
+                            require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
+                        }
+                        else if (oldLevels[level] != hash)
+                        {
+                            any_levels_changed = true;
+                            Program.Log($"Changed level '{level}' detected, will be reinserted...", ConsoleColor.Yellow);
+                            Console.WriteLine();
+                            require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
+                        }
                     }
-                    else if (oldLevels[level] != hash)
+
+                    if (!any_levels_changed)
                     {
-                        any_levels_changed = true;
-                        Program.Log($"Changed level '{level}' detected, will be reinserted...", ConsoleColor.Yellow);
-                        Console.WriteLine();
-                        require_insertion.Add(new Insertable(InsertableType.SingleLevel, level));
+                        Program.Log("Levels already up-to-date!\n", ConsoleColor.Green);
                     }
                 }
-
-                if (!any_levels_changed)
+                else
                 {
-                    Program.Log("Levels already up-to-date!\n", ConsoleColor.Green);
+                    Program.Log("Change in Lunar Magic level import flags detected, reinserting all levels...", ConsoleColor.Yellow);
+                    Console.WriteLine();
+                    require_insertion.Add(new Insertable(InsertableType.Levels));
                 }
-            }
-            else
-            {
-                Program.Log("Change in Lunar Magic level import flags detected, reinserting all levels...", ConsoleColor.Yellow);
-                Console.WriteLine();
-                require_insertion.Add(new Insertable(InsertableType.Levels));
             }
 
             // log whether already up to date
