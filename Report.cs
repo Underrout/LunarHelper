@@ -35,7 +35,7 @@ namespace LunarHelper
         public string lunar_magic_level_import_flags { get; set; }
         public string asar_options { get; set; }
         public string human_readable_map16 { get; set; }
-        public int build_order_hash { get; set; }
+        public string build_order_hash { get; set; }
 
         public static string HashFile(string path)
         {
@@ -91,24 +91,18 @@ namespace LunarHelper
         }
         // SOURCE END
 
-
-        // SOURCE START
-        // Source: Stack Overflow
-        // Original question: https://stackoverflow.com/q/7278136/6875882
-        // Question asked by: Andrew Hare (https://stackoverflow.com/users/34211/andrew-hare)
-        // Code taken from answer: https://stackoverflow.com/a/30758270/6875882
-        // Author of answer: nathanchere (https://stackoverflow.com/users/243557/nathanchere)
-        public static int HashList<T>(IList<T> list)
+        public static string HashBuildOrder(List<Insertable> build_order)
         {
-            const int seed = 487;
-            const int modifier = 31;
+            MD5 md5 = MD5.Create();
 
-            unchecked
-            {
-                return list.Aggregate(seed, (current, item) =>
-                    (current * modifier) + item.GetHashCode());
-            }
+            var as_string = string.Join(' ', build_order
+                .Select(i => i.type == InsertableType.SinglePatch ? $"Patch[{i.normalized_relative_path}" :
+                i.type.ToString()));
+
+            byte[] inputBytes = Encoding.ASCII.GetBytes(as_string);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            return Convert.ToHexString(hashBytes);
         }
-        // SOURCE END
     }
 }

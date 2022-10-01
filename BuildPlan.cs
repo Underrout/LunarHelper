@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
@@ -88,7 +88,7 @@ namespace LunarHelper
                 throw new MustRebuildException();
             }
 
-            if (report.build_order_hash != Report.HashList(config.BuildOrder))
+            if (report.build_order_hash != Report.HashBuildOrder(config.BuildOrder))
             {
                 Program.Log("'build_order' has changed, rebuilding ROM...\n", ConsoleColor.Yellow);
                 throw new MustRebuildException();

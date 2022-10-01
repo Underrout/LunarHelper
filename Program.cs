@@ -574,7 +574,7 @@ namespace LunarHelper
             report.global_data = Report.HashFile(Config.GlobalDataPath);
             report.title_moves = Report.HashFile(Config.TitleMovesPath);
 
-            report.build_order_hash = Report.HashList(Config.BuildOrder);
+            report.build_order_hash = Report.HashBuildOrder(Config.BuildOrder);
 
             report.lunar_helper_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
