@@ -167,6 +167,29 @@ namespace LunarHelper
             List<string>> lists, List<Insertable> build_order, List<(Insertable, Insertable)> quick_build_triggers)
         {
             var lines = data.Split('\n');
+
+            List<string> cleaned_lines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+
+                if (trimmed.StartsWith("--"))
+                    continue;  // line is just comment, skip it
+
+                if (trimmed == "")
+                    continue;  // blank line, skip it
+
+                int comment_start = trimmed.IndexOf("--");
+
+                if (comment_start != -1)
+                    trimmed = trimmed.Substring(0, comment_start);
+
+                cleaned_lines.Add(trimmed);
+            }
+
+            lines = cleaned_lines.ToArray();
+
             for (int i = 0; i < lines.Length; i++)
             {
                 string str = lines[i];
@@ -174,11 +197,7 @@ namespace LunarHelper
                 if (i < lines.Length - 1)
                     peek = lines[i + 1];
 
-                if (str.StartsWith("--"))
-                {
-                    // comment
-                }
-                else if (str.Contains('='))
+                if (str.Contains('='))
                 {
                     // var
                     var sp = str.Split('=', 2);
