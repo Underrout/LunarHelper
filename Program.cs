@@ -433,7 +433,10 @@ namespace LunarHelper
             }
             Console.WriteLine();
 
-            FinalizeOutputROM();
+            if (!FinalizeOutputROM(invoked_from_cli))
+            {
+                return false;
+            }
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
@@ -906,7 +909,10 @@ namespace LunarHelper
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
 
-            FinalizeOutputROM();
+            if (!FinalizeOutputROM(invoked_from_cli))
+            {
+                return false;
+            }
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
@@ -1000,18 +1006,46 @@ namespace LunarHelper
             }
         }
 
-        static private void FinalizeOutputROM()
+        static private bool FinalizeOutputROM(bool on_cli)
         {
             // rename temp rom and generated files to final build output
-            {
-                var path = Path.GetDirectoryName(Path.GetFullPath(Config.TempPath));
-                var temp_name = Path.GetFileNameWithoutExtension(Config.TempPath);
-                var to = Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath));
-                to = Path.Combine(to, Path.GetFileNameWithoutExtension(Config.OutputPath));
+            var path = Path.GetDirectoryName(Path.GetFullPath(Config.TempPath));
+            var temp_name = Path.GetFileNameWithoutExtension(Config.TempPath);
+            var to = Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath));
+            to = Path.Combine(to, Path.GetFileNameWithoutExtension(Config.OutputPath));
 
-                foreach (var file in Directory.EnumerateFiles(path, temp_name + "*"))
-                    File.Move(file, $"{to}{Path.GetExtension(file)}", true);
+            foreach (var file in Directory.EnumerateFiles(path, temp_name + "*"))
+            {
+                while (true)
+                {
+                    var out_file = $"{to}{Path.GetExtension(file)}";
+                    try
+                    {
+                        File.Move(file, out_file, true);
+                        break;
+                    }
+                    catch (Exception e) when (e is IOException || e is SystemException)
+                    {
+                        if (on_cli)
+                        {
+                            Error($"Failed to rename file '{file}' to '{out_file}':\n{e.StackTrace}");
+                            return false;
+                        }
+
+                        Log($"Failed to rename file '{file}' to '{out_file}', retry? Y/N");
+
+                        var response = Console.ReadLine();
+
+                        if (response.ToLower() == "n")
+                        {
+                            Error($"Failed to rename file '{file}' to '{out_file}':\n{e.StackTrace}");
+                            return false;
+                        }
+                    }
+                }
             }
+
+            return true;
         }
 
         [System.Runtime.InteropServices.DllImport("User32.dll")]
