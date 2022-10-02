@@ -7,9 +7,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Text;
 
-using LunarHelper;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 
 namespace LunarHelper
@@ -18,11 +16,16 @@ namespace LunarHelper
     {
         static public Config Config { get; private set; }
 
+        static private int ROM_HEADER_SIZE = 0x200;
+
         static private int COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
-        static private int COMMENT_FIELD_SMC_ROM_OFFSET = 0x7F320;
+        static private int COMMENT_FIELD_SMC_ROM_OFFSET = COMMENT_FIELD_SFC_ROM_OFFSET + ROM_HEADER_SIZE;
         static private int COMMENT_FIELD_LENGTH = 0x20;
         static private string DEFAULT_COMMENT = "I am Naaall, and I love fiiiish!";
         static private string ALTERED_COMMENT = "   Mario says     TRANS RIGHTS  ";
+
+        static private int CHECKSUM_COMPLEMENT_OFFSET = 0x07FDC;
+        static private int CHECKSUM_OFFSET = CHECKSUM_COMPLEMENT_OFFSET + 2;
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process EmulatorProcess = null;
@@ -427,11 +430,7 @@ namespace LunarHelper
             if (!ExecuteInsertionPlan(plan))
                 return false;
 
-            if (!WriteAlteredCommentToRom(Config.TempPath))
-            {
-                Log("WARNING: Failed to mark ROM as non-volatile, your ROM may be corrupted!", ConsoleColor.Red);
-            }
-            Console.WriteLine();
+            MarkRomAsNonVolatile(Config.TempPath);
 
             if (!FinalizeOutputROM(invoked_from_cli))
             {
@@ -726,6 +725,22 @@ namespace LunarHelper
             }
         }
 
+        static void MarkRomAsNonVolatile(string rom_path)
+        {
+            if (!WriteAlteredCommentToRom(rom_path))
+            {
+                Log("WARNING: Failed to mark ROM as non-volatile, your ROM may be corrupted!\n", ConsoleColor.Red);
+            }
+            else
+            {
+                if (!UpdateChecksum(rom_path))
+                {
+                    Log("WARNING: Failed to update ROM's checksum, this should be a purely cosmetic issue " +
+                        "that can be fixed by saving any level with Lunar Magic\n", ConsoleColor.Yellow);
+                }
+            }
+        }
+
         static bool WriteAlteredCommentToRom(string rom_path)
         {
             try
@@ -742,6 +757,57 @@ namespace LunarHelper
                 return false;
             }
         }
+
+        static bool UpdateChecksum(string rom_path)
+        {
+            try
+            {
+                var bytes = File.ReadAllBytes(rom_path);
+
+                var header_length = Config.OutputPath.EndsWith(".smc") ? ROM_HEADER_SIZE : 0;
+
+                var complement_offset = CHECKSUM_COMPLEMENT_OFFSET + header_length;
+                var checksum_offset = CHECKSUM_OFFSET + header_length;
+
+                int sum = 0;
+                int i = 0;
+                foreach (var b in bytes)
+                {
+                    if (i == complement_offset || i == complement_offset + 1)
+                        sum += 0xFF;
+                    else if (i == checksum_offset || i == checksum_offset + 1)
+                        sum += 0x00;
+                    else
+                        sum += b;
+
+                    ++i;
+                }
+
+                var checksum = BitConverter.GetBytes(sum);
+                var complement = BitConverter.GetBytes(sum ^ 0xFFFF);
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(checksum);
+                    Array.Reverse(complement);
+                }
+
+                using (Stream stream = File.Open(rom_path, FileMode.Open))
+                {
+                    stream.Position = complement_offset;
+
+                    stream.Write(complement, 0, 2);
+                    stream.Write(checksum, 0, 2);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
 
         // bool returned is true if it's ok to continue with build, false if it should be cancelled
         // defaults to cancelling the build if invoked from the command line without specifying a preference
@@ -770,7 +836,7 @@ namespace LunarHelper
                         Log("Attempting to export all resources and continue with build...", ConsoleColor.Yellow);
                         if (Exporter.ExportAll(Config))
                         {
-                            WriteAlteredCommentToRom(Config.OutputPath);  // save to mark as non-volatile since export succeeded
+                            MarkRomAsNonVolatile(Config.OutputPath);  // save to mark as non-volatile since export succeeded
                             Console.WriteLine();
                             return true;
                         }
@@ -900,11 +966,7 @@ namespace LunarHelper
             if (!ExecuteInsertionPlan(plan))
                 return false;
 
-            if (!WriteAlteredCommentToRom(Config.TempPath))
-            {
-                Log("WARNING: Failed to mark ROM as non-volatile, your ROM may be corrupted!", ConsoleColor.Red);
-            }
-            Console.WriteLine();
+            MarkRomAsNonVolatile(Config.TempPath);
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
