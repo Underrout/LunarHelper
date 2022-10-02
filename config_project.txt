@@ -16,8 +16,8 @@ initial_patch = Other/initial_patch.bps
 -- asar
 patches
 [
-	Patches\retry\retry.asm
-	Patches\asarspritetiles.asm
+    Patches\retry\retry.asm
+    Patches\asarspritetiles.asm
 ]
 
 -- tools
@@ -46,25 +46,25 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 
 build_order
 [
-	Graphics				-- Insert standard GFX
-	ExGraphics				-- Insert ExGFX
-	Map16					-- Insert Map16
+    Graphics                -- Insert standard GFX
+    ExGraphics              -- Insert ExGFX
+    Map16                   -- Insert Map16
 
---  TitleMoves  			-- Uncomment this if you're inserting title moves
+--  TitleMoves              -- Uncomment this if you're inserting title moves
 
-	GlobalData				-- Insert Overworld, Title Screen and Credits 
+    GlobalData              -- Insert Overworld, Title Screen and Credits 
 
-	Patches					-- Insert all remaining patches from the patches list that 
-							-- are not explicitly mentioned in this build order
+    Patches                 -- Insert all remaining patches from the patches list that 
+                            -- are not explicitly mentioned in this build order
 
-	PIXI					-- Insert custom sprites
-	Levels					-- Insert all levels
+    PIXI                    -- Insert custom sprites
+    Levels                  -- Insert all levels
 
---	PIXI					-- Uncomment this if you're using Lunar Magic 3.31 or higher
+--  PIXI                    -- Uncomment this if you're using Lunar Magic 3.31 or higher
 
-	AddMusicK				-- Insert custom music
-	GPS						-- Insert custom blocks
-	UberASM					-- Insert UberASM code
+    AddMusicK               -- Insert custom music
+    GPS                     -- Insert custom blocks
+    UberASM                 -- Insert UberASM code
 
 --  Patches/some_patch.asm  -- Example of inserting a specific patch at a different time
 ]
@@ -125,15 +125,15 @@ test_level_dest = 105
 
 quick_build_triggers
 [
--- 	Examples of triggers
+--  Examples of triggers
 
--- 	PIXI -> GPS  							-- Re-insert GPS after PIXI is re-inserted
+--  PIXI -> Gps                         -- Re-insert GPS after PIXI is re-inserted
 
--- 	GPS -> Map16							-- Re-insert Map16 after GPS is re-inserted, 
-											-- combined with the first trigger, this means that if 
-											-- PIXI is re-inserted, GPS will be re-inserted at some
-											-- point afterwards and then Map16 will be re-inserted
-											-- at some point after that
+--  GPS -> Map16                        -- Re-insert Map16 after GPS is re-inserted, 
+                                        -- combined with the first trigger, this means that if 
+                                        -- PIXI is re-inserted, GPS will be re-inserted at some
+                                        -- point afterwards and then Map16 will be re-inserted
+                                        -- at some point after that
 
---  Patches/some_patch.asm -> UberASM		-- Re-insert UberASM whenever some_patch.asm is re-inserted
+--  Patches/some_patch.asm -> UberASM   -- Re-insert UberASM whenever some_patch.asm is re-inserted
 ]
