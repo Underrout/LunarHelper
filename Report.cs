@@ -11,7 +11,9 @@ namespace LunarHelper
     class Report
     {
         [JsonIgnore]
-        public const int REPORT_FORMAT_VERSION = 2;
+        public const int REPORT_FORMAT_VERSION = 3;
+
+        public string lunar_helper_version { get; set; }
         public int report_format_version { get; set; }
         public DateTimeOffset build_time { get; set; }
         public string rom_hash { get; set; }
@@ -33,6 +35,7 @@ namespace LunarHelper
         public string lunar_magic_level_import_flags { get; set; }
         public string asar_options { get; set; }
         public string human_readable_map16 { get; set; }
+        public string build_order_hash { get; set; }
 
         public static string HashFile(string path)
         {
@@ -87,5 +90,19 @@ namespace LunarHelper
             return BitConverter.ToString(md5.Hash).Replace("-", "").ToLower();
         }
         // SOURCE END
+
+        public static string HashBuildOrder(List<Insertable> build_order)
+        {
+            MD5 md5 = MD5.Create();
+
+            var as_string = string.Join(' ', build_order
+                .Select(i => i.type == InsertableType.SinglePatch ? $"Patch[{i.normalized_relative_path}" :
+                i.type.ToString()));
+
+            byte[] inputBytes = Encoding.ASCII.GetBytes(as_string);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            return Convert.ToHexString(hashBytes);
+        }
     }
 }
