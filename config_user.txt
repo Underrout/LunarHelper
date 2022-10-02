@@ -7,11 +7,6 @@ output = my_hack.smc
 temp = temp.smc
 package = my_hack.bps
 
--- tools
-asar_path = ../Tools/asar181/asar.exe
-lm_path = ../Tools/Lunar Magic 3.2.1/Lunar Magic.exe
-flips_path = ../Tools/FLIPS/flips.exe
-
 -- emulator settings
 -- you can set emulator_path to an emulator of your choosing that will be used
 -- to run your ROM if you use the Test or Run functions from Lunar Helper's menu

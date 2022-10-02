@@ -735,9 +735,8 @@ ignore them using this config variable like this
 
 ### Finishing up ###
 
-Before trying to use Lunar Helper, please get the included Lunar Monitor set 
-up and then return to the readme in the root directory of this zip archive to 
-learn what you should do once both of these tools are set up!
+After configuring the tool, you should be able to use it easily by launching it and using the 
+included menu.
 
 Some advanced features of Lunar Helper are listed below, if you're just starting out, you might 
 prefer to get familiar with Lunar Helper first before diving into these!

@@ -1,11 +1,11 @@
 -- this is an example project file
+-- (Note: anything on a line after -- is a comment and is ignored by Lunar Helper!)
 -- Lunar Helper will load every config_*.txt file in its directory.
 -- For a solo project, you could simply configure everything in one big config file,
 -- but for collabs it's a good idea to split config files between things that 
 -- are relative to the project path like levels, and tools like Lunar Magic that each
 -- collaborator may have installed at a different location, as in this example
 -- (see config_user.txt for the rest of the example configuration)
- 
  
 -- if defined, the initial patch will be applied before any other steps
 -- It's good idea to open your clean ROM in Lunar Magic, save it to another location, and create a patch
@@ -21,11 +21,29 @@ patches
 ]
 
 -- tools
+asar_path = ../Tools/asar181/asar.exe
+lm_path = ../Tools/Lunar Magic 3.2.1/Lunar Magic.exe
+flips_path = ../Tools/FLIPS/flips.exe
 gps_path = Tools/GPS (V1.4.21)/gps.exe
 pixi_path = Tools/pixi_v1.32/pixi.exe
 pixi_options = -l Tools/pixi_v1.32/list.txt
 addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
 uberasm_path = Tools/UberASMTool14/UberASMTool.exe
+
+-- uncomment this if you're using the human readable map16 format
+-- human_readable_map16_cli_path = ../Tools/human-readable-map16-cli.exe
+
+-- content
+levels = Levels
+shared_palette = Other/shared.pal
+map16 = Other/all.map16
+title_moves = Other/smwtitledemo.zst
+
+-- global_data is a BPS patch file, to be created by Lunar Helper, 
+-- that will hold the overworld, ex global animations, credits, intro screen, and title moves.
+-- You will work on these things from the built output ROM in Lunar Magic, 
+-- and Lunar Monitor will automatically export them as you save your changes
+global_data = Other/global_data.bps
 
 -- Build Order
 
@@ -41,9 +59,6 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 -- this patch will then be inserted at that step instead of being
 -- applied at the same time as the other Patches
 
--- The symbols used in the list are not case-sensitive, i.e.
--- both GPS and Gps should work and refer to the same tool
-
 build_order
 [
     Graphics                -- Insert standard GFX
@@ -52,6 +67,7 @@ build_order
 
 --  TitleMoves              -- Uncomment this if you're inserting title moves
 
+    SharedPalettes          -- Insert Shared Palettes 
     GlobalData              -- Insert Overworld, Title Screen and Credits 
 
     Patches                 -- Insert all remaining patches from the patches list that 
@@ -79,61 +95,7 @@ build_order
 -- uberasm_options = my_list.txt
 -- lm_level_import_flags = 0
 
--- content
-levels = Levels
-shared_palette = Other/shared.pal
-map16 = Other/all.map16
-title_moves = Other/smwtitledemo.zst
-
--- global_data is a BPS patch file, to be created by Lunar Helper, 
--- that will hold the overworld, ex global animations, credits, intro screen, and title moves.
--- You will work on these things from the built output ROM in Lunar Magic, 
--- and Lunar Monitor will automatically export them as you save your changes
-global_data = Other/global_data.bps
-
 -- test_level is a 3-digit hex value specifying the level number of a level that will be copied to the 3-digit level number
 -- specified by test_level_dest *only* when Lunar Helper's "T - Test" option is run
 test_level = 0A7
 test_level_dest = 105
-
--- Triggers for Quick Build (optional and advanced)
-
--- This lets you optionally trigger additional Quick Build behavior
-
--- In general, this should not be necessary unless you have some kind of abstract
--- dependency between resources that requires one to be re-inserted if the 
--- other is re-inserted
-
--- By default, Quick Build will re-insert any resource mentioned in build_order
--- if it detects a change in it (i.e. if a sprite's code is changed or PIXI's list
--- file is updated, Quick Build will re-insert PIXI)
-
--- This list lets you add onto that behavior, an entry in this list takes the form
--- "X -> Y", meaning "if resource X is re-inserted, also re-insert resource Y afterwards",
--- for example, "PIXI -> GPS" would cause GPS to be re-inserted by Quick Build whenever
--- it re-inserts PIXI
-
--- Note that these triggers cascade, i.e. if we also have the trigger "GPS -> Map16", 
--- when PIXI is re-inserted, GPS will be re-inserted at some point afterwards and then
--- Map16 will be re-inserted at some pointer after that, even if no change in GPS was detected
-
--- You can use any symbol mentioned in the build_order in to specify a trigger, with the 
--- exception of the "Patches" symbol (individual patches are fine!)
-
--- Any re-insertions that are not the cause or effect of a trigger will be handled after 
--- all triggers/triggered insertions have taken place
-
-quick_build_triggers
-[
---  Examples of triggers
-
---  PIXI -> Gps                         -- Re-insert GPS after PIXI is re-inserted
-
---  GPS -> Map16                        -- Re-insert Map16 after GPS is re-inserted, 
-                                        -- combined with the first trigger, this means that if 
-                                        -- PIXI is re-inserted, GPS will be re-inserted at some
-                                        -- point afterwards and then Map16 will be re-inserted
-                                        -- at some point after that
-
---  Patches/some_patch.asm -> UberASM   -- Re-insert UberASM whenever some_patch.asm is re-inserted
-]
