@@ -500,8 +500,10 @@ namespace LunarHelper
 
             if (missing_dependencies.Any())
             {
-                builder.Append("\nMissing dependencies may indicate that you are relying on an asar bug that existed at least until version 1.81 " +
-                    "(see https://github.com/RPGHacker/asar/issues/253 for details).\n\nPotentially \"missing\" dependencies:\n");
+                builder.Append("\nMissing dependencies are dependencies pointing to a specific file that is not " +
+                    "actually present at that location. This does not necessarily mean that there is anything wrong, " +
+                    "but Lunar Helper will have to re-insert these resources on every Quick Build to ensure correct results." +
+                    "\n\nPotentially \"missing\" dependencies:\n");
 
                 foreach ((var missing_dependency, var parents) in missing_dependencies)
                 {
@@ -518,11 +520,8 @@ namespace LunarHelper
             if (arbitrary_dependencies.Any())
             {
                 builder.Append("\nArbitrary dependencies are dependencies that Lunar Helper is not currently capable of resolving. " +
-                    "Examples include 'incsrc \"../<file>\"' and 'incsrc \"../!some_define\"'.\nIf a tool or patch relies on such " +
-                    "arbitrary includes, Lunar Helper has to assume that the tool's or patch's dependencies may change between builds " +
-                    "without it being aware of it and thus Lunar Helper will always reinsert the tool or patch in question.\n" +
-                    "If you can replace or remove these arbitrary includes from the affected files, you may consider doing so in order to speed up the " +
-                    "build process and get rid of this message. The files containing arbitrary includes are listed below.\n\nArbitrary dependencies:\n");
+                    "All this means is that Lunar Helper will have to re-insert these resources on every Quick Build " +
+                    "to ensure correct results.\n\nArbitrary dependencies:\n");
 
                 foreach ((var arbitrary_dependency, var parents) in arbitrary_dependencies)
                 {
