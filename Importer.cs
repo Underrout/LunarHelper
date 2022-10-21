@@ -188,7 +188,7 @@ namespace LunarHelper
             Log("Map16", ConsoleColor.Cyan);
 
             if (string.IsNullOrWhiteSpace(config.HumanReadableMap16CLI))
-                Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+                Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Yellow);
             else
             {
                 string humanReadableDirectory;
