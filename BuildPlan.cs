@@ -533,7 +533,7 @@ namespace LunarHelper
                 else if (vertex == null)
                 {
                     // not sure if this actually ever happens
-                    builder.Append("Missing file");
+                    builder.Append("Potentially missing file");
                 }
                 
                 if (vertex != dependency_chain.Last())
