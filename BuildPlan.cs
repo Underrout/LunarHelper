@@ -96,7 +96,7 @@ namespace LunarHelper
 
             if (report.lunar_helper_version != Assembly.GetExecutingAssembly().GetName().Version.ToString())
             {
-                Program.Log($"Previous ROM was built with Lunar Helper {report.lunar_helper_version}, rebuilding ROM...\n", ConsoleColor.Yellow);
+                Program.Log($"Previous ROM was built with Lunar Helper {report.lunar_helper_version.Substring(0, 5)}, rebuilding ROM...\n", ConsoleColor.Yellow);
                 throw new MustRebuildException();
             }
 
