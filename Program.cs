@@ -443,8 +443,6 @@ namespace LunarHelper
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
 
-            WarnAboutProblematicDependencies();
-
             if (Config.ReloadEmulatorAfterBuild && EmulatorProcess != null && !EmulatorProcess.HasExited)
             {
                 Log("Attempting to auto-relaunch your emulator...", ConsoleColor.Cyan);
@@ -452,90 +450,6 @@ namespace LunarHelper
             }
 
             return true;
-        }
-
-        static private void WarnAboutProblematicDependencies()
-        {
-            IEnumerable<(MissingFileOrDirectoryVertex, IEnumerable<Vertex>)> missing_dependencies = new List<(MissingFileOrDirectoryVertex, IEnumerable<Vertex>)>();
-
-            foreach (var missing_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is MissingFileOrDirectoryVertex))
-            {
-                missing_dependencies = missing_dependencies.Append(
-                    ((MissingFileOrDirectoryVertex)missing_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, missing_vertex)));
-            }
-
-            IEnumerable<(ArbitraryFileVertex, IEnumerable<Vertex>)> arbitrary_dependencies = new List<(ArbitraryFileVertex, IEnumerable<Vertex>)>();
-
-            if (!Config.SuppressArbitraryDepsWarning)  // don't need to discover arbitrary dependencies if warning is disabled anyway, just disregard them
-            {
-                foreach (var arbitrary_vertex in dependency_graph.dependency_graph.Vertices.Where(v => v is ArbitraryFileVertex))
-                {
-                    arbitrary_dependencies = arbitrary_dependencies.Append(
-                        ((ArbitraryFileVertex)arbitrary_vertex, DependencyGraphAnalyzer.GetDependents(dependency_graph, arbitrary_vertex)));
-                }
-            }
-
-            if (!missing_dependencies.Any() && !arbitrary_dependencies.Any())
-            {
-                return;
-            }
-
-            var builder = new StringBuilder("WARNING: Build succeeded, but Lunar Helper found ");
-
-            if (missing_dependencies.Any())
-            {
-                builder.Append($"{missing_dependencies.Count()} missing dependencies");
-            }
-
-            if (arbitrary_dependencies.Any())
-            {
-                if (missing_dependencies.Any())
-                {
-                    builder.Append(" and ");
-                }
-                builder.Append($"{arbitrary_dependencies.Count()} arbitrary dependencies");
-            }
-
-            builder.Append("\n");
-
-            if (missing_dependencies.Any())
-            {
-                builder.Append("\nMissing dependencies are dependencies pointing to a specific file that is not " +
-                    "actually present at that location. This does not necessarily mean that there is anything wrong, " +
-                    "but Lunar Helper will have to re-insert these resources on every Quick Build to ensure correct results." +
-                    "\n\nPotentially \"missing\" dependencies:\n");
-
-                foreach ((var missing_dependency, var parents) in missing_dependencies)
-                {
-                    foreach (var parent in parents)
-                    {
-                        builder.Append(BuildPlan.DependencyChainAsString(Util.GetUri(Directory.GetCurrentDirectory()),
-                            new List<Vertex> { parent, missing_dependency }));
-
-                        builder.Append("\n");
-                    }
-                }
-            }
-
-            if (arbitrary_dependencies.Any())
-            {
-                builder.Append("\nArbitrary dependencies are dependencies that Lunar Helper is not currently capable of resolving. " +
-                    "All this means is that Lunar Helper will have to re-insert these resources on every Quick Build " +
-                    "to ensure correct results.\n\nArbitrary dependencies:\n");
-
-                foreach ((var arbitrary_dependency, var parents) in arbitrary_dependencies)
-                {
-                    foreach (var parent in parents)
-                    {
-                        builder.Append(BuildPlan.DependencyChainAsString(Util.GetUri(Directory.GetCurrentDirectory()),
-                            new List<Vertex> { parent, arbitrary_dependency }));
-
-                        builder.Append("\n");
-                    }
-                }
-            }
-
-            Log(builder.ToString(), ConsoleColor.Yellow);
         }
 
         static private void WriteReport()
