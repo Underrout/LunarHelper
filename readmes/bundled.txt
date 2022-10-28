@@ -713,26 +713,6 @@ To make Lunar Helper reload the emulator after a successful build, I would write
     reload_emulator_after_build = yes
 
 
-# suppress_arbitrary_dependency_warning
-
-Optionally allows you to suppress Lunar Helper's warning about arbitrary dependencies 
-after a (Quick) Build succeeds. Setting this to "true" or "yes" will suppress the 
-warning, any other string will keep the warning enabled. 
-
-Arbitrary dependencies are dependencies that Lunar Helper does not fully understand,
-such as `incsrc ../<file>` or `incsrc !file`, `<file>` and `!file` are both variables 
-rather than static text. Lunar Helper cannot (easily) figure out what these includes 
-will resolve to through static analysis, so Lunar Helper will simply assume that 
-whatever file contains such an arbitrary dependency must be reinserted on every build
-to be on the safe side of things. This will make your Quick Build take slightly longer
-than may be strictly necessary, but should never cause any incorrect results.
-
-Since arbitrary dependencies do not cause any functional problems, you may choose to simply
-ignore them using this config variable like this
-
-    suppress_arbitrary_dependency_warning = yes
-
-
 ### Finishing up ###
 
 Before trying to use Lunar Helper, please get the included Lunar Monitor set 
@@ -861,6 +841,12 @@ comment them out as described above.
 
 Resolving arbitrary dependencies can be nice in some cases, but in other cases it might be simpler
 and more organized to just accept them and live with Quick Build being slightly slower.
+
+Note that functions like asar's `canreadfile` will lead to "potentially missing" dependencies if the 
+file that is being checked for is absent. This causes essentially the same behavior as an 
+arbitrary dependency: Lunar Helper will re-insert the affected resource on every Quick Build to 
+ensure the code that's using `canreadfile` gets a chance to check whether the previously absent
+file is now present.
 
 
 # Quick Build triggers
