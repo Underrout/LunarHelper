@@ -491,7 +491,7 @@ namespace LunarHelper
                     return "New dependency";
 
                 case DependencyGraphAnalyzer.Result.Missing:
-                    return "Missing dependency";
+                    return "Potentially missing dependency";
 
                 case DependencyGraphAnalyzer.Result.Arbitrary:
                     return "Arbitrary dependency";

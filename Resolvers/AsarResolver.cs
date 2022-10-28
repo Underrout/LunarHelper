@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +21,11 @@ namespace LunarHelper.Resolvers
         private static readonly Regex incsrc_incbin_regex = new Regex(
             "^\\s*(?<method>incsrc|incbin)\\s+(?:\"(?<path>.*)\"|(?<path>[^\\s]*))",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
+        private static readonly Regex canreadfile_readfile_regex = new Regex(
+            "(?<method>(?:canreadfile[1|2|3|4]?)|(?:readfile[1|2|3|4]))\\(\"(?<path>.*)\"",
+            RegexOptions.Compiled
         );
 
         private static readonly Regex additional_include_directories_regex = new Regex(
@@ -131,6 +136,15 @@ namespace LunarHelper.Resolvers
                         {
                             TryResolveDependency(vertex, match, ref dependency_id, true);
                         }
+                        else
+                        {
+                            match = canreadfile_readfile_regex.Match(line);
+
+                            if (match.Success)
+                            {
+                                TryResolveDependency(vertex, match, ref dependency_id);
+                            }
+                        }
                     }
                 }
             }
@@ -141,7 +155,7 @@ namespace LunarHelper.Resolvers
             (var resolve_result, var attempted_paths, var found_path) = TryResolveInclude(vertex, match);
 
             Vertex dependency = null;
-            bool is_binary_dependency = is_table_include || match.Groups["method"].Value == "incbin";
+            bool is_binary_dependency = is_table_include || match.Groups["method"].Value != "incsrc";
             string tag = is_table_include ? "table" : (is_binary_dependency ? "binary" : "source");
 
             switch (resolve_result)
