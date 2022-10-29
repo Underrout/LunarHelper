@@ -196,31 +196,23 @@ namespace LunarHelper
                 bool no_reinsertions = true;
                 Program.Log("Analyzing patch dependencies...", ConsoleColor.Cyan);
 
-                if (config.AsarOptions != report.asar_options)
-                {
-                    Program.Log($"asar command line options changed from \"{report.asar_options}\" to \"{config.AsarOptions}\", all patches will be reinserted...\n",
-                        ConsoleColor.Yellow);
-                    require_insertion.AddRange(patch_roots.Select(p => new Insertable(InsertableType.SinglePatch, p.normalized_relative_patch_path)));
-                }
-                else
-                {
-                    foreach ((var patch_root, (var result, var dependency_chain)) in results)
-                    {
-                        if (result != DependencyGraphAnalyzer.Result.Identical)
-                        {
-                            no_reinsertions = false;
-                            Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
-                                ConsoleColor.Yellow);
-                            Console.WriteLine();
-                            require_insertion.Add(new Insertable(InsertableType.SinglePatch, patch_root.normalized_relative_patch_path));
-                        }
-                    }
 
-                    if (no_reinsertions)
+                foreach ((var patch_root, (var result, var dependency_chain)) in results)
+                {
+                    if (result != DependencyGraphAnalyzer.Result.Identical)
                     {
-                        Program.Log("Patches already up-to-date!", ConsoleColor.Green);
+                        no_reinsertions = false;
+                        Program.Log(GetQuickBuildReasonString(config, $"Patch \"{patch_root.normalized_relative_patch_path}\"", result, dependency_chain),
+                            ConsoleColor.Yellow);
                         Console.WriteLine();
+                        require_insertion.Add(new Insertable(InsertableType.SinglePatch, patch_root.normalized_relative_patch_path));
                     }
+                }
+
+                if (no_reinsertions)
+                {
+                    Program.Log("Patches already up-to-date!", ConsoleColor.Green);
+                    Console.WriteLine();
                 }
             }
 

@@ -22,9 +22,9 @@ namespace LunarHelper
 
         public DependencyResolver(DependencyGraph graph, Config config)
         {
-            if (!string.IsNullOrWhiteSpace(config.AsarPath) && config.Patches.Count != 0)
+            if (config.Patches.Count != 0)
             {
-                patch_resolver = new PatchResolver(graph, config.AsarPath, config.AsarOptions);
+                patch_resolver = new PatchResolver(graph, Path.Join(Directory.GetCurrentDirectory(), "asar.dll"));
             }
 
             if (!string.IsNullOrWhiteSpace(config.AddMusicKPath))

@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using AsarCLR;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace LunarHelper
 {
@@ -14,7 +16,22 @@ namespace LunarHelper
     {
         static private string UBERASM_SUCCESS_STRING = "Codes inserted successfully.";
 
-        static public bool ApplyPatch(Config config, string cleanROM, string outROM, string patchBPS)
+        class AsarInitException : Exception
+        {
+            public AsarInitException(string message) : base(message)
+            {
+            }
+        }
+
+        public Importer()
+        {
+            if (!Asar.init())
+            {
+                throw new AsarInitException("Failed to initialize asar dll");
+            }
+        }
+
+        static public bool ApplyBpsPatch(Config config, string cleanROM, string outROM, string patchBPS)
         {
             Log($"Patching {cleanROM}\n\tto {outROM}\n\twith {patchBPS}", ConsoleColor.Yellow);
 
@@ -427,25 +444,44 @@ namespace LunarHelper
             return true;
         }
 
-        static public bool ApplyAsarPatch(Config config, string patch_path)
+        public bool ApplyAsarPatch(Config config, string patch_path)
         {
             Log($"Patch '{patch_path}'", ConsoleColor.Cyan);
 
-            ProcessStartInfo psi = new ProcessStartInfo(config.AsarPath, $"{config.AsarOptions ?? ""} \"{patch_path}\" \"{config.TempPath}\"");
+            byte[] full_rom = File.ReadAllBytes(config.TempPath);
+            var header_size = Path.GetExtension(config.TempPath) == ".smc" ? 200 : 0;
+            byte[] rom = full_rom[header_size..];
+            byte[] header = full_rom[0..header_size];
 
-            var p = Process.Start(psi);
-            p.WaitForExit();
+            var res = Asar.patch(patch_path, ref rom);
 
-            if (p.ExitCode == 0)
+            foreach (var print in Asar.getprints())
             {
-                Log("Patch Success!\n", ConsoleColor.Green);
-                return true;
+                Log(print);
             }
-            else
+
+            if (!res)
             {
-                Log("Patch Failure!\n", ConsoleColor.Red);
+                foreach (var error in Asar.geterrors())
+                    Log(error.Fullerrdata, ConsoleColor.Yellow);
+
+                Log($"Patching Failure!\n", ConsoleColor.Red);
+
                 return false;
             }
+
+            using var rom_stream = new FileStream(config.TempPath, FileMode.Truncate);
+            rom_stream.Write(header);
+            rom_stream.Write(rom);
+
+            Log($"Patching Success!\n", ConsoleColor.Green);
+
+            return true;
+        }
+
+        public void CloseAsar()
+        {
+            Asar.close();
         }
 
         static public bool ImportAllLevels(Config config)

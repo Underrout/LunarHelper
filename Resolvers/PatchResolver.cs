@@ -13,14 +13,14 @@ namespace LunarHelper.Resolvers
         private AsarResolver asar_resolver;
         private HashSet<Vertex> seen = new HashSet<Vertex>();
         private readonly DependencyGraph graph;
-        private readonly Vertex asar_exe_vertex;
+        private readonly Vertex asar_dll_vertex;
 
-        public PatchResolver(DependencyGraph graph, string asar_exe_path, string asar_options)
+        public PatchResolver(DependencyGraph graph, string asar_dll_path)
         {
             this.graph = graph;
-            this.asar_exe_vertex = graph.GetOrCreateVertex(asar_exe_path);
+            this.asar_dll_vertex = graph.GetOrCreateVertex(asar_dll_path);
 
-            asar_resolver = new AsarResolver(graph, seen, asar_exe_path, asar_options);
+            asar_resolver = new AsarResolver(graph, seen, asar_dll_path);
         }
 
         public void ResolveDependencies(PatchRootVertex vertex)
@@ -33,7 +33,7 @@ namespace LunarHelper.Resolvers
                 graph.TryAddUniqueEdge(vertex, asar_resolver.stddefines_vertex, "stddefines");
             }
 
-            graph.TryAddUniqueEdge(vertex, asar_exe_vertex, "asar_exe");
+            graph.TryAddUniqueEdge(vertex, asar_dll_vertex, "asar_dll");
         }
     }
 }

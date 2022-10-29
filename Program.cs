@@ -283,6 +283,21 @@ namespace LunarHelper
 
         static private bool ExecuteInsertionPlan(List<Insertable> plan)
         {
+            Importer importer = null;
+
+            if (plan.Any(i => i.type == InsertableType.SinglePatch || i.type == InsertableType.Patches))
+            {
+                try
+                {
+                    importer = new Importer();
+                }
+                catch(Exception e)
+                {
+                    Log(e.Message, ConsoleColor.Red);
+                    return false;
+                }
+            }
+
             foreach (var insertable in plan)
             {
                 bool result = false;
@@ -294,7 +309,7 @@ namespace LunarHelper
                         break;
 
                     case InsertableType.SinglePatch:
-                        result = Importer.ApplyAsarPatch(Config, insertable.normalized_relative_path);
+                        result = importer.ApplyAsarPatch(Config, insertable.normalized_relative_path);
                         break;
 
                     default:
@@ -518,7 +533,6 @@ namespace LunarHelper
             report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
 
-            report.asar_options = Config.AsarOptions;
             report.pixi_options = Config.PixiOptions;
             report.gps_options = Config.GPSOptions;
             report.addmusick_options = Config.AddmusicKOptions;
@@ -861,7 +875,7 @@ namespace LunarHelper
                 var fullPatchPath = Path.GetFullPath(Config.InitialPatch);
                 var fullCleanPath = Path.GetFullPath(Config.CleanPath);
                 var fullTempPath = Path.GetFullPath(Config.TempPath);
-                if (Importer.ApplyPatch(Config, fullCleanPath, fullTempPath, fullPatchPath))
+                if (Importer.ApplyBpsPatch(Config, fullCleanPath, fullTempPath, fullPatchPath))
                     Log("Initial Patch Success!", ConsoleColor.Green);
                 else
                 {

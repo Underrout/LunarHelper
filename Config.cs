@@ -22,9 +22,6 @@ namespace LunarHelper
         public string CleanPath;
         public string PackagePath;
 
-        public string AsarPath;
-        public string AsarOptions;
-
         public string UberASMPath;
         public string UberASMOptions;
 
@@ -106,8 +103,6 @@ namespace LunarHelper
             config.TempPath = vars.GetValueOrDefault("temp", config.TempPath);
             config.CleanPath = vars.GetValueOrDefault("clean", config.CleanPath);
             config.PackagePath = vars.GetValueOrDefault("package", config.PackagePath);
-            config.AsarPath = vars.GetValueOrDefault("asar_path", config.AsarPath);
-            config.AsarOptions = vars.GetValueOrDefault("asar_options", config.AsarOptions);
             config.UberASMPath = vars.GetValueOrDefault("uberasm_path", config.UberASMPath);
             config.UberASMOptions = vars.GetValueOrDefault("uberasm_options", config.UberASMOptions);
             config.GPSPath = vars.GetValueOrDefault("gps_path", config.GPSPath);
@@ -393,12 +388,6 @@ namespace LunarHelper
 
         private static void VerifyPatch(Config config, string patch_path)
         {
-            if (string.IsNullOrEmpty(config.AsarPath))
-                throw new Exception($"No path to asar specified, but patch '{patch_path}' must be inserted");
-
-            if (!File.Exists(config.AsarPath))
-                throw new Exception($"Asar not found at path '{config.AsarPath}'");
-
             if (!File.Exists(patch_path))
                 throw new Exception($"Patch '{patch_path}' not found");
 

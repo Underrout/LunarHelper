@@ -49,7 +49,7 @@ namespace LunarHelper.Resolvers
         // normalized generated file path, tag for generated file
         private List<(Uri, string)> generated_files = new List<(Uri, string)>();
 
-        public AsarResolver(DependencyGraph graph, HashSet<Vertex> seen, string asar_exe_path = null, string asar_options = null)
+        public AsarResolver(DependencyGraph graph, HashSet<Vertex> seen, string asar_path = null, string asar_options = null)
         {
             this.graph = graph;
             this.seen = seen;
@@ -60,9 +60,9 @@ namespace LunarHelper.Resolvers
             }
 
             // afaik you can only have a stddefines file with the exe, not a dll
-            if (!string.IsNullOrWhiteSpace(asar_exe_path) && Path.GetExtension(asar_exe_path) == ".exe")
+            if (!string.IsNullOrWhiteSpace(asar_path) && Path.GetExtension(asar_path) == ".exe")
             {
-                stddefines_vertex = DetermineStddefinesFile(asar_exe_path);
+                stddefines_vertex = DetermineStddefinesFile(asar_path);
 
                 if (stddefines_vertex != null)
                 {

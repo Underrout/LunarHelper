@@ -11,7 +11,7 @@ namespace LunarHelper
     class Report
     {
         [JsonIgnore]
-        public const int REPORT_FORMAT_VERSION = 3;
+        public const int REPORT_FORMAT_VERSION = 4;
 
         public string lunar_helper_version { get; set; }
         public int report_format_version { get; set; }
