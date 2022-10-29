@@ -22,6 +22,8 @@ namespace LunarHelper
         public string CleanPath;
         public string PackagePath;
 
+        public string GlobulesPath;
+
         public string UberASMPath;
         public string UberASMOptions;
 
@@ -103,6 +105,7 @@ namespace LunarHelper
             config.TempPath = vars.GetValueOrDefault("temp", config.TempPath);
             config.CleanPath = vars.GetValueOrDefault("clean", config.CleanPath);
             config.PackagePath = vars.GetValueOrDefault("package", config.PackagePath);
+            config.GlobulesPath = vars.GetValueOrDefault("globules_path", config.GlobulesPath);
             config.UberASMPath = vars.GetValueOrDefault("uberasm_path", config.UberASMPath);
             config.UberASMOptions = vars.GetValueOrDefault("uberasm_options", config.UberASMOptions);
             config.GPSPath = vars.GetValueOrDefault("gps_path", config.GPSPath);

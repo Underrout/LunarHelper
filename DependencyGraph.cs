@@ -16,41 +16,73 @@ namespace LunarHelper
         public BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>> dependency_graph;
         private DependencyResolver resolver;
 
-        public ToolRootVertex pixi_root { get; } = null;
-        public ToolRootVertex uberasm_root { get; } = null;
-        public ToolRootVertex gps_root { get; } = null;
-        public ToolRootVertex amk_root { get; } = null;
+        private Config config;
+
+        public ToolRootVertex pixi_root { get; set; } = null;
+        public ToolRootVertex uberasm_root { get; set; } = null;
+        public ToolRootVertex gps_root { get; set; } = null;
+        public ToolRootVertex amk_root { get; set; } = null;
         public HashSet<Vertex> patch_roots = new HashSet<Vertex>();
 
         public DependencyGraph(Config config)
         {
+            this.config = config;
             dependency_graph = new BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>>();
             resolver = new DependencyResolver(this, config);
+        }
 
+        public void ResolveGlobules()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ResolveNonGlobules()
+        {
+            ResolveAmk();
+            ResolvePixi();
+            ResolveGps();
+            ResolveUberasm();
+            ResolvePatches();
+        }
+
+        public void ResolveAmk()
+        {
             if (resolver.CanResolveAmk() && config.BuildOrder.Any(i => i.type == InsertableType.AddMusicK))
             {
                 amk_root = CreateToolRootVertex(ToolRootVertex.Tool.Amk);
                 resolver.ResolveToolRootDependencies(amk_root);
             }
+        }
 
+        public void ResolvePixi()
+        {
             if (resolver.CanResolvePixi() && config.BuildOrder.Any(i => i.type == InsertableType.Pixi))
             {
                 pixi_root = CreateToolRootVertex(ToolRootVertex.Tool.Pixi);
                 resolver.ResolveToolRootDependencies(pixi_root);
             }
+        }
 
+        public void ResolveGps()
+        {
             if (resolver.CanResolveGps() && config.BuildOrder.Any(i => i.type == InsertableType.Gps))
             {
                 gps_root = CreateToolRootVertex(ToolRootVertex.Tool.Gps);
                 resolver.ResolveToolRootDependencies(gps_root);
             }
+        }
 
+        public void ResolveUberasm()
+        {
             if (resolver.CanResolveUberAsm() && config.BuildOrder.Any(i => i.type == InsertableType.UberAsm))
             {
                 uberasm_root = CreateToolRootVertex(ToolRootVertex.Tool.UberAsm);
                 resolver.ResolveToolRootDependencies(uberasm_root);
             }
+        }
 
+        public void ResolvePatches()
+        {
             if (resolver.CanResolvePatches())
             {
                 CreatePatchRoots(config);

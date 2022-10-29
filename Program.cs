@@ -16,6 +16,8 @@ namespace LunarHelper
     {
         static public Config Config { get; private set; }
 
+        static private Importer importer = new Importer();
+
         static private int ROM_HEADER_SIZE = 0x200;
 
         static private int COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
@@ -162,6 +164,7 @@ namespace LunarHelper
 
                     case ConsoleKey.Escape:
                         running = false;
+                        importer.CloseAsar();
                         Log("Have a nice day!", ConsoleColor.Cyan);
                         Console.BackgroundColor = ConsoleColor.Black;
                         Console.ForegroundColor = ConsoleColor.White;
@@ -283,21 +286,6 @@ namespace LunarHelper
 
         static private bool ExecuteInsertionPlan(List<Insertable> plan)
         {
-            Importer importer = null;
-
-            if (plan.Any(i => i.type == InsertableType.SinglePatch || i.type == InsertableType.Patches))
-            {
-                try
-                {
-                    importer = new Importer();
-                }
-                catch(Exception e)
-                {
-                    Log(e.Message, ConsoleColor.Red);
-                    return false;
-                }
-            }
-
             foreach (var insertable in plan)
             {
                 bool result = false;
@@ -483,7 +471,6 @@ namespace LunarHelper
             }
 
             Directory.CreateDirectory(".lunar_helper");
-            File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
             File.WriteAllText(".lunar_helper\\build_report.json", sw.ToString());
         }
 
@@ -888,6 +875,15 @@ namespace LunarHelper
             else
             {
                 File.Copy(Config.CleanPath, Config.TempPath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                Importer.ClearGlobuleImprints();
+
+                var res = importer.ApplyAllGlobules(Config.TempPath, Config.GlobulesPath);
+                if (!res)
+                    return false;
             }
 
             if (!ExecuteInsertionPlan(plan))

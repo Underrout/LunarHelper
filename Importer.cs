@@ -444,14 +444,115 @@ namespace LunarHelper
             return true;
         }
 
+        private (byte[], byte[]) GetRomHeaderAndData(string rom_path)
+        {
+            byte[] full_rom = File.ReadAllBytes(rom_path);
+            var header_size = Path.GetExtension(rom_path) == ".smc" ? 200 : 0;
+            byte[] rom = full_rom[header_size..];
+            byte[] header = full_rom[0..header_size];
+
+            return (rom, header);
+        }
+
+        private void WriteGlobuleImprint(string globule_name, Asarlabel[] labels)
+        {
+            Directory.CreateDirectory(".lunar_helper/globules");
+
+            var imprint_path = $".lunar_helper/globules/{globule_name}";
+
+            var globule_stream = new StreamWriter(imprint_path);
+
+            foreach (var label in labels)
+            {
+                if (label.Name.StartsWith(':'))
+                    continue;
+
+                var prefixed_label = Path.GetFileNameWithoutExtension(globule_name) + '_' + label.Name;
+                var prefixed_label_as_define = '!' + prefixed_label;
+                var location = Convert.ToString(label.Location, 16).ToUpper();
+
+                globule_stream.WriteLine($"{prefixed_label} = ${location}");
+                globule_stream.WriteLine($"{prefixed_label_as_define} = ${location}");
+            }
+
+            globule_stream.Close();
+        }
+
+        public static void ClearGlobuleImprints()
+        {
+            if (Directory.Exists(".lunar_helper/globules"))
+                Directory.Delete(".lunar_helper/globules", true);
+
+            Directory.CreateDirectory(".lunar_helper/globules");
+        }
+
+        public bool ApplyAllGlobules(string temp_rom_path, string globules_path)
+        {
+            if (!Directory.Exists(globules_path))
+            {
+                Error($"Globules folder '{globules_path}' not found!");
+                return false;
+            }
+
+            foreach (var globule_path in Directory.EnumerateFiles(globules_path, "*.asm", SearchOption.TopDirectoryOnly))
+            {
+                var res = ApplyGlobule(temp_rom_path, globule_path);
+
+                if (!res)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool ApplyGlobule(string temp_rom_path, string globule_path)
+        {
+            Log($"Globule '{globule_path}'", ConsoleColor.Cyan);
+
+            (var rom, var header) = GetRomHeaderAndData(temp_rom_path);
+
+            var temp_patch_path = Path.GetTempFileName();
+
+            var temp_patch_stream = new StreamWriter(temp_patch_path);
+            temp_patch_stream.WriteLine("freecode cleaned");
+            temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(globule_path)}\"");
+            temp_patch_stream.Close();
+
+            var res = Asar.patch(temp_patch_path, ref rom);
+
+            File.Delete(temp_patch_path);
+
+            foreach (var print in Asar.getprints())
+            {
+                Log(print);
+            }
+
+            if (!res)
+            {
+                foreach (var error in Asar.geterrors())
+                    Log(error.Fullerrdata, ConsoleColor.Yellow);
+
+                Log($"Globule Insertion Failure!\n", ConsoleColor.Red);
+
+                return false;
+            }
+
+            using var rom_stream = new FileStream(temp_rom_path, FileMode.Truncate);
+            rom_stream.Write(header);
+            rom_stream.Write(rom);
+
+            WriteGlobuleImprint(Path.GetFileName(globule_path), Asar.getlabels());
+
+            Log($"Globule Insertion Success!\n", ConsoleColor.Green);
+
+            return true;
+        }
+
         public bool ApplyAsarPatch(Config config, string patch_path)
         {
             Log($"Patch '{patch_path}'", ConsoleColor.Cyan);
 
-            byte[] full_rom = File.ReadAllBytes(config.TempPath);
-            var header_size = Path.GetExtension(config.TempPath) == ".smc" ? 200 : 0;
-            byte[] rom = full_rom[header_size..];
-            byte[] header = full_rom[0..header_size];
+            (var rom, var header) = GetRomHeaderAndData(config.TempPath);
 
             var res = Asar.patch(patch_path, ref rom);
 
