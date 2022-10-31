@@ -628,6 +628,8 @@ namespace LunarHelper
                 return false;
             }
 
+            Importer.CreateStandardDefines();
+
             return true;
         }
 

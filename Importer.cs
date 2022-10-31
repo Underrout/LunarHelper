@@ -7,6 +7,7 @@ using System.Text;
 using AsarCLR;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Reflection;
 
 namespace LunarHelper
 {
@@ -15,6 +16,31 @@ namespace LunarHelper
     internal class Importer
     {
         static private string UBERASM_SUCCESS_STRING = "Codes inserted successfully.";
+
+        static private string LH_VERSION_DEFINE_NAME = "!LH_VERSION";
+        static private string LH_ASSEMBLING_DEFINE_NAME = "!LH_ASSEMBLING";
+
+        static public void CreateStandardDefines()
+        {
+            Directory.CreateDirectory(".lunar_helper");
+
+            var ver = Assembly.GetExecutingAssembly().GetName().Version;
+
+
+            File.WriteAllText(".lunar_helper/defines.asm",
+                "; Asar compatible file containing information about Lunar Helper, feel free to inscsrc this if needed,\n" +
+                "; it is recreated before every (Quick) Build\n\n" +
+                "; Define containing Lunar Helper's version number as a string\n" +
+                $"{LH_VERSION_DEFINE_NAME} = \"{ver.ToString().Substring(0, 5)}\"\n\n" +
+                "; Defines containing Lunar Helper's version number as individual numbers\n" +
+                "; For example, if assembled with Lunar Helper 2.6.0, MAJOR will be 2, MINOR will be 6 and PATCH will be 0\n" +
+                $"{LH_VERSION_DEFINE_NAME}_MAJOR = {ver.Major}\n" +
+                $"{LH_VERSION_DEFINE_NAME}_MINOR = {ver.Minor}\n" +
+                $"{LH_VERSION_DEFINE_NAME}_PATCH = {ver.Build}\n\n" +
+                "; Define that just serves as a marker so you can check if a file is being assembled using Lunar Helper if needed\n" +
+                $"{LH_ASSEMBLING_DEFINE_NAME} = 1\n"
+            );
+        }
 
         static public bool ApplyBpsPatch(Config config, string cleanROM, string outROM, string patchBPS)
         {
