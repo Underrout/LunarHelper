@@ -30,6 +30,10 @@ flips_path = Tools/FLIPS/flips.exe
 -- human_readable_map16_cli_path = Tools/human-readable-map16-cli.exe
 -- human_readable_map16_directory_path = Other/all_map16
 
+-- globules
+-- this is an advanced feature, see the readme for details
+-- globules_path = Globules
+
 -- content
 levels = Levels
 shared_palette = Other/shared.pal
