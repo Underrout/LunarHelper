@@ -16,21 +16,6 @@ namespace LunarHelper
     {
         static private string UBERASM_SUCCESS_STRING = "Codes inserted successfully.";
 
-        class AsarInitException : Exception
-        {
-            public AsarInitException(string message) : base(message)
-            {
-            }
-        }
-
-        public Importer()
-        {
-            if (!Asar.init())
-            {
-                throw new AsarInitException("Failed to initialize asar dll");
-            }
-        }
-
         static public bool ApplyBpsPatch(Config config, string cleanROM, string outROM, string patchBPS)
         {
             Log($"Patching {cleanROM}\n\tto {outROM}\n\twith {patchBPS}", ConsoleColor.Yellow);
@@ -444,7 +429,7 @@ namespace LunarHelper
             return true;
         }
 
-        private (byte[], byte[]) GetRomHeaderAndData(string rom_path)
+        private static (byte[], byte[]) GetRomHeaderAndData(string rom_path)
         {
             byte[] full_rom = File.ReadAllBytes(rom_path);
             var header_size = Path.GetExtension(rom_path) == ".smc" ? 200 : 0;
@@ -454,20 +439,21 @@ namespace LunarHelper
             return (rom, header);
         }
 
-        private void WriteGlobuleImprint(string globule_name, Asarlabel[] labels)
+        private static void WriteGlobuleImprint(string globule_name, Asarlabel[] labels)
         {
-            Directory.CreateDirectory(".lunar_helper/globules");
+            if (!Directory.Exists(".lunar_helper/globules"))
+                Directory.CreateDirectory(".lunar_helper/globules");
 
             var imprint_path = $".lunar_helper/globules/{globule_name}";
 
-            var globule_stream = new StreamWriter(imprint_path);
+            var globule_stream = new StreamWriter(imprint_path, false);
 
             foreach (var label in labels)
             {
                 if (label.Name.StartsWith(':'))
                     continue;
 
-                var prefixed_label = Path.GetFileNameWithoutExtension(globule_name) + '_' + label.Name;
+                var prefixed_label = Path.GetFileNameWithoutExtension(globule_name).Replace(' ', '_') + '_' + label.Name;
                 var prefixed_label_as_define = '!' + prefixed_label;
                 var location = Convert.ToString(label.Location, 16).ToUpper();
 
@@ -478,15 +464,91 @@ namespace LunarHelper
             globule_stream.Close();
         }
 
-        public static void ClearGlobuleImprints()
+        public static void FinalizeGlobuleImprints()
         {
-            if (Directory.Exists(".lunar_helper/globules"))
-                Directory.Delete(".lunar_helper/globules", true);
+            if (Directory.Exists(".lunar_helper/inserted_globules"))
+                Directory.Delete(".lunar_helper/inserted_globules", true);
 
             Directory.CreateDirectory(".lunar_helper/globules");
+
+            Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(".lunar_helper/globules", ".lunar_helper/inserted_globules");
         }
 
-        public bool ApplyAllGlobules(string temp_rom_path, string globules_path)
+        public static void CopyGlobuleImprints(string[] globule_names_to_copy)
+        {
+            foreach (string globule_name in globule_names_to_copy)
+            {
+                File.Copy($".lunar_helper/inserted_globules/{globule_name}.asm", $".lunar_helper/globules/{globule_name}.asm", true);
+            }
+        }
+
+        public static bool CleanGlobules(string temp_rom_path, string[] globule_names_to_clean)
+        {
+            var clean_patch_path = Path.GetTempFileName();
+            var clean_patch_stream = new StreamWriter(clean_patch_path);
+
+            foreach (var globule_name in globule_names_to_clean)
+            {
+                var globule_path = $".lunar_helper/inserted_globules/{globule_name}.asm";
+                if (!File.Exists(globule_path))
+                    return false;
+
+                var reader = new StreamReader(globule_path);
+                var line = reader.ReadLine();
+
+                if (line == null)
+                    return false;
+
+                while (line != null)
+                {
+                    if (line.StartsWith('!'))
+                    {
+                        line = reader.ReadLine();
+                        continue;  // skip over the define duplicates of the labels, it'd be redundant to clean both
+                    }
+
+                    var address_start = line.IndexOf('$');
+
+                    if (address_start == -1)
+                        return false;
+
+                    var hex_address = line.Substring(address_start);
+
+                    clean_patch_stream.WriteLine($"autoclean {hex_address}");
+
+                    line = reader.ReadLine();
+                }
+
+                var prev_imprint = $".lunar_helper/globules/{globule_name}.asm";
+
+                if (File.Exists(prev_imprint))
+                    File.Delete(prev_imprint);
+            }
+
+            clean_patch_stream.Close();
+
+            (var rom, var header) = GetRomHeaderAndData(temp_rom_path);
+
+            var res = Asar.patch(clean_patch_path, ref rom);
+
+            if (!res)
+            {
+                foreach (var error in Asar.geterrors())
+                    Log(error.Fullerrdata, ConsoleColor.Yellow);
+
+                Log($"Globule Cleanup Failure!\n", ConsoleColor.Red);
+
+                return false;
+            }
+
+            using var rom_stream = new FileStream(temp_rom_path, FileMode.Truncate);
+            rom_stream.Write(header);
+            rom_stream.Write(rom);
+
+            return true;
+        }
+
+        public static bool ApplyAllGlobules(string temp_rom_path, string globules_path)
         {
             if (!Directory.Exists(globules_path))
             {
@@ -505,19 +567,18 @@ namespace LunarHelper
             return true;
         }
 
-        public bool ApplyGlobule(string temp_rom_path, string globule_path)
+        public static bool ApplyGlobule(string temp_rom_path, string globule_path)
         {
             Log($"Globule '{globule_path}'", ConsoleColor.Cyan);
-
-            (var rom, var header) = GetRomHeaderAndData(temp_rom_path);
 
             var temp_patch_path = Path.GetTempFileName();
 
             var temp_patch_stream = new StreamWriter(temp_patch_path);
             temp_patch_stream.WriteLine("freecode cleaned");
-            temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(globule_path)}\"");
+            temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(globule_path).Replace('\\', '/')}\"");
             temp_patch_stream.Close();
 
+            (var rom, var header) = GetRomHeaderAndData(temp_rom_path);
             var res = Asar.patch(temp_patch_path, ref rom);
 
             File.Delete(temp_patch_path);
@@ -525,6 +586,11 @@ namespace LunarHelper
             foreach (var print in Asar.getprints())
             {
                 Log(print);
+            }
+
+            foreach (var warning in Asar.getwarnings())
+            {
+                Log(warning.Fullerrdata, ConsoleColor.Yellow);
             }
 
             if (!res)
@@ -548,17 +614,22 @@ namespace LunarHelper
             return true;
         }
 
-        public bool ApplyAsarPatch(Config config, string patch_path)
+        public static bool ApplyAsarPatch(Config config, string patch_path)
         {
             Log($"Patch '{patch_path}'", ConsoleColor.Cyan);
 
             (var rom, var header) = GetRomHeaderAndData(config.TempPath);
 
-            var res = Asar.patch(patch_path, ref rom);
+            var res = Asar.patch(Path.GetFullPath(patch_path), ref rom);
 
             foreach (var print in Asar.getprints())
             {
                 Log(print);
+            }
+
+            foreach (var warning in Asar.getwarnings())
+            {
+                Log(warning.Fullerrdata, ConsoleColor.Yellow);
             }
 
             if (!res)
@@ -578,11 +649,6 @@ namespace LunarHelper
             Log($"Patching Success!\n", ConsoleColor.Green);
 
             return true;
-        }
-
-        public void CloseAsar()
-        {
-            Asar.close();
         }
 
         static public bool ImportAllLevels(Config config)

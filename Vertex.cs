@@ -76,6 +76,16 @@ namespace LunarHelper
         }
     }
 
+    class GlobuleRootVertex : HashFileVertex
+    {
+        public readonly string globule_name;
+
+        public GlobuleRootVertex(string globule_name, string path) : base(Util.GetUri(path))
+        {
+            this.globule_name = globule_name;
+        }
+    }
+
     class NoUnderlyingFileException : Exception
     {
         public NoUnderlyingFileException()

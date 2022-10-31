@@ -8,14 +8,14 @@ using System.IO;
 
 namespace LunarHelper.Resolvers
 {
-    class PatchResolver : IResolve<PatchRootVertex>
+    class AsarFileResolver : IResolve<PatchRootVertex>, IResolve<GlobuleRootVertex>
     {
         private AsarResolver asar_resolver;
         private HashSet<Vertex> seen = new HashSet<Vertex>();
         private readonly DependencyGraph graph;
         private readonly Vertex asar_dll_vertex;
 
-        public PatchResolver(DependencyGraph graph, string asar_dll_path)
+        public AsarFileResolver(DependencyGraph graph, string asar_dll_path)
         {
             this.graph = graph;
             this.asar_dll_vertex = graph.GetOrCreateVertex(asar_dll_path);
@@ -26,13 +26,12 @@ namespace LunarHelper.Resolvers
         public void ResolveDependencies(PatchRootVertex vertex)
         {
             asar_resolver.ResolveDependencies(vertex);
+            graph.TryAddUniqueEdge(vertex, asar_dll_vertex, "asar_dll");
+        }
 
-            if (asar_resolver.stddefines_vertex != null)
-            {
-                // Connect patch root to asar stddefines vertex if it exists
-                graph.TryAddUniqueEdge(vertex, asar_resolver.stddefines_vertex, "stddefines");
-            }
-
+        public void ResolveDependencies(GlobuleRootVertex vertex)
+        {
+            asar_resolver.ResolveDependencies(vertex);
             graph.TryAddUniqueEdge(vertex, asar_dll_vertex, "asar_dll");
         }
     }

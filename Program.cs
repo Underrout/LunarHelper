@@ -10,6 +10,8 @@ using System.Text;
 using System.Linq;
 using System.Reflection;
 
+using AsarCLR;
+
 namespace LunarHelper
 {
     class Program
@@ -72,6 +74,12 @@ namespace LunarHelper
         static int Main(string[] args)
         {
             Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
+
+            if (!Asar.init())
+            {
+                Error("Failed to initialize asar.dll!");
+                return -1;
+            }
 
             if (args.Length > 0)
                 return HandleCommandLineInvocation(args);
@@ -164,7 +172,7 @@ namespace LunarHelper
 
                     case ConsoleKey.Escape:
                         running = false;
-                        importer.CloseAsar();
+                        Asar.close();
                         Log("Have a nice day!", ConsoleColor.Cyan);
                         Console.BackgroundColor = ConsoleColor.Black;
                         Console.ForegroundColor = ConsoleColor.White;
@@ -297,7 +305,7 @@ namespace LunarHelper
                         break;
 
                     case InsertableType.SinglePatch:
-                        result = importer.ApplyAsarPatch(Config, insertable.normalized_relative_path);
+                        result = Importer.ApplyAsarPatch(Config, insertable.normalized_relative_path);
                         break;
 
                     default:
@@ -381,8 +389,21 @@ namespace LunarHelper
             }
             Log("\n");
 
+            // delete existing temp ROM
+            if (File.Exists(Config.TempPath))
+                File.Delete(Config.TempPath);
+
+            // create temp ROM from potentially existing output ROM
+            if (File.Exists(Config.OutputPath))
+                File.Copy(Config.OutputPath, Config.TempPath);
+
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+                dependency_graph.ResolveGlobules();
+            // dependency_graph.ResolveNonGlobules();  // these get resolved while planning the build now, it's a little sketchy
+
             List<Insertable> plan;
 
             try 
@@ -401,6 +422,7 @@ namespace LunarHelper
             catch (Exception e)
             {
                 Log($"Encountered exception: '{e.Message}' while planning quick build, falling back to full rebuild...", ConsoleColor.Yellow);
+                Log(e.StackTrace);
                 return Build(invoked_from_cli, volatile_resource_handling_preference, true);
             }
             
@@ -411,10 +433,6 @@ namespace LunarHelper
             }
 
             // Actually doing quick build below
-
-            // delete existing temp ROM
-            if (File.Exists(Config.TempPath))
-                File.Delete(Config.TempPath);
 
             // Lunar Magic required
             if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
@@ -428,8 +446,6 @@ namespace LunarHelper
                 return false;
             }
 
-            File.Copy(Config.OutputPath, Config.TempPath);
-
             if (!ExecuteInsertionPlan(plan))
                 return false;
 
@@ -442,6 +458,8 @@ namespace LunarHelper
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
+
+            Importer.FinalizeGlobuleImprints();
 
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
@@ -879,9 +897,7 @@ namespace LunarHelper
 
             if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
             {
-                Importer.ClearGlobuleImprints();
-
-                var res = importer.ApplyAllGlobules(Config.TempPath, Config.GlobulesPath);
+                var res = Importer.ApplyAllGlobules(Config.TempPath, Config.GlobulesPath);
                 if (!res)
                     return false;
             }
@@ -893,6 +909,15 @@ namespace LunarHelper
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                dependency_graph.ResolveGlobules();
+            }
+
+            Importer.FinalizeGlobuleImprints();
+
+            dependency_graph.ResolveNonGlobules();
 
             if (!FinalizeOutputROM(invoked_from_cli))
             {

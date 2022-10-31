@@ -36,6 +36,11 @@ namespace LunarHelper
             public string path { get; set; }
         }
 
+        public class JsonGlobuleRootVertex : JsonHashVertex
+        {
+            public string name { get; set; }
+        }
+
         public class JsonHashVertex : JsonVertex
         {
             public string hash { get; set; }
@@ -130,6 +135,19 @@ namespace LunarHelper
                 idx = vertices.Count;
 
                 vertices.Add(vertex, json_patch_root);
+            }
+            else if (type == typeof(GlobuleRootVertex))
+            {
+                GlobuleRootVertex globule_root_vertex = (GlobuleRootVertex)vertex;
+                JsonGlobuleRootVertex json_globule_root = new JsonGlobuleRootVertex
+                {
+                    hash = globule_root_vertex.hash,
+                    name = globule_root_vertex.globule_name
+                };
+
+                idx = vertices.Count;
+
+                vertices.Add(vertex, json_globule_root);
             }
             else if (type == typeof(ToolRootVertex))
             {

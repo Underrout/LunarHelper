@@ -100,6 +100,69 @@ namespace LunarHelper
                 throw new MustRebuildException();
             }
 
+            Program.Log($"Analyzing globule dependencies...", ConsoleColor.Cyan);
+
+            IEnumerable<GlobuleRootVertex> globule_roots = dependency_graph.globule_roots.Cast<GlobuleRootVertex>();
+            var globule_results = DependencyGraphAnalyzer.AnalyzeGlobules(dependency_graph, globule_roots, report.dependency_graph);
+
+            bool anything_performed = false;
+
+            if (globule_results.Any())
+            {
+                var needs_cleaning = globule_results.Where(r => new[] {
+                    DependencyGraphAnalyzer.Result.Arbitrary, DependencyGraphAnalyzer.Result.Missing, DependencyGraphAnalyzer.Result.OldRoot,
+                    DependencyGraphAnalyzer.Result.Modified
+                }.Contains(r.Item2.Item1));
+
+                if (needs_cleaning.Any())
+                {
+                    Program.Log("Globules that need cleaning detected in previously built ROM, attempting to clean...", ConsoleColor.Cyan);
+
+                    if (!Importer.CleanGlobules(config.TempPath, needs_cleaning.Select(n => n.Item1).ToArray()))
+                    {
+                        Program.Log("Previously built ROM contains globules that failed to clean, rebuilding ROM...\n");
+                        throw new MustRebuildException();
+                    }
+                    else
+                    {
+                        Program.Log("Globules successfully cleaned up!\n", ConsoleColor.Green);
+                    }
+
+                    anything_performed = true;
+                }
+
+                var needs_insertion = globule_results
+                    .Where(r => !(new[] { DependencyGraphAnalyzer.Result.OldRoot, DependencyGraphAnalyzer.Result.Identical })
+                    .Contains(r.Item2.Item1));
+
+                if (needs_insertion.Any())
+                {
+                    foreach ((var globule_name, (var result, var dep_chain)) in needs_insertion)
+                    {
+                        Program.Log(GetQuickBuildReasonString(config, $"Globule '{globule_name}.asm'", result, dep_chain), ConsoleColor.Yellow);
+                        Program.Log($"\nAttempting to insert globule '{globule_name}.asm'...", ConsoleColor.Cyan);
+                        if (!Importer.ApplyGlobule(config.TempPath, Path.Join(config.GlobulesPath, globule_name + ".asm")))
+                        {
+                            throw new CannotBuildException("At least one globule failed to insert, cannot build!");
+                        }
+                    }
+
+                    anything_performed = true;
+                }
+
+                Importer.CopyGlobuleImprints(globule_results
+                    .Where(r => r.Item2.Item1 == DependencyGraphAnalyzer.Result.Identical)
+                    .Select(r => r.Item1)
+                    .ToArray());
+            }
+
+            if (!anything_performed)
+            {
+                Program.Log("Globules already up-to-date!\n", ConsoleColor.Green);
+            }
+
+            dependency_graph.ResolveNonGlobules();
+
             IEnumerable<PatchRootVertex> patch_roots = dependency_graph.patch_roots.Cast<PatchRootVertex>();
             (var need_rebuild, var results) = DependencyGraphAnalyzer.Analyze(dependency_graph, patch_roots, report.dependency_graph);
 

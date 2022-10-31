@@ -9,12 +9,13 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using LunarHelper.Resolvers;
+using System.Diagnostics;
 
 namespace LunarHelper
 {
     class DependencyResolver : IResolve<PatchRootVertex>, IToolRootResolve
     {
-        private readonly PatchResolver patch_resolver;
+        private readonly AsarFileResolver patch_resolver;
         private readonly AmkResolver amk_resolver;
         private readonly PixiResolver pixi_resolver;
         private readonly GpsResolver gps_resolver;
@@ -22,9 +23,9 @@ namespace LunarHelper
 
         public DependencyResolver(DependencyGraph graph, Config config)
         {
-            if (config.Patches.Count != 0)
+            if (config.Patches.Any() || !string.IsNullOrWhiteSpace(config.GlobulesPath))
             {
-                patch_resolver = new PatchResolver(graph, Path.Join(Directory.GetCurrentDirectory(), "asar.dll"));
+                patch_resolver = new AsarFileResolver(graph, Path.Join(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), "asar.dll"));
             }
 
             if (!string.IsNullOrWhiteSpace(config.AddMusicKPath))
@@ -75,6 +76,11 @@ namespace LunarHelper
         }
 
         public void ResolveDependencies(PatchRootVertex vertex)
+        {
+            patch_resolver.ResolveDependencies(vertex);
+        }
+
+        public void ResolveDependencies(GlobuleRootVertex vertex)
         {
             patch_resolver.ResolveDependencies(vertex);
         }
