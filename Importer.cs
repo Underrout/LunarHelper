@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -574,6 +574,7 @@ namespace LunarHelper
             var temp_patch_path = Path.GetTempFileName();
 
             var temp_patch_stream = new StreamWriter(temp_patch_path);
+            temp_patch_stream.WriteLine("warnings disable W1011");  // any freespace used in the globule is cleaned by LH anyway, no need to warn about "leaks"
             temp_patch_stream.WriteLine("freecode cleaned");
             temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(globule_path).Replace('\\', '/')}\"");
             temp_patch_stream.Close();
