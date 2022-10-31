@@ -901,6 +901,10 @@ namespace LunarHelper
                 if (!res)
                     return false;
             }
+            else
+            {
+                Importer.ClearGlobuleFolder();
+            }
 
             if (!ExecuteInsertionPlan(plan))
                 return false;

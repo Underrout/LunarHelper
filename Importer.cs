@@ -432,7 +432,7 @@ namespace LunarHelper
         private static (byte[], byte[]) GetRomHeaderAndData(string rom_path)
         {
             byte[] full_rom = File.ReadAllBytes(rom_path);
-            var header_size = Path.GetExtension(rom_path) == ".smc" ? 200 : 0;
+            var header_size = full_rom.Length & 0x7FFF;
             byte[] rom = full_rom[header_size..];
             byte[] header = full_rom[0..header_size];
 
@@ -447,6 +447,8 @@ namespace LunarHelper
             var imprint_path = $".lunar_helper/globules/{globule_name}";
 
             var globule_stream = new StreamWriter(imprint_path, false);
+
+            globule_stream.WriteLine("incsrc \"../call_globule.asm\"\n");
 
             foreach (var label in labels)
             {
@@ -471,7 +473,17 @@ namespace LunarHelper
 
             Directory.CreateDirectory(".lunar_helper/globules");
 
+            WriteCallGlobuleMacroFile();
+
             Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(".lunar_helper/globules", ".lunar_helper/inserted_globules");
+        }
+
+        private static void WriteCallGlobuleMacroFile()
+        {
+            File.WriteAllText(".lunar_helper/call_globule.asm",
+                "includeonce\n\nmacro call_globule(globule_label)\n\tPHB\n\t" +
+                "LDA.b #<globule_label>>>16\n\tPHA\n\tPLB\n\tJSL <globule_label>\n\tPLB\nendmacro\n"
+            );
         }
 
         public static void CopyGlobuleImprints(string[] globule_names_to_copy)
@@ -480,6 +492,14 @@ namespace LunarHelper
             {
                 File.Copy($".lunar_helper/inserted_globules/{globule_name}.asm", $".lunar_helper/globules/{globule_name}.asm", true);
             }
+        }
+
+        public static void ClearGlobuleFolder()
+        {
+            if (Directory.Exists(".lunar_helper/globules"))
+                Directory.Delete(".lunar_helper/globules", true);
+
+            Directory.CreateDirectory(".lunar_helper/globules");
         }
 
         public static bool CleanGlobules(string temp_rom_path, string[] globule_names_to_clean)
@@ -510,7 +530,10 @@ namespace LunarHelper
                     var address_start = line.IndexOf('$');
 
                     if (address_start == -1)
-                        return false;
+                    {
+                        line = reader.ReadLine();
+                        continue;
+                    }
 
                     var hex_address = line.Substring(address_start);
 
