@@ -1,36 +1,32 @@
 -- this is an example project file
 -- (Note: anything on a line after -- is a comment and is ignored by Lunar Helper!)
+-- (A lot of this file is commented out, just to show you potential configurations you can use)
 -- Lunar Helper will load every config_*.txt file in its directory.
--- For a solo project, you could simply configure everything in one big config file,
--- but for collabs it's a good idea to split config files between things that 
--- are relative to the project path like levels, and tools like Lunar Magic that each
--- collaborator may have installed at a different location, as in this example
--- (see config_user.txt for the rest of the example configuration)
  
 -- if defined, the initial patch will be applied before any other steps
--- It's good idea to open your clean ROM in Lunar Magic, save it to another location, and create a patch
--- of that saved ROM. This lets Lunar Magic apply a VRAM patch that will be required for some things
--- two initial patches with pretty standard setups are provided with this tool for your convenience
+-- this is important because there are certain things that Lunar Magic inserts that other 
+-- tools and resources may rely on
+-- two initial patches with pretty standard setups are provided in the "initial_patches" folder 
+-- with this tool for your convenience
 initial_patch = Other/initial_patch.bps
 
--- asar
+-- patch list, files in this list will be applied to your ROM using asar
 patches
 [
-    Patches\retry\retry.asm
-    Patches\asarspritetiles.asm
+--  Patches\retry\retry.asm
+--  Patches\asarspritetiles.asm
 ]
 
 -- tools
-asar_path = ../Tools/asar181/asar.exe
-lm_path = ../Tools/Lunar Magic 3.2.1/Lunar Magic.exe
-flips_path = ../Tools/FLIPS/flips.exe
-gps_path = Tools/GPS (V1.4.21)/gps.exe
-pixi_path = Tools/pixi_v1.32/pixi.exe
-pixi_options = -l Tools/pixi_v1.32/list.txt
-addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
-uberasm_path = Tools/UberASMTool14/UberASMTool.exe
+lm_path = Tools/Lunar Magic 3.2.1/Lunar Magic.exe
+flips_path = Tools/FLIPS/flips.exe
+-- gps_path = Tools/GPS (V1.4.21)/gps.exe
+-- pixi_path = Tools/pixi_v1.32/pixi.exe
+-- pixi_options = -l Tools/pixi_v1.32/list.txt
+-- addmusick_path = Tools/AddmusicK_1.0.8/AddMusicK.exe
+-- uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 
--- Optional config variables if you want to use a human readble text-based map16 format
+-- Config variables if you want to use a human readble text-based map16 format
 -- human_readable_map16_cli_path = Tools/human-readable-map16-cli.exe
 -- human_readable_map16_directory_path = Other/all_map16
 
@@ -38,7 +34,7 @@ uberasm_path = Tools/UberASMTool14/UberASMTool.exe
 levels = Levels
 shared_palette = Other/shared.pal
 map16 = Other/all.map16
-title_moves = Other/smwtitledemo.zst
+-- title_moves = Other/title_moves.zst
 
 -- global_data is a BPS patch file, to be created by Lunar Helper, 
 -- that will hold the overworld, ex global animations, credits, intro screen, and title moves.
@@ -46,7 +42,7 @@ title_moves = Other/smwtitledemo.zst
 -- and Lunar Monitor will automatically export them as you save your changes
 global_data = Other/global_data.bps
 
--- Build Order
+-- build order
 
 -- Specifies the order in which resources are inserted
 -- into the ROM when you use the Build function, feel free to 
@@ -60,6 +56,9 @@ global_data = Other/global_data.bps
 -- this patch will then be inserted at that step instead of being
 -- applied at the same time as the other Patches
 
+-- By default, most things in this list are commented out, which 
+-- works well for a vanilla hack
+
 build_order
 [
     Graphics                -- Insert standard GFX
@@ -71,17 +70,17 @@ build_order
     SharedPalettes          -- Insert Shared Palettes 
     GlobalData              -- Insert Overworld, Title Screen and Credits 
 
-    Patches                 -- Insert all remaining patches from the patches list that 
+--  Patches                 -- Insert all remaining patches from the patches list that 
                             -- are not explicitly mentioned in this build order
 
-    PIXI                    -- Insert custom sprites
+--  PIXI                    -- Insert custom sprites
     Levels                  -- Insert all levels
 
 --  PIXI                    -- Uncomment this if you're using Lunar Magic 3.31 or higher
 
-    AddMusicK               -- Insert custom music
-    GPS                     -- Insert custom blocks
-    UberASM                 -- Insert UberASM code
+--  AddMusicK               -- Insert custom music
+--  GPS                     -- Insert custom blocks
+--  UberASM                 -- Insert UberASM code
 
 --  Patches/some_patch.asm  -- Example of inserting a specific patch at a different time
 ]
@@ -94,5 +93,11 @@ build_order
 
 -- test_level is a 3-digit hex value specifying the level number of a level that will be copied to the 3-digit level number
 -- specified by test_level_dest *only* when Lunar Helper's "T - Test" option is run
-test_level = 0A7
-test_level_dest = 105
+-- test_level = 0A7
+-- test_level_dest = 105
+
+-- quick build triggers
+-- this is an advanced feature, see the readme for details
+quick_build_triggers
+[
+]
