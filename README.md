@@ -18,6 +18,7 @@ Modifications include:
 - Ability to pass command line arguments to the underlying tools
 - A set of two initial .bps patches for convenience
 - Ability to auto-reload open emulator instances after a successful build
+- Comes with asar included
 - Various other fixes and adjustments
 
 
@@ -135,6 +136,13 @@ were in a folder called "hack" and I'd stored it in my documents folder I would 
 to 
 
     dir = C:/Users/me/Documents/hack
+
+Note that a relative path also works here, so you can use
+
+    dir = ../..
+
+to set the directory two levels above the one Lunar Helper is in as the
+project directory.
     
 Any other paths I specify in config files would then be relative to this path, 
 i.e. if I had GPS stored at 
@@ -538,7 +546,7 @@ care about them being inserted in a particular order.
 
 We already talked about dir earlier, which is inside config_user.txt by default, 
 which you should have open now since the remaining variables are all inside 
-config_user.txt.
+config_user.txt as well.
 
 Just make sure this path is set to the root directory of your project as described 
 earlier and you should be fine.
@@ -561,14 +569,6 @@ If my clean ROM were at
 I would write 
 
     clean = clean.smc
-    
-If instead I had my clean ROM at 
-
-    C:/Users/me/Documents/my_clean_rom_folder/clean.smc 
-    
-I would write 
-
-    clean = ../my_clean_rom_folder/clean.smc
 
 
 ### output
@@ -619,7 +619,7 @@ I would write
 
 ### lm_path
 
-Same as asar_path but for Lunar Magic.
+This variable specifies the location of your Lunar Magic executable.
 
 Example:
 
@@ -634,20 +634,7 @@ I would write
 
 ### flips_path
 
-Same as the two above but for FLIPS.
-
-Note that older versions of FLIPS (including the one currently hosted in 
-SMW Central's tools section) have a bug that may make Lunar Helper think there 
-was an error with .bps patch application/creation even though no error occurred. 
-
-Make sure you get an up-to-date version, either from FLIPS's GitHub page (though 
-you will have to build it yourself) or from a comment on the tool page for FLIPS 
-on SMW Central (though there is of course no guarantee that this version has 
-not been tempered with).
-
-If you want a version that is verified to be safe you will have to either build 
-it yourself or wait for SMW Central or some other trusted site to host an 
-up-to-date version.
+Same as lm_path but for FLIPS.
 
 Example:
 
@@ -726,7 +713,7 @@ prefer to get familiar with Lunar Helper first before diving into these!
 ## Advanced features
 
 
-### Profiles
+## Profiles
 
 Profiles are essentially different sets of config files you can easily switch between in order 
 to customize Lunar Helper's behavior for different scenarios. A classic example would be having a 
@@ -787,7 +774,113 @@ else
 endif
 
 
-### Command-Line Options
+## Globules
+
+"Globules" are globally inserted pieces of code or data that are not directly tied to 
+any particular tool or resource, but can instead be used from practically anywhere.
+
+This can be very useful for adding new functionality to a ROM that should be available 
+to any potential resource or tool, not just one in particular.
+
+Globules are inserted and managed directly by Lunar Helper and can be removed or added at 
+any time without having to do a full rebuild.
+
+Lunar Helper has a `globules_path` config variable that should point to a folder somewhere 
+inside your folder that you intend to keep your globule files in.
+
+Any .asm file that is directly inside this folder will be inserted as a globule, .asm files
+in folders nested in the globule folder will be ignored.
+
+As an example, let's say we have a very simple globule, we'll call it `MakeBig.asm` and 
+its contents will look like this:
+
+```
+main:
+    LDA #$01
+    STA $19   ; store $01 to powerup status, making Mario big!
+    RTL
+```
+if we place this in our globule folder, Lunar Helper will insert this subroutine
+into our ROM the next time we do a (Quick) Build.
+
+But how do we actually use the subroutine?
+
+After Lunar Helper has inserted the globule, it will store a file containing the 
+address of every label inside the globule to `.lunar_helper/globules/globule_name.asm`,
+in our example, this would be `.lunar_helper/globules/MakeBig.asm`. Every label is 
+prefixed with the name of the globule, so the `main` label in our globule will be 
+available as `MakeBig_main`. Every label is also available as a define, so both 
+`MakeBig_main` or `!MakeBig_main` can be used and refer to the same exact location
+in the ROM.
+
+Let's say we're inserting a block that should make the player big when they touch it.
+Our block could be located at `MyProject/Tools/GPS/blocks/MakeBig.asm`, for example.
+
+Of course, since our globule is so simple, it would be easier to just use the exact
+same code in the block, but let's try to call the subroutine in our globule instead.
+
+To do so, we would first include the generated globule using 
+`incsrc "../../../.lunar_helper/globules/MakeBig.asm"` and then call the subroutine 
+using `%call_globule(MakeBig_main)`. The `%call_globule` macro is a convenience macro
+that is automatically included whenver you include a generated globule and lets you
+call globule subroutines easily.
+
+Our resulting block might look something like this:
+```
+incsrc "../../../.lunar_helper/globules/MakeBig.asm"
+
+db $42
+JMP MarioBelow : JMP MarioAbove : JMP MarioSide
+JMP SpriteV : JMP SpriteH : JMP MarioCape : JMP MarioFireball
+JMP TopCorner : JMP BodyInside : JMP HeadInside
+
+MarioBelow:
+MarioAbove:
+MarioSide:
+
+TopCorner:
+BodyInside:
+HeadInside:
+
+%call_globule(MakeBig_main)  ; %call_globule(!MakeBig_main) would also work!
+
+SpriteV:
+SpriteH:
+
+MarioCape:
+MarioFireball:
+RTL
+```
+The big advantage of globules is that you can use this exact approach in
+sprites, uberasm code, patches, etc. without wasting any ROM space on duplicate
+routines or data or having to manually manage addresses.
+
+The only pitfalls to keep in mind are
+
+- accidentally including the source globule instead of the generated file
+- the globule will likely be in a different bank than the code trying to access it
+
+The second pitfall means that you should generally either use long addressing or 
+change the databank register when trying to read data from globules.
+
+Any freespace used by globules will be automatically cleaned up whenever they're 
+re-inserted or removed. They're (re-)inserted at the very start of a any (Quick)
+Build and are not currently a configurable part of the build order.
+
+
+## Lunar Helper Information in asm
+
+Information about Lunar Helper is available in the `.lunar_helper/defines.asm` file, which 
+can be freely included from any other resource and is generated before each (Quick) Build.
+
+For details on the available defines, feel free to take a look at the contents of the file.
+
+Note that the defines in the file are also automatically included in all globules and patches,
+this can potentially be used to let code authors detect that their code is being assembled by a 
+project and account for that if they want to.
+
+
+## Command-Line Options
 
 Lunar Helper supports `--build`, `--quickbuild`, `--package` and `--profiles` command line options, 
 which you can use to quickly perform the corresponding actions without having to navigate 
@@ -810,7 +903,7 @@ ROM so be careful) and `-v C` will cancel the build with an error if such resour
 (C is the default).
 
 
-### Resolving arbitrary dependencies
+## Resolving arbitrary dependencies
 
 Alternatively to simply leaving arbitrary dependencies unresolved,
 if you have some asm knowledge, you may opt to resolve the arbitrary 
@@ -849,7 +942,7 @@ ensure the code that's using `canreadfile` gets a chance to check whether the pr
 file is now present.
 
 
-### Quick Build triggers
+## Quick Build triggers
 
 By default, Quick Build will only re-insert resources/tools which have changed since the last 
 successful (Quick) Build. In some cases, it might be useful to re-insert a different tool/resource
