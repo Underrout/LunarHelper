@@ -865,7 +865,11 @@ change the databank register when trying to read data from globules.
 
 Any freespace used by globules will be automatically cleaned up whenever they're 
 re-inserted or removed. They're (re-)inserted at the very start of a any (Quick)
-Build and are not currently a configurable part of the build order.
+Build and are not currently a configurable part of the build order. Note that
+Globules should currently **not** import other globules (via incsrc for example).
+Make sure every freespace area in your globules contains at least one label, 
+otherwise you may leak freespace, since Lunar Helper cannot clean these areas up
+automatically unless they contain a label.
 
 
 ## Lunar Helper Information in asm
