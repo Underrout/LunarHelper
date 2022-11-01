@@ -10,11 +10,15 @@ using System.Text;
 using System.Linq;
 using System.Reflection;
 
+using AsarCLR;
+
 namespace LunarHelper
 {
     class Program
     {
         static public Config Config { get; private set; }
+
+        static private Importer importer = new Importer();
 
         static private int ROM_HEADER_SIZE = 0x200;
 
@@ -70,6 +74,12 @@ namespace LunarHelper
         static int Main(string[] args)
         {
             Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
+
+            if (!Asar.init())
+            {
+                Error("Failed to initialize asar.dll!");
+                return -1;
+            }
 
             if (args.Length > 0)
                 return HandleCommandLineInvocation(args);
@@ -162,6 +172,7 @@ namespace LunarHelper
 
                     case ConsoleKey.Escape:
                         running = false;
+                        Asar.close();
                         Log("Have a nice day!", ConsoleColor.Cyan);
                         Console.BackgroundColor = ConsoleColor.Black;
                         Console.ForegroundColor = ConsoleColor.White;
@@ -378,8 +389,21 @@ namespace LunarHelper
             }
             Log("\n");
 
+            // delete existing temp ROM
+            if (File.Exists(Config.TempPath))
+                File.Delete(Config.TempPath);
+
+            // create temp ROM from potentially existing output ROM
+            if (File.Exists(Config.OutputPath))
+                File.Copy(Config.OutputPath, Config.TempPath);
+
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+                dependency_graph.ResolveGlobules();
+            // dependency_graph.ResolveNonGlobules();  // these get resolved while planning the build now, it's a little sketchy
+
             List<Insertable> plan;
 
             try 
@@ -398,6 +422,7 @@ namespace LunarHelper
             catch (Exception e)
             {
                 Log($"Encountered exception: '{e.Message}' while planning quick build, falling back to full rebuild...", ConsoleColor.Yellow);
+                Log(e.StackTrace);
                 return Build(invoked_from_cli, volatile_resource_handling_preference, true);
             }
             
@@ -408,10 +433,6 @@ namespace LunarHelper
             }
 
             // Actually doing quick build below
-
-            // delete existing temp ROM
-            if (File.Exists(Config.TempPath))
-                File.Delete(Config.TempPath);
 
             // Lunar Magic required
             if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
@@ -425,8 +446,6 @@ namespace LunarHelper
                 return false;
             }
 
-            File.Copy(Config.OutputPath, Config.TempPath);
-
             if (!ExecuteInsertionPlan(plan))
                 return false;
 
@@ -439,6 +458,8 @@ namespace LunarHelper
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
             WriteReport();
+
+            Importer.FinalizeGlobuleImprints();
 
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
@@ -468,7 +489,6 @@ namespace LunarHelper
             }
 
             Directory.CreateDirectory(".lunar_helper");
-            File.SetAttributes(".lunar_helper", File.GetAttributes(".lunar_helper") | FileAttributes.Hidden);
             File.WriteAllText(".lunar_helper\\build_report.json", sw.ToString());
         }
 
@@ -518,7 +538,6 @@ namespace LunarHelper
             report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
 
-            report.asar_options = Config.AsarOptions;
             report.pixi_options = Config.PixiOptions;
             report.gps_options = Config.GPSOptions;
             report.addmusick_options = Config.AddmusicKOptions;
@@ -608,6 +627,8 @@ namespace LunarHelper
                 Error(e.Message);
                 return false;
             }
+
+            Importer.CreateStandardDefines();
 
             return true;
         }
@@ -861,7 +882,7 @@ namespace LunarHelper
                 var fullPatchPath = Path.GetFullPath(Config.InitialPatch);
                 var fullCleanPath = Path.GetFullPath(Config.CleanPath);
                 var fullTempPath = Path.GetFullPath(Config.TempPath);
-                if (Importer.ApplyPatch(Config, fullCleanPath, fullTempPath, fullPatchPath))
+                if (Importer.ApplyBpsPatch(Config, fullCleanPath, fullTempPath, fullPatchPath))
                     Log("Initial Patch Success!", ConsoleColor.Green);
                 else
                 {
@@ -876,6 +897,17 @@ namespace LunarHelper
                 File.Copy(Config.CleanPath, Config.TempPath);
             }
 
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                var res = Importer.ApplyAllGlobules(Config.TempPath, Config.GlobulesPath);
+                if (!res)
+                    return false;
+            }
+            else
+            {
+                Importer.ClearGlobuleFolder();
+            }
+
             if (!ExecuteInsertionPlan(plan))
                 return false;
 
@@ -883,6 +915,15 @@ namespace LunarHelper
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                dependency_graph.ResolveGlobules();
+            }
+
+            Importer.FinalizeGlobuleImprints();
+
+            dependency_graph.ResolveNonGlobules();
 
             if (!FinalizeOutputROM(invoked_from_cli))
             {

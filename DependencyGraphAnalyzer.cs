@@ -35,6 +35,39 @@ namespace LunarHelper
             Arbitrary
         }
 
+        public static IEnumerable<(string, (Result, IEnumerable<Vertex>))> AnalyzeGlobules(
+            DependencyGraph new_graph, IEnumerable<GlobuleRootVertex> new_roots, IEnumerable<JsonVertex> old_graph)
+        {
+            var old_roots = old_graph.Where(v => v is JsonGlobuleRootVertex).Cast<JsonGlobuleRootVertex>();
+
+            var newly_added_roots = new_roots.Where(n => !old_roots.Any(o => o.name == n.globule_name));
+            var newly_removed_roots = old_roots.Where(o => !new_roots.Any(n => n.globule_name == o.name));
+
+            var remaining = new_roots.Where(n => !newly_added_roots.Contains(n));
+
+            var remaining_pairs = new_roots
+                .Where(n => !newly_added_roots.Contains(n)).Select(n => (n, old_roots.First(o => o.name == n.globule_name)));
+
+            var results = new List<(string, (Result, IEnumerable<Vertex>))>();
+
+            foreach ((var new_root, var old_root) in remaining_pairs)
+            {
+                results.Add((new_root.globule_name, CompareSubgraphs(new_graph, new_root, old_root, old_graph.ToList())));
+            }
+
+            foreach (var new_root in newly_added_roots)
+            {
+                results.Add((new_root.globule_name, (Result.NewRoot, new List<Vertex> { new_root })));
+            }
+
+            foreach (var old_root in newly_removed_roots)
+            {
+                results.Add((old_root.name, (Result.OldRoot, new List<Vertex> { })));
+            }
+
+            return results;
+        }
+
         // returns (true, null) if we have to suspect that an old patch was removed from the list
         // otherwise returns a list of patch root vertices and the result of analyzing their dependencies
         public static (bool, IEnumerable<(PatchRootVertex, (Result, IEnumerable<Vertex>))>) Analyze(DependencyGraph new_graph, IEnumerable<PatchRootVertex> new_roots, 

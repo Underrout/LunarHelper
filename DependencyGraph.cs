@@ -16,41 +16,71 @@ namespace LunarHelper
         public BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>> dependency_graph;
         private DependencyResolver resolver;
 
-        public ToolRootVertex pixi_root { get; } = null;
-        public ToolRootVertex uberasm_root { get; } = null;
-        public ToolRootVertex gps_root { get; } = null;
-        public ToolRootVertex amk_root { get; } = null;
+        private Config config;
+
+        public ToolRootVertex pixi_root { get; set; } = null;
+        public ToolRootVertex uberasm_root { get; set; } = null;
+        public ToolRootVertex gps_root { get; set; } = null;
+        public ToolRootVertex amk_root { get; set; } = null;
+
         public HashSet<Vertex> patch_roots = new HashSet<Vertex>();
+
+        public HashSet<Vertex> globule_roots = new HashSet<Vertex>();
 
         public DependencyGraph(Config config)
         {
+            this.config = config;
             dependency_graph = new BidirectionalGraph<Vertex, STaggedEdge<Vertex, string>>();
             resolver = new DependencyResolver(this, config);
+        }
 
+        public void ResolveNonGlobules()
+        {
+            ResolveAmk();
+            ResolvePixi();
+            ResolveGps();
+            ResolveUberasm();
+            ResolvePatches();
+        }
+
+        private void ResolveAmk()
+        {
             if (resolver.CanResolveAmk() && config.BuildOrder.Any(i => i.type == InsertableType.AddMusicK))
             {
                 amk_root = CreateToolRootVertex(ToolRootVertex.Tool.Amk);
                 resolver.ResolveToolRootDependencies(amk_root);
             }
+        }
 
+        private void ResolvePixi()
+        {
             if (resolver.CanResolvePixi() && config.BuildOrder.Any(i => i.type == InsertableType.Pixi))
             {
                 pixi_root = CreateToolRootVertex(ToolRootVertex.Tool.Pixi);
                 resolver.ResolveToolRootDependencies(pixi_root);
             }
+        }
 
+        private void ResolveGps()
+        {
             if (resolver.CanResolveGps() && config.BuildOrder.Any(i => i.type == InsertableType.Gps))
             {
                 gps_root = CreateToolRootVertex(ToolRootVertex.Tool.Gps);
                 resolver.ResolveToolRootDependencies(gps_root);
             }
+        }
 
+        private void ResolveUberasm()
+        {
             if (resolver.CanResolveUberAsm() && config.BuildOrder.Any(i => i.type == InsertableType.UberAsm))
             {
                 uberasm_root = CreateToolRootVertex(ToolRootVertex.Tool.UberAsm);
                 resolver.ResolveToolRootDependencies(uberasm_root);
             }
+        }
 
+        private void ResolvePatches()
+        {
             if (resolver.CanResolvePatches())
             {
                 CreatePatchRoots(config);
@@ -60,6 +90,22 @@ namespace LunarHelper
                     if (root is PatchRootVertex)
                     {
                         resolver.ResolveDependencies((PatchRootVertex)root);
+                    }
+                }
+            }
+        }
+
+        public void ResolveGlobules()
+        {
+            if (resolver.CanResolvePatches())
+            {
+                CreateGlobuleRoots(config);
+
+                foreach (var root in globule_roots)
+                {
+                    if (root is GlobuleRootVertex)
+                    {
+                        resolver.ResolveDependencies((GlobuleRootVertex)root);
                     }
                 }
             }
@@ -82,6 +128,26 @@ namespace LunarHelper
 
                 patch_roots.Add(patch_root);
                 dependency_graph.AddVertex(patch_root);
+            }
+        }
+
+        private void CreateGlobuleRoots(Config config)
+        {
+            foreach (var globule_path in Directory.EnumerateFiles(config.GlobulesPath, "*.asm", SearchOption.TopDirectoryOnly))
+            {
+                Vertex globule_root;
+
+                try
+                {
+                    globule_root = new GlobuleRootVertex(Path.GetFileNameWithoutExtension(globule_path), globule_path);
+                }
+                catch (NoUnderlyingFileException)
+                {
+                    globule_root = new MissingFileOrDirectoryVertex(Util.GetUri(globule_path));
+                }
+
+                globule_roots.Add(globule_root);
+                dependency_graph.AddVertex(globule_root);
             }
         }
 
