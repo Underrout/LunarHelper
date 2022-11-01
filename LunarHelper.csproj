@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <DebugType>embedded</DebugType>
@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AssemblyVersion>2.6.0</AssemblyVersion>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
   </PropertyGroup>
