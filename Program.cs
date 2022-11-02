@@ -11,6 +11,8 @@ using System.Linq;
 using System.Reflection;
 
 using AsarCLR;
+using Microsoft.Win32;
+using System.Runtime.InteropServices;
 
 namespace LunarHelper
 {
@@ -1018,7 +1020,57 @@ namespace LunarHelper
             }
             else
             {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Log("No emulator specified, attempting to use Lunar Magic's emulator...", ConsoleColor.Yellow);
+
+                    TryLaunchLunarMagicEmulator();
+
+                    return;
+                }
+
                 Log("No emulator specified!", ConsoleColor.Red);
+            }
+        }
+
+        static private void TryLaunchLunarMagicEmulator()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Log("No Lunar Magic emulator found", ConsoleColor.Red);
+                return;
+            }
+
+            var emulator_path = (string)Registry.GetValue(
+                @"HKEY_CURRENT_USER\SOFTWARE\LunarianConcepts\LunarMagic\Settings", "Emulator", null);
+
+            if (string.IsNullOrEmpty(emulator_path))
+            {
+                Log("No Lunar Magic emulator found", ConsoleColor.Red);
+                return;
+            }
+
+            var options = (string)Registry.GetValue(
+                @"HKEY_CURRENT_USER\SOFTWARE\LunarianConcepts\LunarMagic\Settings", "EmulatorArg", "");
+
+            options = options.Replace("%1", Path.GetFullPath(Config.OutputPath));
+
+            Log("Launching Lunar Magic's emulator...", ConsoleColor.Yellow);
+
+            if (EmulatorProcess != null && !EmulatorProcess.HasExited)
+                EmulatorProcess.Kill(true);
+
+            ProcessStartInfo psi = new ProcessStartInfo(emulator_path, options);
+
+            EmulatorProcess = Process.Start(psi);
+
+            if (EmulatorProcess != null)
+            {
+                Log("Lunar Magic emulator launched!", ConsoleColor.Green);
+            }
+            else
+            {
+                Error("Lunar Magic emulator launch failed");
             }
         }
 
