@@ -61,6 +61,8 @@ namespace LunarHelper
         public bool ReloadEmulatorAfterBuild;
         public bool SuppressArbitraryDepsWarning;
 
+        public bool InvokedOnCommandLine;
+
         public List<Insertable> BuildOrder = null;
         List<(Insertable, Insertable)> QuickBuildTriggers = new List<(Insertable, Insertable)>();
         public BidirectionalGraph<Insertable, Edge<Insertable>> QuickBuildTriggerGraph = null;

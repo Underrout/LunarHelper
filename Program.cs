@@ -228,7 +228,7 @@ namespace LunarHelper
                     {
                         if (profile != null)
                             SwitchToProfile(profile);
-                        var success = Init() && Build(true, volatile_pref);
+                        var success = Init(true) && Build(volatile_pref);
                         return_code = success ? 0 : 1;
                     }))
                 .Given.Flag("-q", "--quickbuild").Then(b => b
@@ -245,7 +245,7 @@ namespace LunarHelper
                     {
                         if (profile != null)
                             SwitchToProfile(profile);
-                        var success = Init() && QuickBuild(true, volatile_pref);
+                        var success = Init(true) && QuickBuild(volatile_pref);
                         return_code = success ? 0 : 1;
                     }))
                 .Given.Flag("-p", "--package").Then(b => b
@@ -262,7 +262,7 @@ namespace LunarHelper
                     {
                         if (profile != null)
                             SwitchToProfile(profile);
-                        var success = Init() && Build(true, volatile_pref) && Package();
+                        var success = Init(true) && Build(volatile_pref) && Package();
                         return_code = success ? 0 : 1;
                     }))
                 .Invalid()
@@ -371,14 +371,14 @@ namespace LunarHelper
             }
         }
 
-        static private bool QuickBuild(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ')
+        static private bool QuickBuild(char volatile_resource_handling_preference = ' ')
         {
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile();
             else
                 profile_manager.DeleteCurrentProfileFile();
 
-            if (!HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
+            if (!HandleVolatileResources(Config.InvokedOnCommandLine, volatile_resource_handling_preference))
             {
                 return false;
             }
@@ -419,13 +419,13 @@ namespace LunarHelper
             }
             catch (BuildPlan.MustRebuildException)
             {
-                return Build(invoked_from_cli, volatile_resource_handling_preference, true);
+                return Build(volatile_resource_handling_preference, true);
             }
             catch (Exception e)
             {
                 Log($"Encountered exception: '{e.Message}' while planning quick build, falling back to full rebuild...", ConsoleColor.Yellow);
                 Log(e.StackTrace);
-                return Build(invoked_from_cli, volatile_resource_handling_preference, true);
+                return Build(volatile_resource_handling_preference, true);
             }
             
             if (plan.Count == 0)
@@ -453,7 +453,7 @@ namespace LunarHelper
 
             MarkRomAsNonVolatile(Config.TempPath);
 
-            if (!FinalizeOutputROM(invoked_from_cli))
+            if (!FinalizeOutputROM(Config.InvokedOnCommandLine))
             {
                 return false;
             }
@@ -566,7 +566,7 @@ namespace LunarHelper
             return dict;
         }
 
-        static private bool Init()
+        static private bool Init(bool invoked_on_command_line = false)
         {
             Directory.SetCurrentDirectory(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName));
 
@@ -585,6 +585,8 @@ namespace LunarHelper
 
             if (Config == null)
                 return false;
+
+            Config.InvokedOnCommandLine = invoked_on_command_line;
 
             // set the working directory
             if (!string.IsNullOrWhiteSpace(Config.WorkingDirectory))
@@ -838,14 +840,14 @@ namespace LunarHelper
             }
         }
 
-        static private bool Build(bool invoked_from_cli = false, char volatile_resource_handling_preference = ' ', bool skip_volatile_check = false)
+        static private bool Build(char volatile_resource_handling_preference = ' ', bool skip_volatile_check = false)
         {
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile();
             else
                 profile_manager.DeleteCurrentProfileFile();
 
-            if (!skip_volatile_check && !HandleVolatileResources(invoked_from_cli, volatile_resource_handling_preference))
+            if (!skip_volatile_check && !HandleVolatileResources(Config.InvokedOnCommandLine, volatile_resource_handling_preference))
             {
                 return false;
             }
@@ -927,7 +929,7 @@ namespace LunarHelper
 
             dependency_graph.ResolveNonGlobules();
 
-            if (!FinalizeOutputROM(invoked_from_cli))
+            if (!FinalizeOutputROM(Config.InvokedOnCommandLine))
             {
                 return false;
             }
