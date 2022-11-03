@@ -205,5 +205,39 @@ namespace LunarHelper
 
             return false;
         }
+
+        internal static bool CreateVanillaGraphics(Config config)
+        {
+            return false;
+            throw new NotImplementedException();
+        }
+
+        internal static bool CreateVanillaMap16(Config config)
+        {
+            return false;
+
+            throw new NotImplementedException();
+        }
+
+        internal static bool CreateVanillaHumanReadableMap16(Config config)
+        {
+            return false;
+
+            throw new NotImplementedException();
+        }
+
+        internal static bool CreateVanillaSharedPalettes(Config config)
+        {
+            return false;
+
+            throw new NotImplementedException();
+        }
+
+        internal static bool CreateVanillaGlobalData(Config config)
+        {
+            return false;
+
+            throw new NotImplementedException();
+        }
     }
 }

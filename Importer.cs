@@ -75,6 +75,18 @@ namespace LunarHelper
         {
             Log("Global Data", ConsoleColor.Cyan);
 
+            if (!config.InvokedOnCommandLine && !File.Exists(config.GlobalDataPath))
+            {
+                var res = Prompt($"'{config.GlobalDataPath}' file not found. " +
+                $"Export and use vanilla global data?");
+
+                if (res)
+                {
+                    if (!Exporter.CreateVanillaGlobalData(config))
+                        return false;
+                }
+            }
+
             ProcessStartInfo psi;
             Process p;
             string globalDataROMPath = Path.Combine(
@@ -182,6 +194,18 @@ namespace LunarHelper
         {
             Log("Shared Palette", ConsoleColor.Cyan);
 
+            if (!config.InvokedOnCommandLine && !File.Exists(config.SharedPalettePath))
+            {
+                var res = Prompt($"'{config.SharedPalettePath}' file not found. " +
+                $"Export and use vanilla shared palettes?");
+
+                if (res)
+                {
+                    if (!Exporter.CreateVanillaSharedPalettes(config))
+                        return false;
+                }
+            }
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
                         $"-ImportSharedPalette \"{config.TempPath}\" \"{config.SharedPalettePath}\"");
@@ -238,6 +262,18 @@ namespace LunarHelper
                 else
                     humanReadableDirectory = Path.Combine(Path.GetDirectoryName(config.Map16Path), Path.GetFileNameWithoutExtension(config.Map16Path));
 
+                if (!config.InvokedOnCommandLine && !Directory.Exists(humanReadableDirectory))
+                {
+                    var res = Prompt($"'{humanReadableDirectory}' folder is missing or empty. " +
+                    $"Export and use vanilla map16?");
+
+                    if (res)
+                    {
+                        if (!Exporter.CreateVanillaHumanReadableMap16(config))
+                            return false;
+                    }
+                }
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo process = new ProcessStartInfo(config.HumanReadableMap16CLI,
                             $"--to-map16 \"{humanReadableDirectory}\" \"{config.Map16Path}\"");
@@ -252,6 +288,18 @@ namespace LunarHelper
                 {
                     Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
                     return false;
+                }
+            }
+
+            if (!config.InvokedOnCommandLine && !File.Exists(config.Map16Path))
+            {
+                var res = Prompt($"'{config.Map16Path}' file not found. " +
+                $"Export and use vanilla map16?");
+
+                if (res)
+                {
+                    if (!Exporter.CreateVanillaMap16(config))
+                        return false;
                 }
             }
 
@@ -407,10 +455,39 @@ namespace LunarHelper
             return true;
         }
 
+        static private bool Prompt(string prompt)
+        {
+            ConsoleKey res;
+            do
+            {
+                Log($"{prompt} Y/N", ConsoleColor.White);
+
+                res = Console.ReadKey(true).Key;
+            } while (!(new[] { ConsoleKey.N, ConsoleKey.Y }).Contains(res));
+
+            return res == ConsoleKey.Y;
+        }
+
         static public bool ImportGraphics(Config config)
         {
             Log("Graphics", ConsoleColor.Cyan);
             {
+                var graphics_folder = Path.Join(Directory.GetCurrentDirectory(), "Graphics");
+                var graphics_folder_missing_or_empty = !Directory.Exists(graphics_folder) ||
+                    !Directory.EnumerateFiles(graphics_folder).Any();
+
+                if (!config.InvokedOnCommandLine && graphics_folder_missing_or_empty)
+                {
+                    var res = Prompt($"'{graphics_folder}' folder is missing or empty. " +
+                    $"Export and use vanilla graphics?");
+
+                    if (res)
+                    {
+                        if (!Exporter.CreateVanillaGraphics(config))
+                            return false;
+                    }
+                }
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
                             $"-ImportGFX \"{config.TempPath}\"");
@@ -720,6 +797,21 @@ namespace LunarHelper
         {
             Log("Levels", ConsoleColor.Cyan);
             // import levels
+
+            if (!config.InvokedOnCommandLine && !Directory.Exists(config.LevelsPath))
+            {
+                var res = Prompt($"'{config.LevelsPath}' folder not found. Create it?");
+
+                if (res)
+                    Directory.CreateDirectory(config.LevelsPath);
+            }
+
+            if (Directory.Exists(config.LevelsPath) && !Directory.EnumerateFiles(config.LevelsPath, "*.mwl", SearchOption.TopDirectoryOnly).Any())
+            {
+                Log("No levels to be inserted yet.\n", ConsoleColor.Yellow);
+                return true;
+            }
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
                         $"-ImportMultLevels \"{config.TempPath}\" \"{config.LevelsPath}\" {config.LunarMagicLevelImportFlags ?? ""}");
@@ -727,16 +819,15 @@ namespace LunarHelper
             p.WaitForExit();
 
             if (p.ExitCode == 0)
-                Log("Levels Import Success!", ConsoleColor.Green);
+            {
+                Log("Levels Import Success!\n", ConsoleColor.Green);
+                return true;
+            }
             else
             {
-                Log("Levels Import Failure!", ConsoleColor.Red);
+                Log("Levels Import Failure!\n", ConsoleColor.Red);
                 return false;
             }
-
-            Console.WriteLine();
-
-            return true;
         }
     }
 }
