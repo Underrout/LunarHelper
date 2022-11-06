@@ -1,11 +1,17 @@
 #pragma once
-#include "LMFunctions.h"
 #include "BuildResultUpdater.h"
 
-#include <filesystem>
+#if LM_VERSION == 330
+#include "Addresses/Addresses330.h"
+#elif LM_VERSION == 331
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 332
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 333
+#include "Addresses/Addresses331.h"
+#endif
 
-constexpr uintptr_t LM_CURR_LEVEL_NUMBER = 0x58c12c;
-constexpr uintptr_t LM_CURR_LEVEL_NUMBER_BEING_SAVED = 0x7ef584;
+#include <filesystem>
 
 namespace fs = std::filesystem;
 
@@ -21,5 +27,5 @@ public:
 	static bool exportAllMwls(const fs::path& lmExePath, const fs::path& romPath, 
 		const fs::path& mwlFilePath);
 	static bool exportMap16(const fs::path& map16Path);
-	static void reloadROM(HWND lmRequestWindowHandle, DWORD verificationCode);
+	static void reloadROM(HWND lmRequestWindowHandle);
 };

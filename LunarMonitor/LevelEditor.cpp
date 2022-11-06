@@ -1,5 +1,4 @@
 #include "LevelEditor.h"
-#include "LMFunctions.h"
 
 #include <sstream>
 #include <vector>
@@ -104,7 +103,16 @@ bool LevelEditor::exportMap16(const fs::path& map16Path)
 	return AddressToFnPtr<export_all_map16_function>(LM_EXPORT_ALL_MAP16_FUNCTION)(0, map16Path.string().c_str());
 }
 
-void LevelEditor::reloadROM(HWND lmRequestWindowHandle, DWORD verificationCode)
+void LevelEditor::reloadROM(HWND lmRequestWindowHandle)
 {
-	PostMessage(lmRequestWindowHandle, 0xBECB, 0, (LPARAM)(verificationCode << 16) + 2);
+	// this is literally gaslighting
+	BOOL* we_can_reload = reinterpret_cast <BOOL*>(LM_ALLOWED_TO_RELOAD_BOOLEAN);
+	*we_can_reload = true;
+
+	PostMessage(
+		(*reinterpret_cast<HWND*>(LM_COMMAND_WINDOW)), 
+		0xBECB, 
+		0, 
+		(LPARAM)((*reinterpret_cast<unsigned int*>(LM_VERIFICATION_CODE)) << 16) + 2
+	);
 }

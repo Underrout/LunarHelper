@@ -9,7 +9,16 @@
 #include "OnGlobalDataSave.h"
 #include "OnSharedPalettesSave.h"
 
-#include "LMFunctions.h"
+#if LM_VERSION == 330
+#include "Addresses/Addresses330.h"
+#elif LM_VERSION == 331
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 332
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 333
+#include "Addresses/Addresses331.h"
+#endif
+
 #include "LM.h"
 #include "resource.h"
 #include "Config.h"
@@ -499,7 +508,7 @@ void CALLBACK OnLunarHelperDirChange(_In_  PVOID unused, _In_  BOOLEAN TimerOrWa
                 lunarHelperDirChange = nullptr;
                 lastRomBuildTime = newHash;
                 Logger::log_message(L"Change in Lunar Helper directory detected, reloading ROM...");
-                lm.getLevelEditor().reloadROM(gLmHandle, verificationCode);
+                lm.getLevelEditor().reloadROM(gLmHandle);
                 return;
             }
         }

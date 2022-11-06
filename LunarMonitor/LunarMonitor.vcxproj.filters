@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Addresses">
+      <UniqueIdentifier>{284f6930-b05a-40ab-8b8f-a605b381fe6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Logger.h">
@@ -24,9 +27,6 @@
     <ClInclude Include="LevelEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LMFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Paths.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -34,9 +34,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="md5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OnSharedPalettesSave.h">
@@ -53,6 +50,9 @@
     </ClInclude>
     <ClInclude Include="Config.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Addresses\Addresses330.h">
+      <Filter>Header Files\Addresses</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -72,9 +72,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LM.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="md5.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OnGlobalDataSave.cpp">

@@ -13,7 +13,7 @@
 
 #include <detours.h>
 
-#include "md5.h"
+#include "../LunarMonitor/md5.h"
 
 constexpr const char* DLL_FORMAT = "{}/DLLs/lunar-monitor-{}.dll";
 

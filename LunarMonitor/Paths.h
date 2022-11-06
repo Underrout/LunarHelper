@@ -4,15 +4,16 @@
 #include <cstdint>
 #include <Windows.h>
 
-constexpr uintptr_t LM_CURR_ROM_NAME = 0x5c0030;
-constexpr uintptr_t LM_CURR_ROM_PATH = 0x7b5ff8;
-constexpr uintptr_t LM_EXE_PATH = 0x592438;
-constexpr uintptr_t LM_TOOLBAR_HANDLE = 0xDAFDC8;
-constexpr uintptr_t LM_MAIN_EDITOR_WINDOW_HANDLE = 0x8B57F8;
-constexpr uintptr_t LM_MAIN_STATUSBAR_HANDLE = 0xDAFDBC;
+#if LM_VERSION == 330
+#include "Addresses/Addresses330.h"
+#elif LM_VERSION == 331
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 332
+#include "Addresses/Addresses331.h"
+#elif LM_VERSION == 333
+#include "Addresses/Addresses331.h"
+#endif
 
-constexpr size_t COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
-constexpr size_t COMMENT_FIELD_SMC_ROM_OFFSET = 0x7F320;
 constexpr const char* FISH_REPLACEMENT = "   Mario says     TRANS RIGHTS  ";
 constexpr const char* FISH = "I am Naaall, and I love fiiiish!";
 
