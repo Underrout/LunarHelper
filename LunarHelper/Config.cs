@@ -36,7 +36,7 @@ namespace LunarHelper
         public string AddMusicKPath;
         public string AddmusicKOptions;
 
-        public string LunarMagicPath;
+        public string LunarMonitorLoaderPath;
         public string LunarMagicLevelImportFlags;
 
         public string FlipsPath;
@@ -116,7 +116,7 @@ namespace LunarHelper
             config.PixiOptions = vars.GetValueOrDefault("pixi_options", config.PixiOptions);
             config.AddMusicKPath = vars.GetValueOrDefault("addmusick_path", config.AddMusicKPath);
             config.AddmusicKOptions = vars.GetValueOrDefault("addmusick_options", config.AddmusicKOptions);
-            config.LunarMagicPath = vars.GetValueOrDefault("lm_path", config.LunarMagicPath);
+            config.LunarMonitorLoaderPath = vars.GetValueOrDefault("lunar_monitor_loader_path", config.LunarMonitorLoaderPath);
             config.LunarMagicLevelImportFlags = vars.GetValueOrDefault("lm_level_import_flags", config.LunarMagicLevelImportFlags);
             config.FlipsPath = vars.GetValueOrDefault("flips_path", config.FlipsPath);
             config.HumanReadableMap16CLI = vars.GetValueOrDefault("human_readable_map16_cli_path", config.HumanReadableMap16CLI);

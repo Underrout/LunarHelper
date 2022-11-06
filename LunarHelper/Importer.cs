@@ -116,7 +116,7 @@ namespace LunarHelper
             //Overworld
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                psi = new ProcessStartInfo(config.LunarMagicPath,
+                psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-TransferOverworld \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
@@ -133,7 +133,7 @@ namespace LunarHelper
             //Global EX Animations
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                psi = new ProcessStartInfo(config.LunarMagicPath,
+                psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-TransferLevelGlobalExAnim \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
@@ -150,7 +150,7 @@ namespace LunarHelper
             //Title Screen
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                psi = new ProcessStartInfo(config.LunarMagicPath,
+                psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-TransferTitleScreen \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
@@ -167,7 +167,7 @@ namespace LunarHelper
             //Credits
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                psi = new ProcessStartInfo(config.LunarMagicPath,
+                psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-TransferCredits \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
@@ -207,7 +207,7 @@ namespace LunarHelper
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportSharedPalette \"{config.TempPath}\" \"{config.SharedPalettePath}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
@@ -230,7 +230,7 @@ namespace LunarHelper
             Log("Title Moves", ConsoleColor.Cyan);
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportTitleMoves \"{config.TempPath}\" \"{config.TitleMovesPath}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
@@ -304,7 +304,7 @@ namespace LunarHelper
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
@@ -489,7 +489,7 @@ namespace LunarHelper
                 }
 
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ImportGFX \"{config.TempPath}\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
@@ -510,7 +510,7 @@ namespace LunarHelper
         static public bool ImportSingleLevel(Config config, string level_path)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportLevel \"{config.TempPath}\" \"{level_path}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
@@ -528,7 +528,7 @@ namespace LunarHelper
         {
             Log("ExGraphics", ConsoleColor.Cyan);
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportExGFX \"{config.TempPath}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
@@ -813,7 +813,7 @@ namespace LunarHelper
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"-ImportMultLevels \"{config.TempPath}\" \"{config.LevelsPath}\" {config.LunarMagicLevelImportFlags ?? ""}");
             var p = Process.Start(psi);
             p.WaitForExit();

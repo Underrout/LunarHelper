@@ -437,12 +437,12 @@ namespace LunarHelper
             // Actually doing quick build below
 
             // Lunar Magic required
-            if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+            if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
             {
                 Log("No path to Lunar Magic provided!", ConsoleColor.Red);
                 return false;
             }
-            else if (!File.Exists(Config.LunarMagicPath))
+            else if (!File.Exists(Config.LunarMonitorLoaderPath))
             {
                 Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
                 return false;
@@ -537,7 +537,7 @@ namespace LunarHelper
             report.rom_hash = Report.HashFile(Config.OutputPath);
 
             report.flips = Report.HashFile(Config.FlipsPath);
-            report.lunar_magic = Report.HashFile(Config.LunarMagicPath);
+            report.lunar_magic = Report.HashFile(Config.LunarMonitorLoaderPath);
             report.human_readable_map16 = Report.HashFile(Config.HumanReadableMap16CLI);
 
             report.pixi_options = Config.PixiOptions;
@@ -863,12 +863,12 @@ namespace LunarHelper
             Log("\n");
 
             // Lunar Magic required
-            if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+            if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
             {
                 Log("No path to Lunar Magic provided!", ConsoleColor.Red);
                 return false;
             }
-            else if (!File.Exists(Config.LunarMagicPath))
+            else if (!File.Exists(Config.LunarMonitorLoaderPath))
             {
                 Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
                 return false;
@@ -972,7 +972,7 @@ namespace LunarHelper
                     Log($"Importing level {Config.TestLevel} to {Config.TestLevelDest} for testing...  ", ConsoleColor.Yellow);
 
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                    ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMonitorLoaderPath,
                         $"-ImportLevel \"{Config.OutputPath}\" \"{path}\" {Config.TestLevelDest}");
                     var p = Process.Start(psi);
                     p.WaitForExit();
@@ -1131,9 +1131,9 @@ namespace LunarHelper
         {
             if (!File.Exists(Config.OutputPath))
                 Error("Output ROM not found - build first!");
-            else if (string.IsNullOrWhiteSpace(Config.LunarMagicPath))
+            else if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
                 Log("No path to Lunar Magic provided, cannot open built ROM.", ConsoleColor.Red);
-            else if (!File.Exists(Config.LunarMagicPath))
+            else if (!File.Exists(Config.LunarMonitorLoaderPath))
                 Log("Lunar Magic not found at provided path, cannot open built ROM.", ConsoleColor.Red);
             else
             {
@@ -1149,7 +1149,7 @@ namespace LunarHelper
                     return;
                 }
 
-                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMonitorLoaderPath,
                             $"\"{Config.OutputPath}\"");
                 LunarMagicProcess = Process.Start(psi);
             }

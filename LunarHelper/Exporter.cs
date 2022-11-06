@@ -53,14 +53,14 @@ namespace LunarHelper
             Log("Exporting Map16...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.Map16Path))
                 Log("No path for Map16 provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(config.LunarMagicPath))
+            else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(config.LunarMagicPath))
+            else if (!File.Exists(config.LunarMonitorLoaderPath))
                 Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ExportAllMap16 \"{config.OutputPath}\" \"{config.Map16Path}\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
@@ -103,14 +103,14 @@ namespace LunarHelper
             Log("Exporting Shared Palette...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.SharedPalettePath))
                 Log("No path for Shared Palette provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(config.LunarMagicPath))
+            else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(config.LunarMagicPath))
+            else if (!File.Exists(config.LunarMonitorLoaderPath))
                 Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ExportSharedPalette \"{config.OutputPath}\" \"{config.SharedPalettePath}\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
@@ -128,14 +128,14 @@ namespace LunarHelper
             Log("Exporting Title Moves...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.TitleMovesPath))
                 Log("No path for Title Moves provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(config.LunarMagicPath))
+            else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(config.LunarMagicPath))
+            else if (!File.Exists(config.LunarMonitorLoaderPath))
                 Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ExportTitleMoves \"{config.OutputPath}\" \"{config.TitleMovesPath}\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
@@ -178,16 +178,16 @@ namespace LunarHelper
             Log("Exporting All Levels...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.LevelsPath))
                 Log("No path for Levels provided!", ConsoleColor.Red);
-            else if (string.IsNullOrWhiteSpace(config.LunarMagicPath))
+            else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Magic Path provided!", ConsoleColor.Red);
-            else if (!File.Exists(config.LunarMagicPath))
+            else if (!File.Exists(config.LunarMonitorLoaderPath))
                 Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
             else if (!File.Exists(config.OutputPath))
                 Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMagicPath,
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ExportMultLevels \"{config.OutputPath}\" \"{config.LevelsPath}{Path.DirectorySeparatorChar}level\"");
                 var p = Process.Start(psi);
                 p.WaitForExit();
