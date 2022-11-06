@@ -517,8 +517,6 @@ void CALLBACK OnLunarHelperDirChange(_In_  PVOID unused, _In_  BOOLEAN TimerOrWa
 
 BOOL NewRomFunction(DWORD a, DWORD b)
 {
-    SetConfig(lm.getPaths().getRomDir());
-
     Logger::log_message(L"Attempting to switch to new ROM");
 
     BOOL result = LMNewRomFunction(a, b);
