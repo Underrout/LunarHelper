@@ -44,7 +44,11 @@ int main(int argc, char* argv[])
 	const auto lunar_magic_path = std::get<const fs::path>(lunar_magic.value());
 	const auto lunar_magic_version = std::get<size_t>(lunar_magic.value());
 
-	const fs::path dll_path = std::format(DLL_FORMAT, fs::current_path().string(), std::to_string(lunar_magic_version));
+	wchar_t szPath[MAX_PATH];
+	GetModuleFileNameW(NULL, szPath, MAX_PATH);
+	const auto our_path{ fs::path{ szPath }.parent_path() / "" };
+
+	const fs::path dll_path = std::format(DLL_FORMAT, our_path.string(), std::to_string(lunar_magic_version));
 
 	if (!fs::exists(dll_path))
 	{
@@ -123,7 +127,11 @@ std::optional<std::tuple<const fs::path, size_t>> get_lunar_magic()
 	size_t curr_version = 0;
 	fs::path curr_path{};
 
-	for (const auto entry : fs::directory_iterator(fs::current_path()))
+	wchar_t szPath[MAX_PATH];
+	GetModuleFileNameW(NULL, szPath, MAX_PATH);
+	const auto our_path{ fs::path{ szPath }.parent_path() / "" };
+
+	for (const auto entry : fs::directory_iterator(our_path))
 	{
 		if (!entry.is_regular_file())
 			continue;
