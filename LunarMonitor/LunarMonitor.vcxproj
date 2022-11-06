@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=331;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=332;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -67,7 +67,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=331;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=332;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -85,6 +85,7 @@
   <ItemGroup>
     <ClInclude Include="Addresses\Addresses330.h" />
     <ClInclude Include="Addresses\Addresses331.h" />
+    <ClInclude Include="Addresses\Addresses332.h" />
     <ClInclude Include="BuildResultUpdater.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Constants.h" />

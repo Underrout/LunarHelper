@@ -63,6 +63,9 @@
     <ClInclude Include="md5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Addresses\Addresses332.h">
+      <Filter>Header Files\Addresses</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Paths.cpp">

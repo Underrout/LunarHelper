@@ -18,9 +18,6 @@ constexpr uintptr_t LM_MAIN_STATUSBAR_HANDLE = 0xDAFDBC;
 constexpr size_t COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
 constexpr size_t COMMENT_FIELD_SMC_ROM_OFFSET = 0x7F320;
 
-constexpr uintptr_t LM_RENDER_LEVEL_FUNCTION = 0x538876;
-using renderLevelFunction = void(*)(DWORD a, DWORD b, DWORD c);
-
 constexpr uintptr_t LM_MAP16_SAVE_FUNCTION = 0x440780;
 using saveMap16Function = BOOL(*)();
 

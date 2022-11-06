@@ -60,8 +60,6 @@ void ShowVolatileResourceExportError();
 
 void WriteCommentFieldFunction(uint32_t a, const char* comment, uint32_t b);
 
-auto LMRenderLevelFunction = AddressToFnPtr<renderLevelFunction>(LM_RENDER_LEVEL_FUNCTION);
-
 auto LMSaveLevelFunction = AddressToFnPtr<saveLevelFunction>(LM_LEVEL_SAVE_FUNCTION);
 auto LMSaveMap16Function = AddressToFnPtr<saveMap16Function>(LM_MAP16_SAVE_FUNCTION);
 auto LMSaveOWFunction = AddressToFnPtr<saveOWFunction>(LM_OW_SAVE_FUNCTION);

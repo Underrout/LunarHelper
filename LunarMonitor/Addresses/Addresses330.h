@@ -15,9 +15,6 @@ constexpr uintptr_t LM_TOOLBAR_HANDLE = 0xDAFDC8;
 constexpr uintptr_t LM_MAIN_EDITOR_WINDOW_HANDLE = 0x8B57F8;
 constexpr uintptr_t LM_MAIN_STATUSBAR_HANDLE = 0xDAFDBC;
 
-constexpr uintptr_t LM_RENDER_LEVEL_FUNCTION = 0x538876;
-using renderLevelFunction = void(*)(DWORD a, DWORD b, DWORD c);
-
 constexpr uintptr_t LM_MAP16_SAVE_FUNCTION = 0x440780;
 using saveMap16Function = BOOL(*)();
 
