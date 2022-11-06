@@ -9,15 +9,7 @@
 #include "OnGlobalDataSave.h"
 #include "OnSharedPalettesSave.h"
 
-#if LM_VERSION == 330
-#include "Addresses/Addresses330.h"
-#elif LM_VERSION == 331
-#include "Addresses/Addresses331.h"
-#elif LM_VERSION == 332
-#include "Addresses/Addresses331.h"
-#elif LM_VERSION == 333
-#include "Addresses/Addresses331.h"
-#endif
+#include "Constants.h"
 
 #include "LM.h"
 #include "resource.h"
@@ -52,7 +44,11 @@ HANDLE lunarHelperDirChange;
 
 BOOL WINAPI InitFunction(HWND hWnd, int nCmdShow);
 
-BOOL SaveLevelFunction(DWORD x);
+#if LM_VERSION >= 331
+    BOOL SaveLevelFunction(DWORD x, DWORD y);
+#else
+    BOOL SaveLevelFunction(DWORD x);
+#endif
 BOOL SaveMap16Function();
 BOOL SaveOWFunction();
 BOOL NewRomFunction(DWORD a, DWORD b);
@@ -392,8 +388,6 @@ void AddExportAllButton(HMODULE hModule)
     SendMessage(toolbarHandle, TB_INSERTBUTTON, 5, (LPARAM)&sep);
     SendMessage(toolbarHandle, TB_AUTOSIZE, 0, 0);
 
-    lm.getPaths().getMainEditorWindowHandle();
-
     mainEditorProc = (HWND)SetWindowLong(*(lm.getPaths().getMainEditorWindowHandle()), GWL_WNDPROC, (LONG)MainEditorReplacementWndProc);
 }
 
@@ -618,10 +612,17 @@ void SetConfig(const fs::path& basePath)
         config = std::nullopt;
     }
 }
-
+#if LM_VERSION >= 331
+BOOL SaveLevelFunction(DWORD x, DWORD y)
+#else
 BOOL SaveLevelFunction(DWORD x)
+#endif
 {
+#if LM_VERSION >= 331
+    BOOL succeeded = LMSaveLevelFunction(x, y);
+#else
     BOOL succeeded = LMSaveLevelFunction(x);
+#endif
 
     OnLevelSave::onLevelSave(succeeded, lm.getLevelEditor().getLevelNumberBeingSaved(), lm, config);
 
@@ -630,17 +631,25 @@ BOOL SaveLevelFunction(DWORD x)
 
 BOOL SaveMap16Function()
 {
+#if  LM_VERSION >= 331
+    __asm {
+        mov eax,ebx
+    }
+#else
     __asm {
         push ebp
         mov ebp,edi
         mov eax,edi
     }
+#endif
 
     BOOL succeeded = LMSaveMap16Function();
 
+#if LM_VERSION < 331
     __asm {
         pop ebp
     }
+#endif
 
     OnMap16Save::onMap16Save(succeeded, lm, config);
 
@@ -649,6 +658,11 @@ BOOL SaveMap16Function()
 
 BOOL SaveOWFunction()
 {
+#if LM_VERSION >= 331
+    __asm {
+        mov eax,[ebp]
+    }
+#endif
     BOOL succeeded = LMSaveOWFunction();
 
     OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config);
@@ -658,9 +672,15 @@ BOOL SaveOWFunction()
 
 BOOL SaveTitlescreenFunction()
 {
+#if LM_VERSION >= 331
+    __asm {
+        mov eax,edi
+    }
+#else
     __asm {
         mov eax,[ebp]
     }
+#endif
     BOOL succeeded = LMSaveTitlescreenFunction();
 
     OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config);
@@ -680,12 +700,22 @@ BOOL SaveCreditsFunction()
 BOOL SaveSharedPalettesFunction(BOOL x)
 {
     BOOL succeeded;
+
+#if LM_VERSION >= 331
+    __asm {
+        mov eax, esi
+        push x
+        call LMSaveSharedPalettesFunction
+        mov succeeded, eax
+    }
+#else
     __asm {
         push x
         mov eax,esi
-        CALL LMSaveSharedPalettesFunction
+        call LMSaveSharedPalettesFunction
         mov succeeded,eax
     }
+#endif
 
     OnSharedPalettesSave::onSharedPalettesSave(succeeded, lm, config);
 

@@ -16,6 +16,7 @@
     <ProjectGuid>{7ee5e78d-b06c-4cd4-99e5-a7bd1cbac955}</ProjectGuid>
     <RootNamespace>LunarMonitor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>LunarMonitor</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -47,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=330;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=331;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -66,7 +67,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=330;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=331;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -83,11 +84,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Addresses\Addresses330.h" />
+    <ClInclude Include="Addresses\Addresses331.h" />
     <ClInclude Include="BuildResultUpdater.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="LevelEditor.h" />
     <ClInclude Include="LM.h" />
     <ClInclude Include="Logger.h" />
+    <ClInclude Include="md5.h" />
     <ClInclude Include="OnGlobalDataSave.h" />
     <ClInclude Include="OnLevelSave.h" />
     <ClInclude Include="OnMap16Save.h" />
@@ -102,6 +106,7 @@
     <ClCompile Include="LevelEditor.cpp" />
     <ClCompile Include="LM.cpp" />
     <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="md5.cpp" />
     <ClCompile Include="OnGlobalDataSave.cpp" />
     <ClCompile Include="OnLevelSave.cpp" />
     <ClCompile Include="OnMap16Save.cpp" />

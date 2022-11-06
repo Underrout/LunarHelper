@@ -1,15 +1,6 @@
 #pragma once
 #include "BuildResultUpdater.h"
-
-#if LM_VERSION == 330
-#include "Addresses/Addresses330.h"
-#elif LM_VERSION == 331
-#include "Addresses/Addresses331.h"
-#elif LM_VERSION == 332
-#include "Addresses/Addresses331.h"
-#elif LM_VERSION == 333
-#include "Addresses/Addresses331.h"
-#endif
+#include "Constants.h"
 
 #include <filesystem>
 
