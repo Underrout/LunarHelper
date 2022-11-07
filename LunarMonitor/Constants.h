@@ -12,3 +12,5 @@
 
 constexpr size_t COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
 constexpr size_t COMMENT_FIELD_SMC_ROM_OFFSET = 0x7F320;
+
+extern bool show_prompts;

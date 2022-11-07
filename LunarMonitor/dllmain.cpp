@@ -35,7 +35,7 @@ LM lm{};
 
 HMODULE g_hModule;
 
-HWND gLmHandle;
+bool show_prompts;
 
 std::optional<std::string> lastRomBuildTime = std::nullopt;
 
@@ -130,6 +130,30 @@ void DllAttach(HMODULE hModule)
     }
     else
     {
+        HANDLE pipe = CreateFile(
+            L"\\\\.\\pipe\\lunar_monitor_pipe",
+            GENERIC_READ, // only need read access
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+
+        DWORD read;
+
+        if (pipe != INVALID_HANDLE_VALUE)
+        {
+            ReadFile(
+                pipe,
+                &show_prompts,
+                sizeof(bool),
+                &read,
+                NULL
+            );
+        }
+        CloseHandle(pipe);
+
         DisableThreadLibraryCalls(hModule);
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());

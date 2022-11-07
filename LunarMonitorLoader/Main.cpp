@@ -65,15 +65,26 @@ int main(int argc, char* argv[])
 
 	size_t converted_chars;
 
-	std::string commandLineStr = "";
-	for (int i = 1; i < argc; i++) commandLineStr.append(std::string(argv[i]).append(" "));
+	std::string command_line_str = "";
+	bool show_prompts = true;
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-NoPrompts") == 0)
+		{
+			show_prompts = false;
+			continue;
+		}
+
+		command_line_str.append(std::string(argv[i]).append(" "));
+	}
 	
 	TCHAR args[4096];
 
 	std::wstring quoted_lunar_magic_path = L'"' + lunar_magic_path.wstring() + L'"';
 
 	mbstowcs_s(&converted_chars, args, 
-		strlen(commandLineStr.c_str()) + 1, commandLineStr.c_str(), _TRUNCATE);
+		strlen(command_line_str.c_str()) + 1, command_line_str.c_str(), _TRUNCATE);
 
 	std::wstring args_string = std::wstring(args);
 
@@ -101,6 +112,33 @@ int main(int argc, char* argv[])
 		dll_path.string().c_str(),
 		NULL
 	);
+
+	HANDLE pipe = CreateNamedPipe(
+		L"\\\\.\\pipe\\lunar_monitor_pipe", // name of the pipe
+		PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+		PIPE_TYPE_BYTE, // send data as a byte stream
+		1, // only allow 1 instance of this pipe
+		0, // no outbound buffer
+		0, // no inbound buffer
+		0, // use default wait time
+		NULL // use default security attributes
+	);
+
+	if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
+	{
+		BOOL result = ConnectNamedPipe(pipe, NULL);
+		if (result)
+		{
+			WriteFile(
+				pipe,
+				&show_prompts,
+				sizeof(bool),
+				NULL,
+				NULL
+			);
+		}
+		CloseHandle(pipe);
+	}
 
 	if (argc >= 3)
 	{

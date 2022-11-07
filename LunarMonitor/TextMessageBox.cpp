@@ -12,67 +12,23 @@ int WINAPI TextMessageBoxA(HWND hwnd, LPCSTR lpText, LPCSTR lpCaption, UINT uTyp
 }
 
 constexpr std::array<std::tuple<UINT, const wchar_t*>, 5> AVAILABLE_KEYS {{
-	{MB_OK, L"O"},
-	{MB_OKCANCEL, L"OC"},
-	{MB_RETRYCANCEL, L"RC"},
-	{MB_YESNO, L"YN"},
-	{MB_YESNOCANCEL, L"YNC"},
+	{MB_OK, L"o"},
+	{MB_OKCANCEL, L"co"},
+	{MB_RETRYCANCEL, L"cr"},
+	{MB_YESNO, L"ny"},
+	{MB_YESNOCANCEL, L"cyn"},
 }};
 
-constexpr std::array<std::tuple<TCHAR, UINT>, 4> KEY_TO_RES {{
-	{L'O', IDOK},
-	{L'C', IDCANCEL},
-	{L'Y', IDYES},
-	{L'N', IDNO}
+constexpr std::array<std::tuple<TCHAR, UINT, const wchar_t*>, 4> KEY_TO_RES {{
+	{L'o', IDOK, L"ok"},
+	{L'c', IDCANCEL, L"cancel"},
+	{L'y', IDYES, L"yes"},
+	{L'n', IDNO, L"no"}
 }};
 
-int GetResponse(HANDLE console_out, UINT uType)
+int PromptUser(HANDLE console_out, std::wstring acceptable_keys, const wchar_t* prompt)
 {
-	const wchar_t* prompt = L"";
-	UINT buttons = uType & 0xF;
-	DWORD written;
-
-	switch (buttons)
-	{
-	case MB_OK:
-		WriteConsole(
-			console_out,
-			L"\n\n",
-			wcslen(L"\n\n"),
-			&written,
-			NULL
-		);
-
-		return IDOK;
-
-	case MB_OKCANCEL:
-		prompt = L"(O)k/(C)ancel?";
-		break;
-
-	case MB_RETRYCANCEL:
-		prompt = L"(R)etry/(C)ancel?";
-		break;
-
-	case MB_YESNO:
-		prompt = L"(Y)es/(N)o?";
-		break;
-
-	case MB_YESNOCANCEL:
-		prompt = L"(Y)es/(N)o/(C)ancel?";
-		break;
-	}
-
-	std::wstring acceptable_keys;
-
-	for (const auto& tup : AVAILABLE_KEYS)
-	{
-		if (std::get<UINT>(tup) == buttons)
-		{
-			acceptable_keys = std::get<const wchar_t*>(tup);
-		}
-	}
-
-	DWORD read;
+	DWORD read, written;
 
 	HANDLE console_in = GetStdHandle(STD_INPUT_HANDLE);
 
@@ -100,34 +56,115 @@ int GetResponse(HANDLE console_out, UINT uType)
 		NULL
 	);
 
+	UINT chosen_response = 0;
+	const wchar_t* chosen_response_text = L"";
+
 	TCHAR c = L' ';
 
-	while (acceptable_keys.find(c) == std::wstring::npos)
+	if (show_prompts)
 	{
-		const auto res = ReadConsole(
-			console_in,
-			(LPVOID)&c,
-			1,
-			&read,
-			NULL
-		);
-	}
 
-	WriteConsole(
-		console_out,
-		L"\n",
-		wcslen(L"\n"),
-		&written,
-		NULL
-	);
+		while (acceptable_keys.find(c) == std::wstring::npos)
+		{
+			const auto res = ReadConsole(
+				console_in,
+				(LPVOID)&c,
+				1,
+				&read,
+				NULL
+			);
+		}
+	}
+	else
+	{
+		c = acceptable_keys.at(0);
+	}
 
 	for (const auto& tup : KEY_TO_RES)
 	{
 		if (std::get<TCHAR>(tup) == c)
 		{
-			return std::get<UINT>(tup);
+			chosen_response = std::get<UINT>(tup);
+			chosen_response_text = std::get<const wchar_t*>(tup);
 		}
 	}
+
+	WriteConsole(
+		console_out,
+		L"Choice: ",
+		wcslen(L"Choice: "),
+		&written,
+		NULL
+	);
+
+	WriteConsole(
+		console_out,
+		chosen_response_text,
+		wcslen(chosen_response_text),
+		&written,
+		NULL
+	);
+
+	WriteConsole(
+		console_out,
+		L"\n\n",
+		wcslen(L"\n\n"),
+		&written,
+		NULL
+	);
+
+	return chosen_response;
+}
+
+
+
+int GetResponse(HANDLE console_out, UINT uType)
+{
+	const wchar_t* prompt = L"";
+	UINT buttons = uType & 0xF;
+	DWORD written;
+
+	switch (buttons)
+	{
+	case MB_OK:
+		WriteConsole(
+			console_out,
+			L"\n\n",
+			wcslen(L"\n\n"),
+			&written,
+			NULL
+		);
+
+		return IDOK;
+
+	case MB_OKCANCEL:
+		prompt = L"(o)k/(c)ancel? (default: cancel)";
+		break;
+
+	case MB_RETRYCANCEL:
+		prompt = L"(r)etry/(c)ancel? (default: cancel)";
+		break;
+
+	case MB_YESNO:
+		prompt = L"(y)es/(n)o? (default: no)";
+		break;
+
+	case MB_YESNOCANCEL:
+		prompt = L"(y)es/(n)o/(c)ancel? (default: cancel)";
+		break;
+	}
+
+	std::wstring acceptable_keys;
+
+	for (const auto& tup : AVAILABLE_KEYS)
+	{
+		if (std::get<UINT>(tup) == buttons)
+		{
+			acceptable_keys = std::get<const wchar_t*>(tup);
+		}
+	}
+
+	return PromptUser(console_out, acceptable_keys, prompt);
 }
 
 int WINAPI TextMessageBoxW(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType)
