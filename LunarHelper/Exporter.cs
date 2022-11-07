@@ -74,7 +74,7 @@ namespace LunarHelper
                 }
 
                 if (string.IsNullOrWhiteSpace(config.HumanReadableMap16CLI))
-                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Red);
+                    Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Yellow);
                 else
                 {
                     string humanReadableDirectory;
@@ -208,36 +208,132 @@ namespace LunarHelper
 
         internal static bool CreateVanillaGraphics(Config config)
         {
-            return false;
-            throw new NotImplementedException();
+            Log("Exporting Vanilla Graphics...", ConsoleColor.Cyan);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
+                        $"-ExportGFX \"{config.TempPath}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+            {
+                Log("Vanilla Graphics Export Success!", ConsoleColor.Green);
+                return true;
+            }
+            else
+            {
+                Log("Vanilla Graphics Export Failure!", ConsoleColor.Red);
+                return false;
+            }
         }
 
         internal static bool CreateVanillaMap16(Config config)
         {
-            return false;
+            // export map16
+            Log("Exporting Vanilla Map16...", ConsoleColor.Cyan);
 
-            throw new NotImplementedException();
-        }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
+                        $"-ExportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
 
-        internal static bool CreateVanillaHumanReadableMap16(Config config)
-        {
-            return false;
+            if (p.ExitCode == 0)
+                Log("Vanilla Map16 Export Success!", ConsoleColor.Green);
+            else
+            {
+                Log("Vanilla Map16 Export Failure!", ConsoleColor.Red);
+                return false;
+            }
 
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(config.HumanReadableMap16CLI))
+                Log("No path to human-readable-map16-cli.exe provided, using binary map16 format", ConsoleColor.Yellow);
+            else
+            {
+                string humanReadableDirectory;
+                if (!string.IsNullOrWhiteSpace(config.HumanReadableMap16Directory))
+                    humanReadableDirectory = config.HumanReadableMap16Directory;
+                else
+                    humanReadableDirectory = Path.Combine(Path.GetDirectoryName(config.Map16Path), Path.GetFileNameWithoutExtension(config.Map16Path));
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo process = new ProcessStartInfo(config.HumanReadableMap16CLI,
+                            $"--from-map16 \"{config.Map16Path}\" \"{humanReadableDirectory}\"");
+                var proc = Process.Start(process);
+                proc.WaitForExit();
+
+                if (proc.ExitCode == 0)
+                {
+                    Log("Human Readable Map16 Conversion Success!", ConsoleColor.Green);
+                    return true;
+                }
+                else
+                {
+                    Log("Human Readable Map16 Conversion Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal static bool CreateVanillaSharedPalettes(Config config)
         {
-            return false;
+            Log("Exporting Vanilla Shared Palette...", ConsoleColor.Cyan);
 
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
+                        $"-ExportSharedPalette \"{config.TempPath}\" \"{config.SharedPalettePath}\"");
+            var p = Process.Start(psi);
+            p.WaitForExit();
+
+            if (p.ExitCode == 0)
+            {
+                Log("Vanilla Shared Palette Export Success!", ConsoleColor.Green);
+                return true;
+            }
+            else
+            {
+                Log("Vanilla Shared Palette Export Failure!", ConsoleColor.Red);
+                return false;
+            }
         }
 
         internal static bool CreateVanillaGlobalData(Config config)
         {
-            return false;
+            // save global data
+            Log("Saving Vanilla Global Data BPS...", ConsoleColor.Cyan);
 
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(config.FlipsPath))
+            {
+                Log("No path to Flips provided!", ConsoleColor.Red);
+                return false;
+            }
+            else if (!File.Exists(config.FlipsPath))
+            {
+                Log("Flips not found at the provided path!", ConsoleColor.Red);
+                return false;
+            }
+            else
+            {
+                if (File.Exists(config.GlobalDataPath))
+                    File.Delete(config.GlobalDataPath);
+
+                var fullCleanPath = Path.GetFullPath(config.CleanPath);
+                var fullTempPath = Path.GetFullPath(config.TempPath);
+                var fullPackagePath = Path.GetFullPath(config.GlobalDataPath);
+                if (CreatePatch(config, fullCleanPath, fullTempPath, fullPackagePath))
+                {
+                    Log("Vanilla Global Data Patch Export Success!", ConsoleColor.Green);
+                    return true;
+                }
+                else
+                {
+                    Log("Vanilla Global Data Patch Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
         }
     }
 }

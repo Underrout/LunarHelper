@@ -269,7 +269,7 @@ namespace LunarHelper
 
                     if (res)
                     {
-                        if (!Exporter.CreateVanillaHumanReadableMap16(config))
+                        if (!Exporter.CreateVanillaMap16(config))
                             return false;
                     }
                 }
