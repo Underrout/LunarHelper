@@ -403,6 +403,7 @@ namespace LunarHelper
             ProcessStartInfo psi = new ProcessStartInfo(config.UberASMPath, $"{config.UberASMOptions ?? "list.txt"} \"{rom}\"");
             psi.RedirectStandardInput = true;
             psi.RedirectStandardOutput = true;
+            psi.UseShellExecute = false;
             psi.WorkingDirectory = dir;
 
             StringBuilder uberasm_output = new StringBuilder();
@@ -418,14 +419,12 @@ namespace LunarHelper
             string output = uberasm_output.ToString();
 
             if (output.Contains(UBERASM_SUCCESS_STRING))
-                Log("UberASM Success!", ConsoleColor.Green);
+                Log("UberASM Success!\n", ConsoleColor.Green);
             else
             {
-                Log("UberASM Failure!", ConsoleColor.Red);
+                Log("UberASM Failure!\n", ConsoleColor.Red);
                 return false;
             }
-
-            Console.WriteLine();
 
             return true;
         }
@@ -444,14 +443,13 @@ namespace LunarHelper
             p.WaitForExit();
 
             if (p.ExitCode == 0)
-                Log("Pixi Success!", ConsoleColor.Green);
+                Log("Pixi Success!\n", ConsoleColor.Green);
             else
             {
-                Log("Pixi Failure!", ConsoleColor.Red);
+                Log("Pixi Failure!\n", ConsoleColor.Red);
                 return false;
             }
 
-            Console.WriteLine();
             return true;
         }
 
@@ -495,14 +493,13 @@ namespace LunarHelper
                 p.WaitForExit();
 
                 if (p.ExitCode == 0)
-                    Log("Import Graphics Success!", ConsoleColor.Green);
+                    Log("Import Graphics Success!\n", ConsoleColor.Green);
                 else
                 {
-                    Log("Import Graphics Failure!", ConsoleColor.Red);
+                    Log("Import Graphics Failure!\n", ConsoleColor.Red);
                     return false;
                 }
 
-                Console.WriteLine();
                 return true;
             }
         }
@@ -534,14 +531,13 @@ namespace LunarHelper
             p.WaitForExit();
 
             if (p.ExitCode == 0)
-                Log("Import ExGraphics Success!", ConsoleColor.Green);
+                Log("Import ExGraphics Success!\n", ConsoleColor.Green);
             else
             {
-                Log("Import ExGraphics Failure!", ConsoleColor.Red);
+                Log("Import ExGraphics Failure!\n", ConsoleColor.Red);
                 return false;
             }
 
-            Console.WriteLine();
             return true;
         }
 

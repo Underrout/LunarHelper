@@ -20,8 +20,6 @@ namespace LunarHelper
     {
         static public Config Config { get; private set; }
 
-        static private Importer importer = new Importer();
-
         static private int ROM_HEADER_SIZE = 0x200;
 
         static private int COMMENT_FIELD_SFC_ROM_OFFSET = 0x7F120;
