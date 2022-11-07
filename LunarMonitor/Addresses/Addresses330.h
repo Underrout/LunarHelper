@@ -4,6 +4,7 @@
 
 constexpr uintptr_t LM_CURR_LEVEL_NUMBER = 0x58C12C;
 constexpr uintptr_t LM_CURR_LEVEL_NUMBER_BEING_SAVED = 0x7EF584;
+
 constexpr uintptr_t LM_VERIFICATION_CODE = 0x8F3058;
 constexpr uintptr_t LM_COMMAND_WINDOW = 0xDAFFA0;
 constexpr uintptr_t LM_ALLOWED_TO_RELOAD_BOOLEAN = 0xDAFF6F;

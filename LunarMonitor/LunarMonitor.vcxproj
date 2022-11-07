@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=333;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=332;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -67,7 +67,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LM_VERSION=333;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM_VERSION=332;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\JSON\single_include\nlohmann;..\Detours\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -100,6 +100,7 @@
     <ClInclude Include="OnSharedPalettesSave.h" />
     <ClInclude Include="Paths.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="TextMessageBox.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BuildResultUpdater.cpp" />
@@ -114,6 +115,7 @@
     <ClCompile Include="OnMap16Save.cpp" />
     <ClCompile Include="OnSharedPalettesSave.cpp" />
     <ClCompile Include="Paths.cpp" />
+    <ClCompile Include="TextMessageBox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="bitmap1.bmp" />

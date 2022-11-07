@@ -10,12 +10,16 @@
 #include "OnSharedPalettesSave.h"
 
 #include "Constants.h"
+#include "TextMessageBox.h"
 
 #include "LM.h"
 #include "resource.h"
 #include "Config.h"
 
 #include "BuildResultUpdater.h"
+
+LPWSTR commandline_args;
+int command_line_amount;
 
 __declspec(dllexport) void __cdecl dummy(void);
 
@@ -117,31 +121,57 @@ void DllAttach(HMODULE hModule)
 {
     g_hModule = hModule;
 
-    DisableThreadLibraryCalls(hModule);
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach(&(PVOID&)TrueShowWindow, InitFunction);
-    DetourTransactionCommit();
+    commandline_args = GetCommandLine();
+    CommandLineToArgvW(commandline_args, &command_line_amount);
+
+    if (command_line_amount < 3)
+    {
+        DisableThreadLibraryCalls(hModule);
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)TrueShowWindow, InitFunction);
+        DetourTransactionCommit();
+    }
+    else
+    {
+        DisableThreadLibraryCalls(hModule);
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)TrueMessageBoxW, TextMessageBoxW);
+        DetourAttach(&(PVOID&)TrueMessageBoxA, TextMessageBoxA);
+        DetourTransactionCommit();
+    }
 }
 
 void DllDetach(HMODULE hModule)
 {
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourDetach(&(PVOID&)LMSaveLevelFunction, SaveLevelFunction);
-    DetourDetach(&(PVOID&)LMSaveMap16Function, SaveMap16Function);
-    DetourDetach(&(PVOID&)LMSaveOWFunction, SaveOWFunction);
-    DetourDetach(&(PVOID&)LMNewRomFunction, NewRomFunction);
-    DetourDetach(&(PVOID&)LMSaveCreditsFunction, SaveCreditsFunction);
-    DetourDetach(&(PVOID&)LMSaveTitlescreenFunction, SaveTitlescreenFunction);
-    DetourDetach(&(PVOID&)LMSaveSharedPalettesFunction, SaveSharedPalettesFunction);
-    DetourDetach(&(PVOID&)LMWritecommentFunction, WriteCommentFieldFunction);
-    DetourTransactionCommit();
+    if (command_line_amount < 3)
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&(PVOID&)LMSaveLevelFunction, SaveLevelFunction);
+        DetourDetach(&(PVOID&)LMSaveMap16Function, SaveMap16Function);
+        DetourDetach(&(PVOID&)LMSaveOWFunction, SaveOWFunction);
+        DetourDetach(&(PVOID&)LMNewRomFunction, NewRomFunction);
+        DetourDetach(&(PVOID&)LMSaveCreditsFunction, SaveCreditsFunction);
+        DetourDetach(&(PVOID&)LMSaveTitlescreenFunction, SaveTitlescreenFunction);
+        DetourDetach(&(PVOID&)LMSaveSharedPalettesFunction, SaveSharedPalettesFunction);
+        DetourDetach(&(PVOID&)LMWritecommentFunction, WriteCommentFieldFunction);
+        DetourTransactionCommit();
 
-    if (lunarHelperDirChangeWaiter != nullptr)
-        UnregisterWait(lunarHelperDirChangeWaiter);
-    if (lunarHelperDirChange != nullptr)
-        FindCloseChangeNotification(lunarHelperDirChange);
+        if (lunarHelperDirChangeWaiter != nullptr)
+            UnregisterWait(lunarHelperDirChangeWaiter);
+        if (lunarHelperDirChange != nullptr)
+            FindCloseChangeNotification(lunarHelperDirChange);
+    }
+    else
+    {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&(PVOID&)TrueMessageBoxW, TextMessageBoxW);
+        DetourDetach(&(PVOID&)TrueMessageBoxA, TextMessageBoxA);
+        DetourTransactionCommit();
+    }
 }
 
 void __cdecl dummy(void)
