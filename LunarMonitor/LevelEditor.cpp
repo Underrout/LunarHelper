@@ -103,7 +103,7 @@ bool LevelEditor::exportMap16(const fs::path& map16Path)
 	return AddressToFnPtr<export_all_map16_function>(LM_EXPORT_ALL_MAP16_FUNCTION)(0, map16Path.string().c_str());
 }
 
-void LevelEditor::reloadROM(HWND lmRequestWindowHandle)
+void LevelEditor::reloadROM()
 {
 	// this is literally gaslighting
 	BOOL* we_can_reload = reinterpret_cast <BOOL*>(LM_ALLOWED_TO_RELOAD_BOOLEAN);

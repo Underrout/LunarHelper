@@ -36,10 +36,6 @@ LM lm{};
 HMODULE g_hModule;
 
 HWND gLmHandle;
-DWORD verificationCode;
-
-bool statusbar_added = false;
-bool export_all_button_added = false;
 
 std::optional<std::string> lastRomBuildTime = std::nullopt;
 
@@ -530,7 +526,7 @@ void CALLBACK OnLunarHelperDirChange(_In_  PVOID unused, _In_  BOOLEAN TimerOrWa
                 lunarHelperDirChange = nullptr;
                 lastRomBuildTime = newHash;
                 Logger::log_message(L"Change in Lunar Helper directory detected, reloading ROM...");
-                lm.getLevelEditor().reloadROM(gLmHandle);
+                lm.getLevelEditor().reloadROM();
                 return;
             }
         }
