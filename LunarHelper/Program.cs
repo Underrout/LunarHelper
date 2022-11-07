@@ -33,7 +33,6 @@ namespace LunarHelper
 
         static private readonly Regex LevelRegex = new Regex("[0-9a-fA-F]{3}");
         static private Process EmulatorProcess = null;
-        static private Process LunarMagicProcess;
 
         static private ConsoleColor[] profile_colors = { 
             ConsoleColor.Gray, ConsoleColor.Cyan, ConsoleColor.Green,
@@ -1135,21 +1134,9 @@ namespace LunarHelper
                 Log("Lunar Magic not found at provided path, cannot open built ROM.", ConsoleColor.Red);
             else
             {
-                if (LunarMagicProcess != null && !LunarMagicProcess.HasExited)
-                {
-                    IntPtr handle = LunarMagicProcess.MainWindowHandle;
-                    if (IsIconic(handle))
-                    {
-                        ShowWindow(handle, SW_RESTORE);
-                    }
-
-                    SetForegroundWindow(handle);
-                    return;
-                }
-
                 ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMonitorLoaderPath,
                             $"\"{Config.OutputPath}\"");
-                LunarMagicProcess = Process.Start(psi);
+                Process.Start(psi);
             }
         }
 
