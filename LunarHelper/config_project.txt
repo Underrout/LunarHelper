@@ -94,6 +94,7 @@ build_order
 -- addmusick_options = -v
 -- uberasm_options = my_list.txt
 -- lm_level_import_flags = 0
+-- lunar_monitor_loader_options = -NoPrompts
 
 -- test_level is a 3-digit hex value specifying the level number of a level that will be copied to the 3-digit level number
 -- specified by test_level_dest *only* when Lunar Helper's "T - Test" option is run

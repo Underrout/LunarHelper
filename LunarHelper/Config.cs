@@ -38,6 +38,7 @@ namespace LunarHelper
 
         public string LunarMonitorLoaderPath;
         public string LunarMagicLevelImportFlags;
+        public string LunarMonitorLoaderOptions;
 
         public string FlipsPath;
 
@@ -118,6 +119,7 @@ namespace LunarHelper
             config.AddmusicKOptions = vars.GetValueOrDefault("addmusick_options", config.AddmusicKOptions);
             config.LunarMonitorLoaderPath = vars.GetValueOrDefault("lunar_monitor_loader_path", config.LunarMonitorLoaderPath);
             config.LunarMagicLevelImportFlags = vars.GetValueOrDefault("lm_level_import_flags", config.LunarMagicLevelImportFlags);
+            config.LunarMonitorLoaderOptions = vars.GetValueOrDefault("lunar_monitor_loader_options", config.LunarMonitorLoaderOptions);
             config.FlipsPath = vars.GetValueOrDefault("flips_path", config.FlipsPath);
             config.HumanReadableMap16CLI = vars.GetValueOrDefault("human_readable_map16_cli_path", config.HumanReadableMap16CLI);
             config.HumanReadableMap16Directory = vars.GetValueOrDefault("human_readable_map16_directory_path", config.HumanReadableMap16Directory);
