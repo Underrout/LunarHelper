@@ -113,51 +113,47 @@ int main(int argc, char* argv[])
 		NULL
 	);
 
-	HANDLE pipe = CreateNamedPipe(
-		L"\\\\.\\pipe\\lunar_monitor_pipe", // name of the pipe
-		PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
-		PIPE_TYPE_BYTE, // send data as a byte stream
-		1, // only allow 1 instance of this pipe
-		0, // no outbound buffer
-		0, // no inbound buffer
-		0, // use default wait time
-		NULL // use default security attributes
-	);
-
-	if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
-	{
-		BOOL result = ConnectNamedPipe(pipe, NULL);
-		if (result)
-		{
-			WriteFile(
-				pipe,
-				&show_prompts,
-				sizeof(bool),
-				NULL,
-				NULL
-			);
-		}
-		CloseHandle(pipe);
-	}
 
 	if (argc >= 3)
 	{
-		WaitForSingleObject(pi.hProcess, INFINITE);
+		HANDLE pipe = CreateNamedPipe(
+			L"\\\\.\\pipe\\lunar_monitor_pipe", // name of the pipe
+			PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+			PIPE_TYPE_BYTE, // send data as a byte stream
+			1, // only allow 1 instance of this pipe
+			0, // no outbound buffer
+			0, // no inbound buffer
+			0, // use default wait time
+			NULL // use default security attributes
+		);
 
-		DWORD exitCode;
-
-		GetExitCodeProcess(pi.hProcess, &exitCode);
-
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-
-		return exitCode;
+		if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
+		{
+			BOOL result = ConnectNamedPipe(pipe, NULL);
+			if (result)
+			{
+				WriteFile(
+					pipe,
+					&show_prompts,
+					sizeof(bool),
+					NULL,
+					NULL
+				);
+			}
+			CloseHandle(pipe);
+		}
 	}
+
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	DWORD exitCode;
+
+	GetExitCodeProcess(pi.hProcess, &exitCode);
 
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
 
-	return 0;
+	return exitCode;
 }
 
 std::optional<std::tuple<const fs::path, size_t>> get_lunar_magic()
