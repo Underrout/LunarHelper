@@ -34,13 +34,13 @@ namespace LunarHelper
             };
         }
 
-        static public void CreateStandardDefines()
+        static public void CreateStandardDefines(string output_folder)
         {
-            Directory.CreateDirectory(".lunar_helper");
+            Directory.CreateDirectory(Path.Combine(output_folder, ".lunar_helper"));
 
             var ver = Assembly.GetExecutingAssembly().GetName().Version;
 
-            File.WriteAllText(".lunar_helper/defines.asm",
+            File.WriteAllText(Path.Combine(output_folder, ".lunar_helper/defines.asm"),
                 "; Asar compatible file containing information about Lunar Helper, feel free to inscsrc this if needed,\n" +
                 "; it is recreated before every (Quick) Build\n\n" +
                 "; Define containing Lunar Helper's version number as a string\n" +
@@ -470,7 +470,7 @@ namespace LunarHelper
         {
             Log("Graphics", ConsoleColor.Cyan);
             {
-                var graphics_folder = Path.Join(Directory.GetCurrentDirectory(), "Graphics");
+                var graphics_folder = Path.Join(Path.GetDirectoryName(config.OutputPath), "Graphics");
                 var graphics_folder_missing_or_empty = !Directory.Exists(graphics_folder) ||
                     !Directory.EnumerateFiles(graphics_folder).Any();
 
@@ -486,11 +486,38 @@ namespace LunarHelper
                     }
                 }
 
+                var output_gfx = Path.Combine(Path.GetDirectoryName(config.OutputPath), "Graphics");
+                var temp_gfx = Path.Combine(Path.GetDirectoryName(config.TempPath), "Graphics");
+
+                try
+                {
+                    Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(
+                        output_gfx,
+                        temp_gfx
+                    );
+                }
+                catch (Exception)
+                {
+                    // pass
+                }
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -ImportGFX \"{config.TempPath}\"");
+                            $"{config.LunarMonitorLoaderOptions} -ImportGFX \"{Path.GetFileName(config.TempPath)}\"");
+
+                psi.WorkingDirectory = Path.GetDirectoryName(config.TempPath);
+
                 var p = Process.Start(psi);
                 p.WaitForExit();
+
+                try
+                {
+                    Directory.Delete(temp_gfx, true);
+                }
+                catch
+                {
+                    // pass
+                }
 
                 if (p.ExitCode == 0)
                     Log("Import Graphics Success!\n", ConsoleColor.Green);
@@ -524,11 +551,39 @@ namespace LunarHelper
         static public bool ImportExGraphics(Config config)
         {
             Log("ExGraphics", ConsoleColor.Cyan);
+
+            var output_exgfx = Path.Combine(Path.GetDirectoryName(config.OutputPath), "ExGraphics");
+            var temp_exgfx = Path.Combine(Path.GetDirectoryName(config.TempPath), "ExGraphics");
+
+            try
+            {
+                Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(
+                    output_exgfx,
+                    temp_exgfx
+                );
+            }
+            catch
+            {
+                // pass
+            }
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportExGFX \"{config.TempPath}\"");
+                        $"{config.LunarMonitorLoaderOptions} -ImportExGFX \"{Path.GetFileName(config.TempPath)}\"");
+
+            psi.WorkingDirectory = Path.GetDirectoryName(config.TempPath);
+
             var p = Process.Start(psi);
             p.WaitForExit();
+
+            try
+            {
+                Directory.Delete(temp_exgfx, true);
+            }
+            catch
+            {
+                // pass
+            }
 
             if (p.ExitCode == 0)
                 Log("Import ExGraphics Success!\n", ConsoleColor.Green);
@@ -551,12 +606,14 @@ namespace LunarHelper
             return (rom, header);
         }
 
-        private static void WriteGlobuleImprint(string globule_name, Asarlabel[] labels)
+        private static void WriteGlobuleImprint(string output_directory, string globule_name, Asarlabel[] labels)
         {
-            if (!Directory.Exists(".lunar_helper/globules"))
-                Directory.CreateDirectory(".lunar_helper/globules");
+            var globules_folder = Path.Combine(output_directory, ".lunar_helper/globules");
 
-            var imprint_path = $".lunar_helper/globules/{globule_name}";
+            if (!Directory.Exists(globules_folder))
+                Directory.CreateDirectory(globules_folder);
+
+            var imprint_path = Path.Combine(globules_folder, globule_name);
 
             var globule_stream = new StreamWriter(imprint_path, false);
 
@@ -578,50 +635,61 @@ namespace LunarHelper
             globule_stream.Close();
         }
 
-        public static void FinalizeGlobuleImprints()
+        public static void FinalizeGlobuleImprints(string output_directory)
         {
-            if (Directory.Exists(".lunar_helper/inserted_globules"))
-                Directory.Delete(".lunar_helper/inserted_globules", true);
+            var inserted_globules_folder = Path.Combine(output_directory, ".lunar_helper/inserted_globules");
+            var globules_folder = Path.Combine(output_directory, ".lunar_helper/globules");
 
-            Directory.CreateDirectory(".lunar_helper/globules");
+            if (Directory.Exists(inserted_globules_folder))
+                Directory.Delete(inserted_globules_folder, true);
 
-            WriteCallGlobuleMacroFile();
+            Directory.CreateDirectory(globules_folder);
 
-            Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(".lunar_helper/globules", ".lunar_helper/inserted_globules");
+            WriteCallGlobuleMacroFile(output_directory);
+
+            Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(globules_folder, inserted_globules_folder);
         }
 
-        private static void WriteCallGlobuleMacroFile()
+        private static void WriteCallGlobuleMacroFile(string output_directory)
         {
-            File.WriteAllText(".lunar_helper/call_globule.asm",
+            File.WriteAllText(Path.Combine(output_directory, ".lunar_helper/call_globule.asm"),
                 "includeonce\n\nmacro call_globule(globule_label)\n\tPHB\n\t" +
                 "LDA.b #<globule_label>>>16\n\tPHA\n\tPLB\n\tJSL <globule_label>\n\tPLB\nendmacro\n"
             );
         }
 
-        public static void CopyGlobuleImprints(string[] globule_names_to_copy)
+        public static void CopyGlobuleImprints(string output_directory, string[] globule_names_to_copy)
         {
+            var base_path = Path.Combine(output_directory, ".lunar_helper");
+
             foreach (string globule_name in globule_names_to_copy)
             {
-                File.Copy($".lunar_helper/inserted_globules/{globule_name}.asm", $".lunar_helper/globules/{globule_name}.asm", true);
+                File.Copy(Path.Combine(base_path, $"inserted_globules/{globule_name}.asm"), 
+                    Path.Combine(base_path, $".lunar_helper/globules/{globule_name}.asm"), true);
             }
         }
 
-        public static void ClearGlobuleFolder()
+        public static void ClearGlobuleFolder(string output_directory)
         {
-            if (Directory.Exists(".lunar_helper/globules"))
-                Directory.Delete(".lunar_helper/globules", true);
+            var globules_folder = Path.Combine(output_directory, ".lunar_helper/globules");
 
-            Directory.CreateDirectory(".lunar_helper/globules");
+            if (Directory.Exists(globules_folder))
+                Directory.Delete(globules_folder, true);
+
+            Directory.CreateDirectory(globules_folder);
         }
 
-        public static bool CleanGlobules(string temp_rom_path, string[] globule_names_to_clean)
+        public static bool CleanGlobules(string output_directory, string temp_rom_path, string[] globule_names_to_clean)
         {
             var clean_patch_path = Path.GetTempFileName();
             var clean_patch_stream = new StreamWriter(clean_patch_path);
 
+            var inserted_globules_folder = Path.Combine(output_directory, ".lunar_helper/inserted_globules");
+            var globules_folder = Path.Combine(output_directory, ".lunar_helper/globules");
+
             foreach (var globule_name in globule_names_to_clean)
             {
-                var globule_path = $".lunar_helper/inserted_globules/{globule_name}.asm";
+                var globule_path = Path.Combine(inserted_globules_folder, $"{globule_name}.asm");
                 if (!File.Exists(globule_path))
                     return false;
 
@@ -654,7 +722,7 @@ namespace LunarHelper
                     line = reader.ReadLine();
                 }
 
-                var prev_imprint = $".lunar_helper/globules/{globule_name}.asm";
+                var prev_imprint = Path.Combine(globules_folder, $"{globule_name}.asm");
 
                 if (File.Exists(prev_imprint))
                     File.Delete(prev_imprint);
@@ -683,7 +751,7 @@ namespace LunarHelper
             return true;
         }
 
-        public static bool ApplyAllGlobules(string temp_rom_path, string globules_path)
+        public static bool ApplyAllGlobules(string output_folder, string temp_rom_path, string globules_path)
         {
             if (!Directory.Exists(globules_path))
             {
@@ -693,7 +761,7 @@ namespace LunarHelper
 
             foreach (var globule_path in Directory.EnumerateFiles(globules_path, "*.asm", SearchOption.TopDirectoryOnly))
             {
-                var res = ApplyGlobule(temp_rom_path, globule_path);
+                var res = ApplyGlobule(output_folder, temp_rom_path, globule_path);
 
                 if (!res)
                     return false;
@@ -702,7 +770,7 @@ namespace LunarHelper
             return true;
         }
 
-        public static bool ApplyGlobule(string temp_rom_path, string globule_path)
+        public static bool ApplyGlobule(string output_folder, string temp_rom_path, string globule_path)
         {
             Log($"Globule '{globule_path}'", ConsoleColor.Cyan);
 
@@ -744,7 +812,7 @@ namespace LunarHelper
             rom_stream.Write(header);
             rom_stream.Write(rom);
 
-            WriteGlobuleImprint(Path.GetFileName(globule_path), Asar.getlabels());
+            WriteGlobuleImprint(output_folder, Path.GetFileName(globule_path), Asar.getlabels());
 
             Log($"Globule Insertion Success!\n", ConsoleColor.Green);
 

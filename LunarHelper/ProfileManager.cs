@@ -67,20 +67,21 @@ namespace LunarHelper
             return DetermineDefaultProfile();
         }
 
-        public void WriteCurrentProfileToFile()
+        public void WriteCurrentProfileToFile(string output_folder)
         {
-            Directory.CreateDirectory(".lunar_helper");
+            Directory.CreateDirectory(Path.Combine(output_folder, ".lunar_helper"));
 
             var define_name = current_profile_define_prefix + current_profile;
             var full_define = $"{define_name} = 1";
 
-            File.WriteAllText(lunar_helper_profile_define_file_path, $"; {warning_comment}\n\n{full_define}  ; {define_comment}{current_profile}\n");
+            File.WriteAllText(Path.Combine(output_folder, lunar_helper_profile_define_file_path), 
+                $"; {warning_comment}\n\n{full_define}  ; {define_comment}{current_profile}\n");
         }
 
-        public void DeleteCurrentProfileFile()
+        public void DeleteCurrentProfileFile(string output_folder)
         {
-            if (File.Exists(lunar_helper_profile_define_file_path))
-                File.Delete(lunar_helper_profile_define_file_path);
+            if (File.Exists(Path.Combine(output_folder, lunar_helper_profile_define_file_path)))
+                File.Delete(Path.Combine(output_folder, lunar_helper_profile_define_file_path));
         }
 
         public static IEnumerable<string> GetAllProfiles()

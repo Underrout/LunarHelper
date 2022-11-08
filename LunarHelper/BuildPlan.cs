@@ -41,6 +41,9 @@ namespace LunarHelper
         {
             // check whether we need to rebuild completely
 
+            var output_folder = Path.GetDirectoryName(config.OutputPath);
+            var build_report_path = Path.Combine(output_folder, ".lunar_helper/build_report.json");
+
             Program.Log("Analyzing previous build result", ConsoleColor.Cyan);
 
             if (!File.Exists(config.OutputPath))
@@ -52,7 +55,7 @@ namespace LunarHelper
             Program.Log($"Previously built ROM found at '{config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
 
-            if (!File.Exists(".lunar_helper\\build_report.json"))
+            if (!File.Exists(build_report_path))
             {
                 Program.Log("No previous build report found, rebuilding ROM...", ConsoleColor.Yellow);
                 Console.WriteLine();
@@ -65,7 +68,7 @@ namespace LunarHelper
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.TypeNameHandling = TypeNameHandling.Objects;
 
-                using (StreamReader sr = new StreamReader(".lunar_helper\\build_report.json"))
+                using (StreamReader sr = new StreamReader(build_report_path))
                 using (JsonReader reader = new JsonTextReader(sr))
                 {
                     report = (Report)serializer.Deserialize(reader, typeof(Report));
@@ -118,7 +121,7 @@ namespace LunarHelper
                 {
                     Program.Log("Globules that need cleaning detected in previously built ROM, attempting to clean...", ConsoleColor.Cyan);
 
-                    if (!Importer.CleanGlobules(config.TempPath, needs_cleaning.Select(n => n.Item1).ToArray()))
+                    if (!Importer.CleanGlobules(output_folder, config.TempPath, needs_cleaning.Select(n => n.Item1).ToArray()))
                     {
                         Program.Log("Previously built ROM contains globules that failed to clean, rebuilding ROM...\n");
                         throw new MustRebuildException();
@@ -141,7 +144,7 @@ namespace LunarHelper
                     {
                         Program.Log(GetQuickBuildReasonString(config, $"Globule '{globule_name}.asm'", result, dep_chain), ConsoleColor.Yellow);
                         Program.Log($"\nAttempting to insert globule '{globule_name}.asm'...", ConsoleColor.Cyan);
-                        if (!Importer.ApplyGlobule(config.TempPath, Path.Join(config.GlobulesPath, globule_name + ".asm")))
+                        if (!Importer.ApplyGlobule(output_folder, config.TempPath, Path.Join(config.GlobulesPath, globule_name + ".asm")))
                         {
                             throw new CannotBuildException("At least one globule failed to insert, cannot build!");
                         }
@@ -150,7 +153,7 @@ namespace LunarHelper
                     anything_performed = true;
                 }
 
-                Importer.CopyGlobuleImprints(globule_results
+                Importer.CopyGlobuleImprints(output_folder, globule_results
                     .Where(r => r.Item2.Item1 == DependencyGraphAnalyzer.Result.Identical)
                     .Select(r => r.Item1)
                     .ToArray());

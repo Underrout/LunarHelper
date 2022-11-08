@@ -16,8 +16,62 @@ namespace LunarHelper
         {
             if (!File.Exists(config.OutputPath))
             {
-                Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
+                Log("Output ROM does not exist!", ConsoleColor.Red);
                 return false;
+            }
+
+            // save graphics
+
+            Log("Saving Graphics...", ConsoleColor.Cyan);
+            if (!config.BuildOrder.Any(i => i.type == InsertableType.Graphics))
+                Log("Graphics not specified as insertion step in build_order!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
+                            $"-ExportGFX \"{Path.GetFileName(config.OutputPath)}\"");
+
+                psi.WorkingDirectory = Path.GetDirectoryName(config.OutputPath);
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                {
+                    Log("Graphics Export Success!", ConsoleColor.Green);
+                }
+                else
+                {
+                    Log("Graphics Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            // save exgraphics
+
+            Log("Saving ExGraphics...", ConsoleColor.Cyan);
+            if (!config.BuildOrder.Any(i => i.type == InsertableType.ExGraphics))
+                Log("ExGraphics not specified as insertion step in build_order!", ConsoleColor.Red);
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
+                            $"-ExportExGFX \"{Path.GetFileName(config.OutputPath)}\"");
+
+                psi.WorkingDirectory = Path.GetDirectoryName(config.OutputPath);
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                {
+                    Log("ExGraphics Export Success!", ConsoleColor.Green);
+                }
+                else
+                {
+                    Log("ExGraphics Export Failure!", ConsoleColor.Red);
+                    return false;
+                }
             }
 
             // save global data
@@ -210,15 +264,25 @@ namespace LunarHelper
         {
             Log("Exporting Vanilla Graphics...", ConsoleColor.Cyan);
 
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"-ExportGFX \"{config.TempPath}\"");
+                        $"-ExportGFX \"{Path.GetFileName(config.TempPath)}\"");
+
+            psi.WorkingDirectory = Path.GetDirectoryName(config.TempPath);
+
             var p = Process.Start(psi);
             p.WaitForExit();
 
             if (p.ExitCode == 0)
             {
                 Log("Vanilla Graphics Export Success!", ConsoleColor.Green);
+
+                Directory.Move(
+                    Path.Combine(Path.GetDirectoryName(config.TempPath), "Graphics"),
+                    Path.Combine(Path.GetDirectoryName(config.OutputPath), "Graphics")
+                );
+
                 return true;
             }
             else

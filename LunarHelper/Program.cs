@@ -370,10 +370,12 @@ namespace LunarHelper
 
         static private bool QuickBuild(char volatile_resource_handling_preference = ' ')
         {
+            var output_folder = Path.GetDirectoryName(Config.OutputPath);
+
             if (profile_manager.current_profile != null)
-                profile_manager.WriteCurrentProfileToFile();
+                profile_manager.WriteCurrentProfileToFile(output_folder);
             else
-                profile_manager.DeleteCurrentProfileFile();
+                profile_manager.DeleteCurrentProfileFile(output_folder);
 
             if (!HandleVolatileResources(Config.InvokedOnCommandLine, volatile_resource_handling_preference))
             {
@@ -456,9 +458,9 @@ namespace LunarHelper
             }
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
-            WriteReport();
+            WriteReport(output_folder);
 
-            Importer.FinalizeGlobuleImprints();
+            Importer.FinalizeGlobuleImprints(output_folder);
 
             Log($"ROM '{Config.OutputPath}' successfully updated!", ConsoleColor.Green);
             Console.WriteLine();
@@ -472,7 +474,7 @@ namespace LunarHelper
             return true;
         }
 
-        static private void WriteReport()
+        static private void WriteReport(string output_folder)
         {
             var report = GetBuildReport();
 
@@ -487,8 +489,8 @@ namespace LunarHelper
                 serializer.Serialize(writer, report);
             }
 
-            Directory.CreateDirectory(".lunar_helper");
-            File.WriteAllText(".lunar_helper\\build_report.json", sw.ToString());
+            Directory.CreateDirectory(Path.Combine(output_folder, ".lunar_helper"));
+            File.WriteAllText(Path.Combine(output_folder,".lunar_helper\\build_report.json"), sw.ToString());
         }
 
         static private Report GetBuildReport()
@@ -629,7 +631,7 @@ namespace LunarHelper
                 return false;
             }
 
-            Importer.CreateStandardDefines();
+            Importer.CreateStandardDefines(Path.GetDirectoryName(Config.OutputPath));
 
             return true;
         }
@@ -839,10 +841,12 @@ namespace LunarHelper
 
         static private bool Build(char volatile_resource_handling_preference = ' ', bool skip_volatile_check = false)
         {
+            var output_folder = Path.GetDirectoryName(Config.OutputPath);
+
             if (profile_manager.current_profile != null)
-                profile_manager.WriteCurrentProfileToFile();
+                profile_manager.WriteCurrentProfileToFile(output_folder);
             else
-                profile_manager.DeleteCurrentProfileFile();
+                profile_manager.DeleteCurrentProfileFile(output_folder);
 
             if (!skip_volatile_check && !HandleVolatileResources(Config.InvokedOnCommandLine, volatile_resource_handling_preference))
             {
@@ -900,13 +904,13 @@ namespace LunarHelper
 
             if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
             {
-                var res = Importer.ApplyAllGlobules(Config.TempPath, Config.GlobulesPath);
+                var res = Importer.ApplyAllGlobules(output_folder, Config.TempPath, Config.GlobulesPath);
                 if (!res)
                     return false;
             }
             else
             {
-                Importer.ClearGlobuleFolder();
+                Importer.ClearGlobuleFolder(output_folder);
             }
 
             if (!ExecuteInsertionPlan(plan))
@@ -922,7 +926,7 @@ namespace LunarHelper
                 dependency_graph.ResolveGlobules();
             }
 
-            Importer.FinalizeGlobuleImprints();
+            Importer.FinalizeGlobuleImprints(output_folder);
 
             dependency_graph.ResolveNonGlobules();
 
@@ -932,7 +936,7 @@ namespace LunarHelper
             }
 
             Log("Writing build report...\n", ConsoleColor.Cyan);
-            WriteReport();
+            WriteReport(output_folder);
 
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
