@@ -209,7 +209,7 @@ namespace LunarHelper
                     var key = sp[0].Trim();
                     if (vars.ContainsKey(key))
                         throw new Exception($"Duplicate config key: '{key}'");
-                    vars.Add(key, sp[1].Trim());
+                    vars.Add(key, sp[1].Trim().Replace('\\', '/'));
                 }
                 else if (peek != null && peek.Trim() == "[")
                 {
@@ -233,7 +233,7 @@ namespace LunarHelper
                         if (str.Trim() == "]")
                             break;
                         else
-                            list.Add(str.Trim().Replace('/', '\\').TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                            list.Add(str.Trim().Replace('\\', '/').TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                                 .ToLowerInvariant());
 
                         i++;

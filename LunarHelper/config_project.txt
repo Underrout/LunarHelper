@@ -5,8 +5,8 @@ initial_patch = Other/initial_patch.bps
 
 patches
 [
---  Patches\retry\retry.asm
---  Patches\asarspritetiles.asm
+--  Patches/retry/retry.asm
+--  Patches/asarspritetiles.asm
 ]
 
 -- tools

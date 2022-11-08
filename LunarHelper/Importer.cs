@@ -303,6 +303,8 @@ namespace LunarHelper
                 }
             }
 
+            Log($"{config.LunarMonitorLoaderOptions} -ImportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                         $"{config.LunarMonitorLoaderOptions} -ImportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");

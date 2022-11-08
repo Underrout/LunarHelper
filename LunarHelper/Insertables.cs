@@ -34,7 +34,7 @@ namespace LunarHelper
         {
             this.type = type;
             if (path != null)
-                this.normalized_relative_path = path.Trim().Replace('/', '\\')
+                this.normalized_relative_path = path.Trim().Replace('\\', '/')
                     .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).ToLowerInvariant();
         }
 

@@ -54,7 +54,7 @@ namespace LunarHelper.Resolvers
         private readonly RootDependencyList static_root_dependencies = new RootDependencyList
         {
             ( "asar.dll", "asar", RootDependencyType.Binary ),
-            ( "asm\\base\\main.asm", "main", RootDependencyType.Asar )
+            ( "asm/base/main.asm", "main", RootDependencyType.Asar )
         };
 
         private const string default_list_file = "list.txt";

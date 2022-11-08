@@ -45,7 +45,7 @@ namespace LunarHelper
             // load profile specific config
 
             var prefix = GetDefaultProfiles().Contains(current_profile) ? default_profile_folder_search_prefix : profile_folder_search_prefix; 
-            Config full_config = Config.Load(out var profile_err, base_config, prefix + current_profile + "\\");
+            Config full_config = Config.Load(out var profile_err, base_config, prefix + current_profile + "/");
 
             if (profile_err != "")
             {

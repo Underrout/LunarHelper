@@ -490,7 +490,7 @@ namespace LunarHelper
             }
 
             Directory.CreateDirectory(Path.Combine(output_folder, ".lunar_helper"));
-            File.WriteAllText(Path.Combine(output_folder,".lunar_helper\\build_report.json"), sw.ToString());
+            File.WriteAllText(Path.Combine(output_folder,".lunar_helper/build_report.json"), sw.ToString());
         }
 
         static private Report GetBuildReport()
@@ -1139,7 +1139,10 @@ namespace LunarHelper
             else
             {
                 ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMonitorLoaderPath,
-                            $"\"{Config.OutputPath}\"");
+                            $"\"{Path.GetFileName(Config.OutputPath)}\"");
+
+                psi.WorkingDirectory = Path.GetDirectoryName(Config.OutputPath);
+
                 Process.Start(psi);
             }
         }

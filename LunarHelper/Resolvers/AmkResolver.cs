@@ -34,12 +34,12 @@ namespace LunarHelper.Resolvers
             ( "Addmusic_list.txt", "song_list", RootDependencyType.SongList ),
             ( "Addmusic_sample groups.txt", "sample_groups", RootDependencyType.SampleGroups ),
             ( "Addmusic_sound effects.txt", "sound_effect_list", RootDependencyType.SoundEffectList ),
-            ( "asm\\main.asm", "main", RootDependencyType.Asar ),
-            ( "asm\\SNES\\AMUndo.asm", "am_undo", RootDependencyType.Asar ),
-            ( "asm\\SNES\\patch.asm", "patch", RootDependencyType.Asar ),
-            ( "asm\\SNES\\patch2.asm", "patch2", RootDependencyType.Asar ),
-            ( "asm\\SNES\\SPCBase.bin", "spc_base", RootDependencyType.Binary ),
-            ( "asm\\SNES\\SPCDSPBase.bin", "scpdsp_base", RootDependencyType.Binary )
+            ( "asm/main.asm", "main", RootDependencyType.Asar ),
+            ( "asm/SNES/AMUndo.asm", "am_undo", RootDependencyType.Asar ),
+            ( "asm/SNES/patch.asm", "patch", RootDependencyType.Asar ),
+            ( "asm/SNES/patch2.asm", "patch2", RootDependencyType.Asar ),
+            ( "asm/SNES/SPCBase.bin", "spc_base", RootDependencyType.Binary ),
+            ( "asm/SNES/SPCDSPBase.bin", "scpdsp_base", RootDependencyType.Binary )
         };
 
         private const string amk_samples_folder_name = "samples";
@@ -49,7 +49,7 @@ namespace LunarHelper.Resolvers
 
         private const string amk_asar_exe_name = "asar.exe";
 
-        private (string, string) amk_song_sample_list_ignore = ( "asm\\SNES\\SongSampleList.asm", "song_sample_list" );
+        private (string, string) amk_song_sample_list_ignore = ( "asm/SNES/SongSampleList.asm", "song_sample_list" );
 
         private readonly string amk_directory;
         private readonly DependencyGraph graph;
