@@ -54,9 +54,9 @@ namespace LunarHelper
             if (string.IsNullOrWhiteSpace(config.Map16Path))
                 Log("No path for Map16 provided!", ConsoleColor.Red);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+                Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+                Log("Could not find Lunar Monitor Loader at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -104,9 +104,9 @@ namespace LunarHelper
             if (string.IsNullOrWhiteSpace(config.SharedPalettePath))
                 Log("No path for Shared Palette provided!", ConsoleColor.Red);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+                Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+                Log("Could not find Lunar Monitor Loader at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -129,9 +129,9 @@ namespace LunarHelper
             if (string.IsNullOrWhiteSpace(config.TitleMovesPath))
                 Log("No path for Title Moves provided!", ConsoleColor.Red);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+                Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+                Log("Could not find Lunar Monitor Loader at the provided path!", ConsoleColor.Red);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -179,9 +179,9 @@ namespace LunarHelper
             if (string.IsNullOrWhiteSpace(config.LevelsPath))
                 Log("No path for Levels provided!", ConsoleColor.Red);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
-                Log("No Lunar Magic Path provided!", ConsoleColor.Red);
+                Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
-                Log("Could not find Lunar Magic at the provided path!", ConsoleColor.Red);
+                Log("Could not find Lunar Monitor Loader at the provided path!", ConsoleColor.Red);
             else if (!File.Exists(config.OutputPath))
                 Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
             else

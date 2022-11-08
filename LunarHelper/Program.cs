@@ -433,15 +433,15 @@ namespace LunarHelper
 
             // Actually doing quick build below
 
-            // Lunar Magic required
+            // Lunar Monitor Loader required
             if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
             {
-                Log("No path to Lunar Magic provided!", ConsoleColor.Red);
+                Log("No path to Lunar Monitor Loader provided!", ConsoleColor.Red);
                 return false;
             }
             else if (!File.Exists(Config.LunarMonitorLoaderPath))
             {
-                Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
+                Log("Lunar Monitor Loader not found at provided path!", ConsoleColor.Red);
                 return false;
             }
 
@@ -859,15 +859,15 @@ namespace LunarHelper
             }
             Log("\n");
 
-            // Lunar Magic required
+            // Lunar Monitor Loader required
             if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
             {
-                Log("No path to Lunar Magic provided!", ConsoleColor.Red);
+                Log("No path to Lunar Monitor Loader provided!", ConsoleColor.Red);
                 return false;
             }
             else if (!File.Exists(Config.LunarMonitorLoaderPath))
             {
-                Log("Lunar Magic not found at provided path!", ConsoleColor.Red);
+                Log("Lunar Monitor Loader not found at provided path!", ConsoleColor.Red);
                 return false;
             }
 
@@ -1129,9 +1129,9 @@ namespace LunarHelper
             if (!File.Exists(Config.OutputPath))
                 Error("Output ROM not found - build first!");
             else if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
-                Log("No path to Lunar Magic provided, cannot open built ROM.", ConsoleColor.Red);
+                Log("No path to Lunar Monitor Loader provided, cannot open built ROM.", ConsoleColor.Red);
             else if (!File.Exists(Config.LunarMonitorLoaderPath))
-                Log("Lunar Magic not found at provided path, cannot open built ROM.", ConsoleColor.Red);
+                Log("Lunar Monitor Loader not found at provided path, cannot open built ROM.", ConsoleColor.Red);
             else
             {
                 ProcessStartInfo psi = new ProcessStartInfo(Config.LunarMonitorLoaderPath,
