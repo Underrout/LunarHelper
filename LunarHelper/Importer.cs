@@ -667,7 +667,7 @@ namespace LunarHelper
             foreach (string globule_name in globule_names_to_copy)
             {
                 File.Copy(Path.Combine(base_path, $"inserted_globules/{globule_name}.asm"), 
-                    Path.Combine(base_path, $".lunar_helper/globules/{globule_name}.asm"), true);
+                    Path.Combine(base_path, $"globules/{globule_name}.asm"), true);
             }
         }
 
