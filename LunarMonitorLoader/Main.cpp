@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		command_line_str.append(std::string(argv[i]).append(" "));
+		command_line_str.append('"' + std::string(argv[i]).append("\" "));
 	}
 	
 	TCHAR args[4096];
