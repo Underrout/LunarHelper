@@ -500,7 +500,7 @@ void WatchLunarHelperDirectory()
     if (!fs::exists(lunarHelperDir) || !fs::is_directory(lunarHelperDir))
     {
         fs::create_directory(lunarHelperDir);
-        SetFileAttributes(lunarHelperDir.c_str(), FILE_ATTRIBUTE_HIDDEN);
+        SetFileAttributes(lunarHelperDir.c_str(), FILE_ATTRIBUTE_DIRECTORY);
     }
     else
     {
