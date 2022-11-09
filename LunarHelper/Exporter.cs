@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,7 +24,7 @@ namespace LunarHelper
 
             Log("Saving Graphics...", ConsoleColor.Cyan);
             if (!config.BuildOrder.Any(i => i.type == InsertableType.Graphics))
-                Log("Graphics not specified as insertion step in build_order!", ConsoleColor.Red);
+                Log("Graphics not specified as insertion step in build_order!", ConsoleColor.Yellow);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -51,7 +51,7 @@ namespace LunarHelper
 
             Log("Saving ExGraphics...", ConsoleColor.Cyan);
             if (!config.BuildOrder.Any(i => i.type == InsertableType.ExGraphics))
-                Log("ExGraphics not specified as insertion step in build_order!", ConsoleColor.Red);
+                Log("ExGraphics not specified as insertion step in build_order!", ConsoleColor.Yellow);
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -77,7 +77,7 @@ namespace LunarHelper
             // save global data
             Log("Saving Global Data BPS...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.GlobalDataPath))
-                Log("No path for GlobalData BPS provided!", ConsoleColor.Red);
+                Log("No path for GlobalData BPS provided!", ConsoleColor.Yellow);
             else if (string.IsNullOrWhiteSpace(config.CleanPath))
                 Log("No path for Clean ROM provided!", ConsoleColor.Red);
             else if (!File.Exists(config.CleanPath))
@@ -106,7 +106,7 @@ namespace LunarHelper
             // export map16
             Log("Exporting Map16...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.Map16Path))
-                Log("No path for Map16 provided!", ConsoleColor.Red);
+                Log("No path for Map16 provided!", ConsoleColor.Yellow);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
@@ -156,7 +156,7 @@ namespace LunarHelper
             // export shared palette
             Log("Exporting Shared Palette...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.SharedPalettePath))
-                Log("No path for Shared Palette provided!", ConsoleColor.Red);
+                Log("No path for Shared Palette provided!", ConsoleColor.Yellow);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
@@ -181,7 +181,7 @@ namespace LunarHelper
             // export title moves
             Log("Exporting Title Moves...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.TitleMovesPath))
-                Log("No path for Title Moves provided!", ConsoleColor.Red);
+                Log("No path for Title Moves provided!", ConsoleColor.Yellow);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
@@ -231,7 +231,7 @@ namespace LunarHelper
         {
             Log("Exporting All Levels...", ConsoleColor.Cyan);
             if (string.IsNullOrWhiteSpace(config.LevelsPath))
-                Log("No path for Levels provided!", ConsoleColor.Red);
+                Log("No path for Levels provided!", ConsoleColor.Yellow);
             else if (string.IsNullOrWhiteSpace(config.LunarMonitorLoaderPath))
                 Log("No Lunar Monitor Loader Path provided!", ConsoleColor.Red);
             else if (!File.Exists(config.LunarMonitorLoaderPath))
@@ -267,7 +267,6 @@ namespace LunarHelper
         internal static bool CreateVanillaGraphics(Config config)
         {
             Log("Exporting Vanilla Graphics...", ConsoleColor.Cyan);
-
 
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
