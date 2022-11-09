@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -240,6 +240,10 @@ namespace LunarHelper
                 Log("Output ROM does not exist! Build first!", ConsoleColor.Red);
             else
             {
+                // very strange things occur here if this path does not exist yet, so I'm 
+                // creating the directory here just to not have strange things occur if that's ok
+                Directory.CreateDirectory(config.LevelsPath);
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
                             $"-ExportMultLevels \"{config.OutputPath}\" \"{config.LevelsPath}{Path.DirectorySeparatorChar}level\"");
