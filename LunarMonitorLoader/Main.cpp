@@ -37,7 +37,10 @@ int main(int argc, char* argv[])
 
 	if (!lunar_magic.has_value())
 	{
-		MessageBox(NULL, L"No viable Lunar Magic found!", NULL, MB_OK | MB_ICONERROR);
+		MessageBox(NULL, 
+			L"No supported Lunar Magic version found. Currently supported versions are 3.30, 3.31, 3.32 and 3.33", 
+			NULL, MB_OK | MB_ICONERROR
+		);
 		return 1;
 	}
 
@@ -52,7 +55,8 @@ int main(int argc, char* argv[])
 
 	if (!fs::exists(dll_path))
 	{
-		MessageBox(NULL, L"DLL for viable Lunar Magic not found!", NULL, MB_OK | MB_ICONERROR);
+		MessageBox(NULL, L"DLL for supported Lunar Magic version not found! Are you sure you have a DLLs folder?",
+			NULL, MB_OK | MB_ICONERROR);
 		return 1;
 	}
 
