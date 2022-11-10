@@ -1196,11 +1196,13 @@ namespace LunarHelper
             Log("Creates your ROM from scratch, using your provided clean SMW ROM as a base and inserting all the configured patches, graphics, levels, etc.\n");
 
             Log("Q - Quick Build", ConsoleColor.Yellow);
-            Log("Attempts to reuse a previously built ROM for the build process if it is available. Automatically determines if a full rebuild is " +
+            Log("Attempts to reuse a previously built ROM for the build process if it is available.\n" +
+                "Automatically determines if a full rebuild is " +
                 "needed or if only certain tools need to be reapplied or resources need to be reinserted.\n");
 
             Log("R - Run", ConsoleColor.Yellow);
-            Log("Loads the previously-built ROM into the configured emulator for testing. The ROM must already be built first.\n");
+            Log("Loads the previously-built ROM into the configured emulator for testing. The ROM must already be built first.\n" +
+                "If no emulator was configured, an attempt will be made to retrieve and use the emulator configured in Lunar Magic.\n");
 
             Log("T - Test (Quick Build -> Run)", ConsoleColor.Yellow);
             Log("Executes the above two commands in sequence.\n");
