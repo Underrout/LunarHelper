@@ -29,8 +29,7 @@ void OnGlobalDataSave::onSuccessfulGlobalDataSave(LM& lm, const Config& config)
 
 void OnGlobalDataSave::exportBps(LM& lm, const Config& config)
 {
-	fs::path romPath = lm.getPaths().getRomDir();
-	romPath += lm.getPaths().getRomName();
+	fs::path romPath = lm.getPaths().getRomPath();
 
 	createBpsPatch(romPath, config.getCleanRomPath(), config.getGlobalDataPath(), config.getFlipsPath());
 	Logger::log_message(L"Successfully exported global data to \"%s\"", config.getGlobalDataPath().c_str());
