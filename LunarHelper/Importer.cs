@@ -19,10 +19,14 @@ namespace LunarHelper
 
         static private string LH_VERSION_DEFINE_NAME = "LH_VERSION";
         static private string LH_ASSEMBLING_DEFINE_NAME = "LH_ASSEMBLING";
+        static private string LH_GLOBULE_FOLDER_DEFINE_NAME = "LH_GLOBULES_FOLDER";
 
-        static private Dictionary<string, string> GetStandardDefineDict()
+        static private Dictionary<string, string> GetStandardDefineDict(string output_folder)
         {
             var ver = Assembly.GetExecutingAssembly().GetName().Version;
+
+            var globule_folder = Path.Combine(Path.GetFullPath(output_folder), ".lunar_helper/globules")
+                .Replace('\\', '/');
 
             return new Dictionary<string, string>
             {
@@ -30,7 +34,8 @@ namespace LunarHelper
                 { LH_VERSION_DEFINE_NAME + "_MAJOR", ver.Major.ToString() },
                 { LH_VERSION_DEFINE_NAME + "_MINOR", ver.Minor.ToString() },
                 { LH_VERSION_DEFINE_NAME + "_PATCH", ver.Build.ToString() },
-                { LH_ASSEMBLING_DEFINE_NAME, "1" }
+                { LH_ASSEMBLING_DEFINE_NAME, "1" },
+                { LH_GLOBULE_FOLDER_DEFINE_NAME, globule_folder }
             };
         }
 
@@ -40,7 +45,11 @@ namespace LunarHelper
 
             var ver = Assembly.GetExecutingAssembly().GetName().Version;
 
+            var globule_folder = Path.Combine(Path.GetFullPath(output_folder), ".lunar_helper/globules/")
+                .Replace('\\', '/');
+
             File.WriteAllText(Path.Combine(output_folder, ".lunar_helper/defines.asm"),
+                "includeonce\n\n" +
                 "; Asar compatible file containing information about Lunar Helper, feel free to inscsrc this if needed,\n" +
                 "; it is recreated before every (Quick) Build\n\n" +
                 "; Define containing Lunar Helper's version number as a string\n" +
@@ -51,7 +60,10 @@ namespace LunarHelper
                 $"!{LH_VERSION_DEFINE_NAME}_MINOR = {ver.Minor}\n" +
                 $"!{LH_VERSION_DEFINE_NAME}_PATCH = {ver.Build}\n\n" +
                 "; Define that just serves as a marker so you can check if a file is being assembled using Lunar Helper if needed\n" +
-                $"!{LH_ASSEMBLING_DEFINE_NAME} = 1\n"
+                $"!{LH_ASSEMBLING_DEFINE_NAME} = 1\n\n" +
+                $"; Define that contains the path to Lunar Helper's globule folder, useful for calling globules without having to " +
+                $"hardcode a user-specific path to the globule\n" +
+                $"!{LH_GLOBULE_FOLDER_DEFINE_NAME} = {globule_folder}\n"
             );
         }
 
@@ -815,7 +827,7 @@ namespace LunarHelper
             temp_patch_stream.Close();
 
             (var rom, var header) = GetRomHeaderAndData(temp_rom_path);
-            var define_dict = GetStandardDefineDict();
+            var define_dict = GetStandardDefineDict(output_folder);
             var res = Asar.patch(temp_patch_path, ref rom, null, true, define_dict);
 
             File.Delete(temp_patch_path);
@@ -857,7 +869,7 @@ namespace LunarHelper
 
             (var rom, var header) = GetRomHeaderAndData(config.TempPath);
 
-            var define_dict = GetStandardDefineDict();
+            var define_dict = GetStandardDefineDict(Path.GetDirectoryName(config.OutputPath));
             var res = Asar.patch(Path.GetFullPath(patch_path), ref rom, null, true, define_dict);
 
             foreach (var print in Asar.getprints())
