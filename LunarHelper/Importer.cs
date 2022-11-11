@@ -113,11 +113,16 @@ namespace LunarHelper
                 }
             }
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             //Overworld
             {
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -TransferOverworld \"{config.TempPath}\" \"{globalDataROMPath}\"");
+                            $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                            $"-TransferOverworld \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
 
@@ -134,7 +139,8 @@ namespace LunarHelper
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -TransferLevelGlobalExAnim \"{config.TempPath}\" \"{globalDataROMPath}\"");
+                            $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                            $"-TransferLevelGlobalExAnim \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
 
@@ -151,7 +157,8 @@ namespace LunarHelper
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -TransferTitleScreen \"{config.TempPath}\" \"{globalDataROMPath}\"");
+                            $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                            $"-TransferTitleScreen \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
 
@@ -168,7 +175,8 @@ namespace LunarHelper
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -TransferCredits \"{config.TempPath}\" \"{globalDataROMPath}\"");
+                            $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                            $"-TransferCredits \"{config.TempPath}\" \"{globalDataROMPath}\"");
                 p = Process.Start(psi);
                 p.WaitForExit();
 
@@ -206,9 +214,13 @@ namespace LunarHelper
                 }
             }
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportSharedPalette \"{config.TempPath}\" \"{config.SharedPalettePath}\"");
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                        $"-ImportSharedPalette \"{config.TempPath}\" \"{config.SharedPalettePath}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
 
@@ -229,9 +241,13 @@ namespace LunarHelper
         {
             Log("Title Moves", ConsoleColor.Cyan);
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportTitleMoves \"{config.TempPath}\" \"{config.TitleMovesPath}\"");
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts}" +
+                        $"-ImportTitleMoves \"{config.TempPath}\" \"{config.TitleMovesPath}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
 
@@ -303,9 +319,13 @@ namespace LunarHelper
                 }
             }
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                        $"-ImportAllMap16 \"{config.TempPath}\" \"{config.Map16Path}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
 
@@ -501,9 +521,13 @@ namespace LunarHelper
                     // pass
                 }
 
+                // supress message box prompts if invoked on CLI
+                var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                            $"{config.LunarMonitorLoaderOptions} -ImportGFX \"{Path.GetFileName(config.TempPath)}\"");
+                            $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                            $"-ImportGFX \"{Path.GetFileName(config.TempPath)}\"");
 
                 psi.WorkingDirectory = Path.GetDirectoryName(config.TempPath);
 
@@ -533,9 +557,13 @@ namespace LunarHelper
 
         static public bool ImportSingleLevel(Config config, string level_path)
         {
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportLevel \"{config.TempPath}\" \"{level_path}\"");
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                        $"-ImportLevel \"{config.TempPath}\" \"{level_path}\"");
             var p = Process.Start(psi);
             p.WaitForExit();
 
@@ -567,9 +595,13 @@ namespace LunarHelper
                 // pass
             }
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportExGFX \"{Path.GetFileName(config.TempPath)}\"");
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                        $"-ImportExGFX \"{Path.GetFileName(config.TempPath)}\"");
 
             psi.WorkingDirectory = Path.GetDirectoryName(config.TempPath);
 
@@ -876,9 +908,13 @@ namespace LunarHelper
                 return true;
             }
 
+            // supress message box prompts if invoked on CLI
+            var supress_prompts = config.InvokedOnCommandLine ? "-NoPrompts" : "";
+
             Console.ForegroundColor = ConsoleColor.Yellow;
             ProcessStartInfo psi = new ProcessStartInfo(config.LunarMonitorLoaderPath,
-                        $"{config.LunarMonitorLoaderOptions} -ImportMultLevels \"{config.TempPath}\" " +
+                        $"{config.LunarMonitorLoaderOptions} {supress_prompts} " +
+                        $"-ImportMultLevels \"{config.TempPath}\" " +
                         $"\"{config.LevelsPath}\" {config.LunarMagicLevelImportFlags ?? ""}");
             var p = Process.Start(psi);
             p.WaitForExit();
