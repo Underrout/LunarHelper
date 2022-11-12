@@ -79,7 +79,7 @@ bool OnMap16Save::onSuccessfulMap16Save(LM& lm, const Config& config)
 
 		Logger::log_message(L"Successfully exported map16 to \"%s\"", config.getMap16Path().c_str());
 
-		if (BuildResultUpdater::updateResourceEntry("map16", export_path))
+		if (BuildResultUpdater::updateResourceEntry("map16", config.getMap16Path()))
 		{
 			Logger::log_message(L"Successfully updated build report entry for map16");
 		}
