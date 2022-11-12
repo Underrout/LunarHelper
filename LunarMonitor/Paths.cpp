@@ -1,18 +1,33 @@
 #include "Paths.h"
 
-const char* Paths::getRomName()
+std::filesystem::path Paths::getRomName()
 {
-	return reinterpret_cast<const char*>(LM_CURR_ROM_NAME);
+	std::string path = reinterpret_cast<const char*>(LM_CURR_ROM_NAME);
+
+	return trim(path);
 }
 
-const char* Paths::getRomDir()
+std::filesystem::path Paths::getRomDir()
 {
-	return reinterpret_cast<const char*>(LM_CURR_ROM_PATH);
+	std::string path = reinterpret_cast<const char*>(LM_CURR_ROM_PATH);
+
+	return trim(path);
 }
 
-const char* Paths::getLmExePath()
+std::string Paths::trim(const std::string& str)
 {
-	return reinterpret_cast<const char*>(LM_EXE_PATH);
+	size_t first = str.find_first_not_of(' ');
+	if (std::string::npos == first)
+	{
+		return str;
+	}
+	size_t last = str.find_last_not_of(' ');
+	return str.substr(first, (last - first + 1));
+}
+
+std::filesystem::path Paths::getLmExePath()
+{
+	return trim(std::string(reinterpret_cast<const char*>(LM_EXE_PATH)));
 }
 
 std::filesystem::path Paths::getRomPath()

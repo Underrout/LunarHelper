@@ -12,11 +12,13 @@ constexpr const char* FISH = "I am Naaall, and I love fiiiish!";
 class Paths
 {
 public:
-	static const char* getRomName();
-	static const char* getRomDir();
-	static const char* getLmExePath();
+	static std::filesystem::path getRomName();
+	static std::filesystem::path getRomDir();
+	static std::filesystem::path getLmExePath();
 	static std::filesystem::path getRomPath();
 	static HWND* getToolbarHandle();
 	static HWND* getMainEditorWindowHandle();
 	static HWND* getMainEditorStatusbarHandle();
+private:
+	static std::string trim(const std::string &str);
 };
