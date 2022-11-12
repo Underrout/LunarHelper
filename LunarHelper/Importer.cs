@@ -548,7 +548,11 @@ namespace LunarHelper
 
                 try
                 {
-                    Directory.Delete(temp_gfx, true);
+                    // delete temporary graphics folder, but only if it's not identical to the output 
+                    // graphics folder
+                    if (new Uri(Path.GetFullPath(Path.GetDirectoryName(config.OutputPath))).LocalPath !=
+                        new Uri(Path.GetFullPath(Path.GetDirectoryName(config.TempPath))).LocalPath)
+                        Directory.Delete(temp_gfx, true);
                 }
                 catch
                 {
@@ -622,7 +626,11 @@ namespace LunarHelper
 
             try
             {
-                Directory.Delete(temp_exgfx, true);
+                // delete temporary exgraphics folder, but only if it's not identical to the output 
+                // exgraphics folder
+                if (new Uri(Path.GetFullPath(Path.GetDirectoryName(config.OutputPath))).LocalPath !=
+                    new Uri(Path.GetFullPath(Path.GetDirectoryName(config.TempPath))).LocalPath)
+                    Directory.Delete(temp_exgfx, true);
             }
             catch
             {
