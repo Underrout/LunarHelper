@@ -24,7 +24,7 @@ namespace LunarHelper.Resolvers
         );
 
         private static readonly Regex canreadfile_readfile_regex = new Regex(
-            "^[^;]*?(?<method>(?:canreadfile[1|2|3|4]?)|(?:readfile[1|2|3|4]))\\(\"(?<path>.*)\"",
+            "^[^;]*?(?<method>(?:canreadfile[1|2|3|4]?)|(?:readfile[1|2|3|4])|(?:filesize)|(?:getfilestatus))\\(\"(?<path>.*)\"",
             RegexOptions.Compiled
         );
 
