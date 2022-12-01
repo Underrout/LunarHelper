@@ -36,7 +36,7 @@ namespace LunarHelper
             if (!string.IsNullOrWhiteSpace(config.PixiPath))
             {
                 pixi_resolver = new PixiResolver(graph, config.PixiPath, 
-                    config.PixiOptions, config.OutputPath);
+                    config.PixiOptions, Path.GetDirectoryName(Path.GetFullPath(config.TempPath)));
             }
 
             if (!string.IsNullOrWhiteSpace(config.GPSPath))

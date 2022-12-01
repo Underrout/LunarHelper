@@ -150,12 +150,12 @@ namespace LunarHelper.Resolvers
         private string cluster_directory;
         private string routine_directory;
 
-        public PixiResolver(DependencyGraph graph, string pixi_exe_path, string pixi_options, string output_path)
+        public PixiResolver(DependencyGraph graph, string pixi_exe_path, string pixi_options, string temp_path)
         {
             this.graph = graph;
             pixi_directory = Path.GetDirectoryName(pixi_exe_path);
 
-            DetermineDirectoryPaths(pixi_options, output_path);
+            DetermineDirectoryPaths(pixi_options, temp_path);
 
             asar_resolver = CreateAsarResolver();
             root_dependencies = DetermineRootDependencies(pixi_exe_path);
@@ -256,6 +256,7 @@ namespace LunarHelper.Resolvers
 
             if (!File.Exists(list_file))
             {
+                Console.WriteLine($"Missing {list_file}");
                 Vertex missing_list_file = graph.GetOrCreateMissingFileVertex(list_file);
                 graph.TryAddUniqueEdge(vertex, missing_list_file, list_tag);
             }
@@ -435,7 +436,7 @@ namespace LunarHelper.Resolvers
             }
         }
 
-        private void DetermineDirectoryPaths(string pixi_options, string output_path)
+        private void DetermineDirectoryPaths(string pixi_options, string temp_path)
         {
             if (!string.IsNullOrWhiteSpace(pixi_options))
             {
@@ -452,7 +453,7 @@ namespace LunarHelper.Resolvers
                     {
                         case "l":
                             var list_path = match.Groups["path"].Value;
-                            path = Path.IsPathRooted(list_path) ? list_path : Path.Combine(output_path, list_path);
+                            list_path = Path.IsPathRooted(list_path) ? list_path : Path.Combine(temp_path, list_path);
                             // only set list_file if it's not already been set (we're iterating in reverse!)
                             list_file ??= list_path;
                             break;
@@ -499,7 +500,7 @@ namespace LunarHelper.Resolvers
             {
                 // pixi always resolves the list file relative to the rom's dir unless an absolute
                 // -l option is passed
-                var rom_dir = Path.GetDirectoryName(Path.GetFullPath(output_path));
+                var rom_dir = Path.GetDirectoryName(Path.GetFullPath(temp_path));
 
                 // everything else is resolved relative to the pixi directory
                 list_file = Path.Combine(rom_dir, default_list_file);
