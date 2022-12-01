@@ -631,7 +631,7 @@ namespace LunarHelper
                 return false;
             }
 
-            Importer.CreateStandardDefines(Path.GetDirectoryName(Config.OutputPath));
+            Importer.CreateStandardDefines(Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath)));
 
             return true;
         }
