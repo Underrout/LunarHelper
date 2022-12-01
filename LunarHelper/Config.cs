@@ -1,4 +1,4 @@
-﻿using QuickGraph;
+﻿using QuikGraph;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,9 +7,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-using QuickGraph.Algorithms;
-using QuickGraph.Algorithms.Search;
-using QuickGraph.Algorithms.ConnectedComponents;
+using QuikGraph.Algorithms;
+using QuikGraph.Algorithms.Search;
+using QuikGraph.Algorithms.ConnectedComponents;
 
 namespace LunarHelper
 {

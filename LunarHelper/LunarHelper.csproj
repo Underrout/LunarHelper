@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <DebugType>embedded</DebugType>
@@ -52,6 +52,6 @@
   <ItemGroup>
     <PackageReference Include="FluentArgs" Version="0.9.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="QuickGraph" Version="3.6.61119.7" />
+    <PackageReference Include="QuikGraph" Version="2.5.0" />
   </ItemGroup>
 </Project>

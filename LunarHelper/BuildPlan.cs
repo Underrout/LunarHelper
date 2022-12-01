@@ -4,7 +4,7 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using QuickGraph;
+using QuikGraph;
 using System.Reflection;
 
 namespace LunarHelper

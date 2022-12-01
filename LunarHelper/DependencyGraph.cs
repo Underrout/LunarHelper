@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.IO;
 
-using QuickGraph.Algorithms;
-using QuickGraph;
+using QuikGraph.Algorithms;
+using QuikGraph;
 
 namespace LunarHelper
 {
