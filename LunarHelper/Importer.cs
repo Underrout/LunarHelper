@@ -697,12 +697,10 @@ namespace LunarHelper
 
             Directory.CreateDirectory(globules_folder);
 
-            WriteCallGlobuleMacroFile(output_directory);
-
             Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(globules_folder, inserted_globules_folder);
         }
 
-        private static void WriteCallGlobuleMacroFile(string output_directory)
+        public static void WriteCallGlobuleMacroFile(string output_directory)
         {
             File.WriteAllText(Path.Combine(output_directory, ".lunar_helper/call_globule.asm"),
                 "includeonce\n\nmacro call_globule(globule_label)\n\tPHB\n\t" +

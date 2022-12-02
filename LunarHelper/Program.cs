@@ -435,6 +435,11 @@ namespace LunarHelper
 
             // Actually doing quick build below
 
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                Importer.WriteCallGlobuleMacroFile(Path.GetDirectoryName(Config.OutputPath));
+            }
+
             // Lunar Monitor Loader required
             if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
             {
@@ -907,6 +912,8 @@ namespace LunarHelper
                 var res = Importer.ApplyAllGlobules(output_folder, Config.TempPath, Config.GlobulesPath);
                 if (!res)
                     return false;
+
+                Importer.WriteCallGlobuleMacroFile(Path.GetDirectoryName(Config.OutputPath));
             }
             else
             {
