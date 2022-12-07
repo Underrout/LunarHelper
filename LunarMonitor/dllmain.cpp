@@ -35,7 +35,7 @@ LM lm{};
 
 HMODULE g_hModule;
 
-bool show_prompts;
+bool show_prompts, is_running;
 
 std::optional<std::string> lastRomBuildTime = std::nullopt;
 
@@ -43,6 +43,12 @@ HANDLE lunarHelperDirChangeWaiter;
 HANDLE lunarHelperDirChange;
 
 BOOL WINAPI InitFunction(HWND hWnd, int nCmdShow);
+
+#if LM_VERSION >= 332
+    VOID RunningInitFunction(DWORD a);
+#else
+    VOID RunningInitFunction(DWORD a, DWORD b, DWORD c);
+#endif
 
 #if LM_VERSION >= 331
     BOOL SaveLevelFunction(DWORD x, DWORD y);
@@ -59,6 +65,8 @@ BOOL SaveSharedPalettesFunction(BOOL x);
 void ShowVolatileResourceExportError();
 
 void WriteCommentFieldFunction(uint32_t a, const char* comment, uint32_t b);
+
+auto LMRenderLevelFunction = AddressToFnPtr<renderLevelFunction>(LM_RENDER_LEVEL_FUNCTION);
 
 auto LMSaveLevelFunction = AddressToFnPtr<saveLevelFunction>(LM_LEVEL_SAVE_FUNCTION);
 auto LMSaveMap16Function = AddressToFnPtr<saveMap16Function>(LM_MAP16_SAVE_FUNCTION);
@@ -122,10 +130,41 @@ void DllAttach(HMODULE hModule)
 
     if (command_line_amount < 3)
     {
+        HANDLE pipe = CreateFile(
+            L"\\\\.\\pipe\\lunar_monitor_pipe",
+            GENERIC_READ, // only need read access
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+
+        DWORD read;
+
+        if (pipe != INVALID_HANDLE_VALUE)
+        {
+            ReadFile(
+                pipe,
+                &is_running,
+                sizeof(bool),
+                &read,
+                NULL
+            );
+        }
+        CloseHandle(pipe);
+
         DisableThreadLibraryCalls(hModule);
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)TrueShowWindow, InitFunction);
+        if (is_running)
+        {
+            DetourAttach(&(PVOID&)LMRenderLevelFunction, RunningInitFunction);
+        }
+        else
+        {
+            DetourAttach(&(PVOID&)TrueShowWindow, InitFunction);
+        }
         DetourTransactionCommit();
     }
     else
@@ -225,6 +264,55 @@ BOOL WINAPI InitFunction(HWND hWnd, int nCmdShow)
 
     return TrueShowWindow(hWnd, nCmdShow);
 }
+
+#if LM_VERSION >= 332
+    VOID RunningInitFunction(DWORD a)
+#else
+    VOID RunningInitFunction(DWORD a, DWORD b, DWORD c)
+#endif
+{
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&(PVOID&)LMRenderLevelFunction, RunningInitFunction);
+
+    DetourAttach(&(PVOID&)LMSaveLevelFunction, SaveLevelFunction);
+    DetourAttach(&(PVOID&)LMSaveMap16Function, SaveMap16Function);
+    DetourAttach(&(PVOID&)LMSaveOWFunction, SaveOWFunction);
+    DetourAttach(&(PVOID&)LMNewRomFunction, NewRomFunction);
+    DetourAttach(&(PVOID&)LMSaveCreditsFunction, SaveCreditsFunction);
+    DetourAttach(&(PVOID&)LMSaveTitlescreenFunction, SaveTitlescreenFunction);
+    DetourAttach(&(PVOID&)LMSaveSharedPalettesFunction, SaveSharedPalettesFunction);
+    DetourAttach(&(PVOID&)LMWritecommentFunction, WriteCommentFieldFunction);
+    DetourTransactionCommit();
+
+    AddStatusBarField();
+
+    SetConfig(lm.getPaths().getRomDir());
+
+    AddExportAllButton(g_hModule);
+
+    if (config.has_value())
+    {
+        WatchLunarHelperDirectory();
+
+        if (fs::exists(lm.getPaths().getRomPath()) && !CommentFieldIsAltered())
+        {
+            Logger::log_message(L"Potential volatile resources in ROM, notifying user");
+            MessageBox(
+                *lm.getPaths().getMainEditorWindowHandle(),
+                (LPCWSTR)L"There may be unexported resources in the ROM you are opening.\nIt is recommended that you "
+                "export these resources by pressing the \"Export All\" button in the toolbar before "
+                "attempting to build with Lunar Helper.",
+                (LPCWSTR)L"Lunar Monitor: Volatile Resources",
+                MB_ICONWARNING
+            );
+        }
+    }
+
+    // LMRenderLevelFunction(a);  // apparently I can't call this without raising an access violation but 
+                                  // it seems like not calling it is also fine for some reason ¯\_(-u-)_/¯
+}
+
 
 bool CommentFieldIsAltered()
 {
