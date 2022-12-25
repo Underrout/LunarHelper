@@ -1,17 +1,21 @@
 #include "Paths.h"
 
+#include <fstream>
+
 std::filesystem::path Paths::getRomName()
 {
-	std::string path = reinterpret_cast<const char*>(LM_CURR_ROM_NAME);
+	std::filesystem::path path = trim(reinterpret_cast<const char*>(LM_CURR_ROM_NAME));
 
-	return trim(path);
+	return path.filename();
 }
 
 std::filesystem::path Paths::getRomDir()
 {
-	std::string path = reinterpret_cast<const char*>(LM_CURR_ROM_PATH);
+	std::filesystem::path path = trim(reinterpret_cast<const char*>(LM_CURR_ROM_PATH));
 
-	return trim(path);
+	path += trim(reinterpret_cast<const char*>(LM_CURR_ROM_NAME));
+
+	return path.parent_path().string() + '\\';
 }
 
 std::string Paths::trim(const std::string& str)
