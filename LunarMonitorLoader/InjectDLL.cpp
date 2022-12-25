@@ -2,13 +2,40 @@
 
 BOOL WINAPI InjectDLL(__in LPCWSTR lpcwszDll, __in HANDLE processHandle)
 {
-	SIZE_T nLength;
-	LPVOID lpLoadLibraryW = NULL;
-	LPVOID lpRemoteString;
-
 	if (processHandle == NULL)
 	{
 		return FALSE;
+	}
+
+	SIZE_T nLength;
+	LPVOID lpLoadLibraryW = NULL;
+	LPVOID lpRemoteString;
+	HMODULE hMods[1024];
+	DWORD cbNeeded;
+	size_t i{ 0 };
+
+	if (EnumProcessModules(processHandle, hMods, sizeof(hMods), &cbNeeded))
+	{
+		for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+		{
+			char szModName[MAX_PATH];
+
+			if (GetModuleBaseNameA(processHandle, hMods[i], szModName,
+				sizeof(szModName) / sizeof(char)))
+			{
+				std::string as_string{ std::string(szModName).substr(0, 13)};
+				if (as_string == "lunar-monitor") {
+					return FALSE;
+				}
+			}
+		}
+	}
+	else {
+		DWORD last{ GetLastError() };
+		std::ofstream os{ "D:/slready.txt" };
+		os << "slj";
+		os << last;
+		os.close();
 	}
 
 	lpLoadLibraryW = GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "LoadLibraryW");

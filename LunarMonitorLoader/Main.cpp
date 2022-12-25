@@ -114,6 +114,18 @@ int main(int argc, char* argv[])
 	}
 	args[i] = L'\0';
 
+
+	HANDLE pipe = CreateNamedPipe(
+		L"\\\\.\\pipe\\lunar_monitor_pipe", // name of the pipe
+		PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+		PIPE_TYPE_BYTE, // send data as a byte stream
+		1, // only allow 1 instance of this pipe
+		0, // no outbound buffer
+		0, // no inbound buffer
+		0, // use default wait time
+		NULL // use default security attributes
+	);
+
 	DetourCreateProcessWithDll(
 		NULL,
 		args,
@@ -129,36 +141,25 @@ int main(int argc, char* argv[])
 		NULL
 	);
 
-
-	if (argc >= 3)
+	DWORD written;
+	BOOL result = ConnectNamedPipe(pipe, NULL);
+	if (result)
 	{
-		HANDLE pipe = CreateNamedPipe(
-			L"\\\\.\\pipe\\lunar_monitor_pipe", // name of the pipe
-			PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
-			PIPE_TYPE_BYTE, // send data as a byte stream
-			1, // only allow 1 instance of this pipe
-			0, // no outbound buffer
-			0, // no inbound buffer
-			0, // use default wait time
-			NULL // use default security attributes
-		);
-
-		if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
+		bool bool_to_send{ show_prompts };
+		if (argc < 3)
 		{
-			BOOL result = ConnectNamedPipe(pipe, NULL);
-			if (result)
-			{
-				WriteFile(
-					pipe,
-					&show_prompts,
-					sizeof(bool),
-					NULL,
-					NULL
-				);
-			}
-			CloseHandle(pipe);
+			bool_to_send = false;
 		}
+		WriteFile(
+			pipe,
+			&bool_to_send,
+			sizeof(bool),
+			&written,
+			NULL
+		);
 	}
+
+	CloseHandle(pipe);
 
 	WaitForSingleObject(pi.hProcess, INFINITE);
 
@@ -219,19 +220,13 @@ void LoadIntoRunningInstance(char* argv[])
 		GetWindowThreadProcessId(gLmWindowHandle, &pId);
 
 		HANDLE processHandle = OpenProcess(
-			PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | SYNCHRONIZE,
+			PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | SYNCHRONIZE | TOKEN_ALL_ACCESS,
 			false, pId
 		);
 
-
 		if (processHandle != NULL)
 		{
-
 			std::filesystem::path dll_path = std::format(DLL_PATH, lunar_dir, argv[3]);
-
-			std::ofstream o{ "D:/lalaa.txt" };
-			o << dll_path;
-			o.close();
 
 			if (!std::filesystem::exists(dll_path))
 			{
@@ -251,25 +246,25 @@ void LoadIntoRunningInstance(char* argv[])
 
 			bool is_running{ true };
 
-			InjectDLL(dll_path.c_str(), processHandle);
-
-			if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
-			{
-				BOOL result = ConnectNamedPipe(pipe, NULL);
-				if (result)
+			if (InjectDLL(dll_path.c_str(), processHandle)) {
+				if (pipe != NULL && pipe != INVALID_HANDLE_VALUE)
 				{
-					WriteFile(
-						pipe,
-						&is_running,
-						sizeof(bool),
-						NULL,
-						NULL
-					);
+					BOOL result = ConnectNamedPipe(pipe, NULL);
+					if (result)
+					{
+						WriteFile(
+							pipe,
+							&is_running,
+							sizeof(bool),
+							NULL,
+							NULL
+						);
+					}
+					CloseHandle(pipe);
 				}
-				CloseHandle(pipe);
-			}
 
-			DWORD dw = WaitForSingleObject(processHandle, INFINITE);
+				DWORD dw = WaitForSingleObject(processHandle, INFINITE);
+			}
 
 			CloseHandle(processHandle);
 		}
