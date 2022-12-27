@@ -109,6 +109,7 @@ namespace LunarHelper
                 if (show_profiles)
                     Log("S - Switch profile");
 
+                Log("O - Open project in File Explorer");
                 Log("E - Edit (in Lunar Magic)");
                 Log("P - Package, H - Help, ESC - Exit");
                 Console.WriteLine();
@@ -167,6 +168,18 @@ namespace LunarHelper
 
                     case ConsoleKey.H:
                         Help();
+                        break;
+
+                    case ConsoleKey.O:
+                        if (Init())
+                        {
+                            ProcessStartInfo start_info = new ProcessStartInfo(Directory.GetCurrentDirectory())
+                            {
+                                UseShellExecute = true
+                            };
+
+                            Process.Start(start_info);
+                        }
                         break;
 
                     case ConsoleKey.Escape:
@@ -1224,6 +1237,9 @@ namespace LunarHelper
 
             Log("P - Package", ConsoleColor.Yellow);
             Log("Creates a BPS patch for your ROM against the configured clean SMW ROM, so that you can share it!\n");
+
+            Log("O - Open project in File Explorer", ConsoleColor.Yellow);
+            Log("Opens the configured 'dir' folder in a new File Explorer window, useful to quickly get to your project directory\n");
         }
 
         static public void Error(string error, ConsoleColor? background_color = null)
