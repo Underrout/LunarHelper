@@ -712,8 +712,8 @@ namespace LunarHelper
                 var checksum_offset = CHECKSUM_OFFSET + header_length;
 
                 int sum = 0;
-                int i = 0;
-                foreach (var b in bytes)
+                int i = header_length;
+                foreach (var b in bytes.Skip(header_length))
                 {
                     if (i == complement_offset || i == complement_offset + 1)
                         sum += 0xFF;
