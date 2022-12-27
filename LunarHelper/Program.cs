@@ -1178,17 +1178,22 @@ namespace LunarHelper
                 var fullPackagePath = Path.GetFullPath(Config.PackagePath);
 
                 if (Exporter.CreatePatch(Config, fullCleanPath, fullOutputPath, fullPackagePath))
+                {
                     Log("Packaging Success!", ConsoleColor.Green);
+
+                    ProcessStartInfo start_info = new ProcessStartInfo(fullPackagePath)
+                    {
+                        UseShellExecute = true
+                    };
+
+                    Process.Start(start_info);
+                }
                 else
                 {
                     Log("Packaging Failure!", ConsoleColor.Red);
                     return false;
                 }
             }
-
-            //Open explorer and select patch file
-            if (File.Exists(Config.PackagePath))
-                Process.Start("explorer.exe", $"/select, \"{Config.PackagePath}\"");
 
             Console.WriteLine();
 
