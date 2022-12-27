@@ -281,10 +281,17 @@ namespace LunarHelper
             {
                 Log("Vanilla Graphics Export Success!", ConsoleColor.Green);
 
-                Directory.Move(
-                    Path.Combine(Path.GetDirectoryName(config.TempPath), "Graphics"),
-                    Path.Combine(Path.GetDirectoryName(config.OutputPath), "Graphics")
-                );
+                try
+                {
+                    Directory.Move(
+                        Path.Combine(Path.GetDirectoryName(config.TempPath), "Graphics"),
+                        Path.Combine(Path.GetDirectoryName(config.OutputPath), "Graphics")
+                    );
+                } 
+                catch(System.IO.IOException)
+                {
+                    // don't care if source and target for move are the same
+                }
 
                 return true;
             }
