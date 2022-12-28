@@ -14,7 +14,9 @@ lunar_monitor_loader_path = Tools/LunarMagic/LunarMonitorLoader.exe
 flips_path = Tools/FLIPS/flips.exe
 -- gps_path = Tools/GPS/gps.exe
 -- pixi_path = Tools/PIXI/pixi.exe
--- pixi_options = -l Tools/PIXI/list.txt
+-- pixi_options = -l Tools/PIXI/list.txt  -- NOTE: PIXI resolves the list path relative to the temporary ROM
+                                          --       so you may need to fiddle with this a bit if your 
+                                          --       temporary ROM is not in the project's root folder
 -- addmusick_path = Tools/AddMusicK/AddMusicK.exe
 -- uberasm_path = Tools/UberASMTool/UberASMTool.exe
 
