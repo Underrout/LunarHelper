@@ -69,6 +69,9 @@ namespace LunarHelper.Resolvers
                     // stddefines file apparently cannot contain incsrc/incbin, so I'm going to 
                     // treat it as if it were a binary file, since it presumably cannot cause 
                     // further dependencies
+
+                    // TODO not sure why no edge is added here? might not actually detect this
+                    // vertex in dependency graph
                     seen.Add(stddefines_vertex);
                 }
             }

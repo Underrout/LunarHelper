@@ -32,8 +32,13 @@ namespace LunarHelper.Resolvers
             Normal,
             Shooter,
             Generator,
+            Extended,
             Cluster,
-            Extended
+            MinorExtended,
+            Bounce,
+            Smoke,
+            SpinningCoin,
+            Score
         }
 
         // range of sprite numbers that correspond to shooters (inclusive on both ends)
@@ -41,6 +46,10 @@ namespace LunarHelper.Resolvers
 
         // range of sprite numbers that correspond to generators (inclusive on both ends)
         private (int, int) generator_sprite_range = (0xD0, 0xFF);
+
+        private const string extra_defines_folder_name = "ExtraDefines";
+
+        private const string extra_hijacks_folder_name = "ExtraHijacks";
 
         // for cfg files
         private const string cfg_sprite_tag = "cfg_sprite";
@@ -61,11 +70,21 @@ namespace LunarHelper.Resolvers
 
         private const string extended_sprite_tag = "extended";
 
+        private const string minor_extended_sprite_tag = "minor_extended";
+
+        private const string bounce_sprite_tag = "bounce";
+
+        private const string smoke_sprite_tag = "smoke";
+
+        private const string spinning_coin_sprite_tag = "spinning_coin";
+
+        private const string score_sprite_tag = "score";
+
         // tag used between config files and the asm file they refer to
         private const string config_to_asm_tag = "asm_file";
 
         private readonly Regex list_section = new Regex(
-            @"^\s*(?i)(?<section>SPRITE|EXTENDED|CLUSTER|)(?-i):",
+            @"^\s*(?i)(?<section>SPRITE|EXTENDED|CLUSTER|MINOREXTENDED|BOUNCE|SMOKE|SPINNINGCOIN|SCORE)(?-i):",
             RegexOptions.Compiled | RegexOptions.Multiline
         );
 
@@ -86,7 +105,7 @@ namespace LunarHelper.Resolvers
         );
 
         private readonly Regex passed_directories = new Regex(
-            "-(?<type>l|a|sp|sh|g|e|c|r)\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s\"]+))",
+            "-(?<type>l|a|sp|sh|g|e|c|me|b|sm|sn|sc|r)\\s+(?:(?:\"(?<path>.*?)\")|(?<path>[^\\s\"]+))",
             RegexOptions.Compiled
         );
 
@@ -102,6 +121,11 @@ namespace LunarHelper.Resolvers
             ( "cluster.asm", "cluster", RootDependencyType.Asar ),
             ( "extended.asm", "extended", RootDependencyType.Asar ),
             ( "main.asm", "main", RootDependencyType.Asar ),
+            ( "bounce.asm", "bounce", RootDependencyType.Asar ),
+            ( "minorextended.asm", "minor_extended", RootDependencyType.Asar ),
+            ( "score.asm", "score", RootDependencyType.Asar ),
+            ( "smoke.asm", "smoke", RootDependencyType.Asar ),
+            ( "spinningcoin.asm", "spinning_coin", RootDependencyType.Asar),
             ( "spritetool_clean.asm", "sprite_tool_clean", RootDependencyType.Asar )
         };
 
@@ -140,6 +164,11 @@ namespace LunarHelper.Resolvers
         private const string default_extended_directory = "extended";
         private const string default_cluster_directory = "cluster";
         private const string default_routine_directory = "routines";
+        private const string default_minor_extended_directory = "misc_sprites/minorextended";
+        private const string default_bounce_directory = "misc_sprites/bounce";
+        private const string default_smoke_directory = "misc_sprites/smoke";
+        private const string default_spinning_coin_directory = "misc_sprites/spinningcoin";
+        private const string default_score_directory = "misc_sprites/score";
 
         private string list_file;
         private string asm_directory;
@@ -149,6 +178,11 @@ namespace LunarHelper.Resolvers
         private string extended_directory;
         private string cluster_directory;
         private string routine_directory;
+        private string minor_extended_directory;
+        private string bounce_directory;
+        private string smoke_directory;
+        private string spinning_coin_directory;
+        private string score_directory;
 
         public PixiResolver(DependencyGraph graph, string pixi_exe_path, string pixi_options, string temp_path)
         {
@@ -199,10 +233,28 @@ namespace LunarHelper.Resolvers
 
             if (Directory.Exists(routine_directory))
             {
-                foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.TopDirectoryOnly))
+                foreach (var routine_path in Directory.EnumerateFiles(routine_directory, "*.asm", SearchOption.AllDirectories))
                 {
                     // not numbering these tags since the order of routines probably doesn't matter
                     dependencies.Add((routine_path, routine_tag_and_type.Item1, routine_tag_and_type.Item2));
+                }
+            }
+
+            var potential_extra_defines_path = Path.Join(Path.GetDirectoryName(pixi_exe_path), extra_defines_folder_name);
+            if (Directory.Exists(potential_extra_defines_path))
+            {
+                foreach (var extra_define_path in Directory.EnumerateFiles(potential_extra_defines_path, "*.asm", SearchOption.TopDirectoryOnly))
+                {
+                    dependencies.Add((extra_define_path, "extra_define", RootDependencyType.Asar));
+                }
+            }
+
+            var potential_extra_hijacks_path = Path.Join(Path.GetDirectoryName(pixi_exe_path), extra_hijacks_folder_name);
+            if (Directory.Exists(potential_extra_hijacks_path))
+            {
+                foreach (var extra_hijack_path in Directory.EnumerateFiles(potential_extra_hijacks_path, "*.asm", SearchOption.TopDirectoryOnly))
+                {
+                    dependencies.Add((extra_hijack_path, "extra_hijack", RootDependencyType.Asar));
                 }
             }
 
@@ -328,6 +380,26 @@ namespace LunarHelper.Resolvers
                                 case "cluster":
                                     curr_section = SpriteType.Cluster;
                                     break;
+
+                                case "minorextended":
+                                    curr_section = SpriteType.MinorExtended;
+                                    break;
+
+                                case "bounce":
+                                    curr_section = SpriteType.Bounce;
+                                    break;
+
+                                case "smoke":
+                                    curr_section = SpriteType.Smoke;
+                                    break;
+
+                                case "spinningcoin":
+                                    curr_section = SpriteType.SpinningCoin;
+                                    break;
+
+                                case "score":
+                                    curr_section = SpriteType.Score;
+                                    break;
                             }
                             continue;
                         }
@@ -377,6 +449,31 @@ namespace LunarHelper.Resolvers
                 case SpriteType.Generator:
                     base_path = generators_directory;
                     tag_base = generator_sprite_tag;
+                    break;
+
+                case SpriteType.MinorExtended:
+                    base_path = minor_extended_directory;
+                    tag_base = minor_extended_sprite_tag;
+                    break;
+
+                case SpriteType.Bounce:
+                    base_path = bounce_directory;
+                    tag_base = bounce_sprite_tag;
+                    break;
+
+                case SpriteType.Smoke:
+                    base_path = smoke_directory;
+                    tag_base= smoke_sprite_tag;
+                    break;
+
+                case SpriteType.SpinningCoin:
+                    base_path= spinning_coin_directory;
+                    tag_base= spinning_coin_sprite_tag;
+                    break;
+
+                case SpriteType.Score:
+                    base_path = score_directory;
+                    tag_base = score_sprite_tag;
                     break;
             }
 
@@ -482,6 +579,26 @@ namespace LunarHelper.Resolvers
                             cluster_directory ??= path;
                             break;
 
+                        case "me":
+                            minor_extended_directory ??= path;
+                            break;
+
+                        case "b":
+                            bounce_directory ??= path;
+                            break;
+
+                        case "sm":
+                            smoke_directory ??= path;
+                            break;
+
+                        case "sn":
+                            spinning_coin_directory ??= path;
+                            break;
+
+                        case "sc":
+                            score_directory ??= path;
+                            break;
+
                         case "r":
                             routine_directory ??= path;
                             break;
@@ -489,7 +606,9 @@ namespace LunarHelper.Resolvers
 
                     // if all paths are already set, we don't need to scan the remaining matches
                     if (new[] { list_file, asm_directory, sprites_directory, shooters_directory,
-                    generators_directory, extended_directory, cluster_directory, routine_directory}.All(p => p != null))
+                        generators_directory, extended_directory, cluster_directory, routine_directory, 
+                        minor_extended_directory, bounce_directory, smoke_directory, spinning_coin_directory,
+                        score_directory}.All(p => p != null))
                     {
                         break;
                     }
@@ -512,6 +631,11 @@ namespace LunarHelper.Resolvers
             generators_directory ??= Path.Combine(pixi_directory, default_generators_directory);
             extended_directory ??= Path.Combine(pixi_directory, default_extended_directory);
             cluster_directory ??= Path.Combine(pixi_directory, default_cluster_directory);
+            minor_extended_directory ??= Path.Combine(pixi_directory, default_minor_extended_directory);
+            bounce_directory ??= Path.Combine(pixi_directory, default_bounce_directory);
+            smoke_directory ??= Path.Combine(pixi_directory, default_smoke_directory);
+            spinning_coin_directory ??= Path.Combine(pixi_directory, default_spinning_coin_directory);
+            score_directory ??= Path.Combine(pixi_directory, default_score_directory);
             routine_directory ??= Path.Combine(pixi_directory, default_routine_directory);
         }
 
