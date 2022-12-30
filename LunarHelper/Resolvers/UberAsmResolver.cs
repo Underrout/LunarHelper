@@ -23,12 +23,12 @@ namespace LunarHelper.Resolvers
         );
 
         private readonly Regex list_item = new Regex(
-            @"^\s*(?<number>[a-fA-F0-9]+)\s*(?<path>.*?)(?:(?:\s*$)|(?:\s+;(?:.*)$))",
+            @"^\s*(?<number>[a-fA-F0-9]+)\s+(?<path>[^#]*)",
             RegexOptions.Compiled
         );
 
         private readonly Regex global_macro_statusbar = new Regex(
-            @"^\s*(?<type>(?:global|statusbar|macrolib)):\s+(?<path>(.*?))(?:(?:\s*$)|(?:\s+;(?:.*)$))",
+            @"^\s*(?<type>(?:global|statusbar|macrolib)):\s+(?<path>[^#]*)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase
         );
 
@@ -208,7 +208,7 @@ namespace LunarHelper.Resolvers
                     {
                         var number = int.Parse(match.Groups["number"].Value, System.Globalization.NumberStyles.HexNumber);
                         var tag = $"{curr_section.ToString().ToLower()}_{number}";
-                        ResolveListVar(vertex, match.Groups["path"].Value, tag, curr_section);
+                        ResolveListVar(vertex, match.Groups["path"].Value.Trim(), tag, curr_section);
                         continue;
                     }
 
@@ -218,7 +218,7 @@ namespace LunarHelper.Resolvers
                     {
                         ListVar var_type = DetermineListVar(match.Groups["type"].Value);
 
-                        ResolveListVar(vertex, match.Groups["path"].Value, match.Groups["type"].Value.ToLower(), var_type);
+                        ResolveListVar(vertex, match.Groups["path"].Value.Trim(), match.Groups["type"].Value.ToLower(), var_type);
                         continue;
                     }
 
