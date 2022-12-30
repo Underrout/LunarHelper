@@ -613,6 +613,15 @@ namespace LunarHelper
                 globule_import_graph.RemoveVertex(source);
             }
 
+            foreach (var globule_root in graph.globule_roots)
+            {
+                var name = ((GlobuleRootVertex)globule_root).globule_name;
+                if (!order.Contains(name))
+                {
+                    order.Add(name);
+                }
+            }
+
             return order;
         }
 
