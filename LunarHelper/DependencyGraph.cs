@@ -163,7 +163,7 @@ namespace LunarHelper
         // has a unique tag
         public bool TryAddUniqueEdge(Vertex source, Vertex target, string tag, bool unique_tag = false)
         {
-            if (dependency_graph.OutEdges(source).Any(e => e.Target == target && (!unique_tag || e.Tag == tag)))
+            if (dependency_graph.OutEdges(source).Any(e => (e.Target is ArbitraryFileVertex || e.Target == target) && (!unique_tag || e.Tag == tag)))
             {
                 return false;
             }
