@@ -37,7 +37,7 @@ namespace LunarHelper
             return build_order.Any(i => i.type == type);
         }
 
-        public static List<Insertable> PlanQuickBuild(Config config, DependencyGraph dependency_graph)
+        public static (bool, List<Insertable>) PlanQuickBuild(Config config, DependencyGraph dependency_graph)
         {
             // check whether we need to rebuild completely
 
@@ -110,6 +110,8 @@ namespace LunarHelper
 
             bool anything_performed = false;
 
+            bool globules_changed = false;
+
             if (globule_results.Any())
             {
                 var needs_cleaning = globule_results.Where(r => new[] {
@@ -149,7 +151,7 @@ namespace LunarHelper
                             throw new CannotBuildException("At least one globule failed to insert, cannot build!");
                         }
                     }
-
+                    globules_changed = true;
                     anything_performed = true;
                 }
 
@@ -447,13 +449,13 @@ namespace LunarHelper
 
             // log whether already up to date
 
-            if (require_insertion.Count == 0)
+            if (require_insertion.Count == 0 && !globules_changed)
             {
                 Program.Log("Previously built ROM should already be up to date!", ConsoleColor.Green);
                 Console.WriteLine();
             }
 
-            return DetermineQuickBuildInsertionOrder(require_insertion, config.QuickBuildTriggerGraph);
+            return (globules_changed, DetermineQuickBuildInsertionOrder(require_insertion, config.QuickBuildTriggerGraph));
         }
 
         private static List<Insertable> DetermineQuickBuildInsertionOrder(List<Insertable> detected_changes,

@@ -415,14 +415,24 @@ namespace LunarHelper
             dependency_graph = new DependencyGraph(Config);
 
             if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
-                dependency_graph.ResolveGlobules();
-            // dependency_graph.ResolveNonGlobules();  // these get resolved while planning the build now, it's a little sketchy
+            {
+                try
+                {
+                    dependency_graph.ResolveGlobules();
+                }
+                catch (GlobuleException e)
+                {
+                    Error(e.Message);
+                    return false;
+                }
+            }
 
             List<Insertable> plan;
+            bool store_report_without_building = false;
 
             try 
             {
-                plan = BuildPlan.PlanQuickBuild(Config, dependency_graph);
+                (store_report_without_building , plan) = BuildPlan.PlanQuickBuild(Config, dependency_graph);
             }
             catch (BuildPlan.CannotBuildException)
             {
@@ -440,7 +450,7 @@ namespace LunarHelper
                 return Build(volatile_resource_handling_preference, true);
             }
             
-            if (plan.Count == 0)
+            if (plan.Count == 0 && !store_report_without_building)
             {
                 // nothing to insert, we're up to date
                 return true;
@@ -871,6 +881,21 @@ namespace LunarHelper
                 return false;
             }
 
+            dependency_graph = new DependencyGraph(Config);
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                try
+                {
+                    dependency_graph.ResolveGlobules();
+                }
+                catch (GlobuleException e)
+                {
+                    Error(e.Message);
+                    return false;
+                }
+            }
+
             List<Insertable> plan = BuildPlan.PlanBuild(Config);
 
             Lognl("Starting Build");
@@ -939,12 +964,6 @@ namespace LunarHelper
             MarkRomAsNonVolatile(Config.TempPath);
 
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
-            dependency_graph = new DependencyGraph(Config);
-
-            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
-            {
-                dependency_graph.ResolveGlobules();
-            }
 
             Importer.FinalizeGlobuleImprints(output_folder);
 

@@ -13,19 +13,20 @@ using System.Diagnostics;
 
 namespace LunarHelper
 {
-    class DependencyResolver : IResolve<PatchRootVertex>, IToolRootResolve
+    class DependencyResolver : IResolve<GlobuleRootVertex>, IResolve<PatchRootVertex>, IToolRootResolve
     {
-        private readonly AsarFileResolver patch_resolver;
+        private readonly PatchResolver patch_resolver;
         private readonly AmkResolver amk_resolver;
         private readonly PixiResolver pixi_resolver;
         private readonly GpsResolver gps_resolver;
         private readonly UberAsmResolver uberasm_resolver;
+        private readonly GlobuleResolver globule_resolver;
 
         public DependencyResolver(DependencyGraph graph, Config config)
         {
-            if (config.Patches.Any() || !string.IsNullOrWhiteSpace(config.GlobulesPath))
+            if (config.Patches.Any())
             {
-                patch_resolver = new AsarFileResolver(graph, Path.Join(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), "asar.dll"));
+                patch_resolver = new PatchResolver(graph, Path.Join(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName), "asar.dll"));
             }
 
             if (!string.IsNullOrWhiteSpace(config.AddMusicKPath))
@@ -48,6 +49,17 @@ namespace LunarHelper
             {
                 uberasm_resolver = new UberAsmResolver(graph, config.UberASMPath, config.UberASMOptions);
             }
+
+            if (!string.IsNullOrWhiteSpace(config.GlobulesPath))
+            {
+                globule_resolver = new GlobuleResolver(graph, Path.Join(Path.GetDirectoryName(
+                    Process.GetCurrentProcess().MainModule.FileName), "asar.dll"), Path.GetFullPath(config.GlobulesPath));
+            }
+        }
+
+        public bool CanResolveGlobules()
+        {
+            return globule_resolver != null;
         }
 
         public bool CanResolvePatches()
@@ -82,7 +94,7 @@ namespace LunarHelper
 
         public void ResolveDependencies(GlobuleRootVertex vertex)
         {
-            patch_resolver.ResolveDependencies(vertex);
+            globule_resolver.ResolveDependencies(vertex);
         }
 
         public void ResolveToolRootDependencies(ToolRootVertex vertex)

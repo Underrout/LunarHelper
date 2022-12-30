@@ -97,7 +97,7 @@ namespace LunarHelper
 
         public void ResolveGlobules()
         {
-            if (resolver.CanResolvePatches())
+            if (resolver.CanResolveGlobules())
             {
                 CreateGlobuleRoots(config);
 
