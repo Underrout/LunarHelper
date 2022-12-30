@@ -8,6 +8,8 @@ using AsarCLR;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using QuikGraph;
+using QuikGraph.Algorithms.ConnectedComponents;
 
 namespace LunarHelper
 {
@@ -571,6 +573,49 @@ namespace LunarHelper
             }
         }
 
+        static public List<string> DetermineGlobuleInsertionOrder(DependencyGraph graph)
+        {
+            BidirectionalGraph<string, Edge<string>> globule_import_graph = new BidirectionalGraph<string, Edge<string>>();
+
+            foreach (var globule_root in graph.globule_roots)
+            {
+                foreach (var out_edge in graph.dependency_graph.OutEdges(globule_root))
+                {
+                    if (out_edge.Target is GlobuleRootVertex)
+                    {
+                        var importer_name = ((GlobuleRootVertex)globule_root).globule_name;
+                        var imported_name = ((GlobuleRootVertex)out_edge.Target).globule_name;
+                        globule_import_graph.AddVertex(importer_name);
+                        globule_import_graph.AddVertex(imported_name);
+                        globule_import_graph.AddEdge(new Edge<string>(imported_name, importer_name));
+                    }
+                }
+            }
+
+            if (globule_import_graph.Edges.Any(e => e.Source.Equals(e.Target)))
+                throw new Exception("Cyclic imports detected in globules, cannot insert globules");
+
+            var ssc = new StronglyConnectedComponentsAlgorithm<string, Edge<string>>(globule_import_graph);
+
+            ssc.Compute();
+
+            bool cycles_present = ssc.ComponentCount != globule_import_graph.VertexCount;  // if all strongly connected components are
+                                                                                           // single vertices, our graph is acyclic
+
+            if (cycles_present)
+                throw new Exception("Cyclic imports detected in globules, cannot insert globules");
+
+            List<string> order = new List<string>();
+            while (globule_import_graph.VertexCount != 0)
+            {
+                var source = globule_import_graph.Vertices.First(v => globule_import_graph.InDegree(v) == 0);
+                order.Add(source);
+                globule_import_graph.RemoveVertex(source);
+            }
+
+            return order;
+        }
+
         static public bool ImportSingleLevel(Config config, string level_path)
         {
             // supress message box prompts if invoked on CLI
@@ -658,7 +703,7 @@ namespace LunarHelper
             return (rom, header);
         }
 
-        private static void WriteGlobuleImprint(string output_directory, string globule_name, Asarlabel[] labels)
+        private static void WriteGlobuleImprint(string output_directory, string globule_name, Asarlabel[] labels, HashSet<string> imported_names)
         {
             var globules_folder = Path.Combine(output_directory, ".lunar_helper/globules");
 
@@ -675,6 +720,9 @@ namespace LunarHelper
             {
                 if (label.Name.StartsWith(':'))
                     continue;
+
+                if (label.Name.Contains('_') && imported_names.Contains(label.Name.Substring(0, label.Name.IndexOf('_'))))
+                    continue;  // skip imported labels
 
                 var prefixed_label = Path.GetFileNameWithoutExtension(globule_name).Replace(' ', '_') + '_' + label.Name;
                 var prefixed_label_as_define = '!' + prefixed_label;
@@ -801,34 +849,46 @@ namespace LunarHelper
             return true;
         }
 
-        public static bool ApplyAllGlobules(string output_folder, string temp_rom_path, string globules_path)
+        public static bool ApplyAllGlobules(string output_folder, string temp_rom_path, string globules_folder, DependencyGraph graph)
         {
-            if (!Directory.Exists(globules_path))
-            {
-                Error($"Globules folder '{globules_path}' not found!");
-                return false;
-            }
+            var order = DetermineGlobuleInsertionOrder(graph);
 
-            foreach (var globule_path in Directory.EnumerateFiles(globules_path, "*.asm", SearchOption.TopDirectoryOnly))
+            foreach (var globule_name in order)
             {
-                var res = ApplyGlobule(output_folder, temp_rom_path, globule_path);
+                var full_globule_path = Path.Join(globules_folder, globule_name) + ".asm";
 
-                if (!res)
+                if (!ApplyGlobule(output_folder, temp_rom_path, full_globule_path, graph))
+                {
                     return false;
+                }
             }
 
             return true;
         }
 
-        public static bool ApplyGlobule(string output_folder, string temp_rom_path, string globule_path)
+        public static bool ApplyGlobule(string output_folder, string temp_rom_path, string globule_path, DependencyGraph graph)
         {
             Log($"Globule '{globule_path}'", ConsoleColor.Cyan);
+
+            var imports = new List<string>();
+            var import_names = new HashSet<string>();
+            foreach (var out_edge in graph.dependency_graph.OutEdges(graph.GetOrCreateFileNameVertex(globule_path)))
+            {
+                if (out_edge.Target is GlobuleRootVertex)
+                {
+                    var import_name = ((GlobuleRootVertex)out_edge.Target).globule_name;
+                    imports.Add(Path.Combine(output_folder, $".lunar_helper/globules/{import_name}.asm"));
+                    import_names.Add(import_name);
+                }
+            }
 
             var temp_patch_path = Path.GetTempFileName();
 
             var temp_patch_stream = new StreamWriter(temp_patch_path);
             temp_patch_stream.WriteLine("warnings disable W1011");  // any freespace used in the globule is cleaned by LH anyway, no need to warn about "leaks"
             temp_patch_stream.WriteLine("freecode cleaned");
+            foreach (var import_path in imports)
+                temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(import_path).Replace('\\', '/')}\"");
             temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(globule_path).Replace('\\', '/')}\"");
             temp_patch_stream.Close();
 
@@ -862,7 +922,7 @@ namespace LunarHelper
             rom_stream.Write(header);
             rom_stream.Write(rom);
 
-            WriteGlobuleImprint(output_folder, Path.GetFileName(globule_path), Asar.getlabels());
+            WriteGlobuleImprint(output_folder, Path.GetFileName(globule_path), Asar.getlabels(), import_names);
 
             Log($"Globule Insertion Success!\n", ConsoleColor.Green);
 

@@ -134,6 +134,7 @@ namespace LunarHelper
                     }
 
                     anything_performed = true;
+                    globules_changed = true;
                 }
 
                 var needs_insertion = globule_results
@@ -142,11 +143,25 @@ namespace LunarHelper
 
                 if (needs_insertion.Any())
                 {
-                    foreach ((var globule_name, (var result, var dep_chain)) in needs_insertion)
+                    List<string> globule_insertion_order;
+
+                    try
+                    {
+                        globule_insertion_order = Importer.DetermineGlobuleInsertionOrder(dependency_graph);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new CannotBuildException(e.Message);
+                    }
+
+                    var sorted_insertion = needs_insertion.ToList();
+                    sorted_insertion.Sort((a, b) => globule_insertion_order.IndexOf(a.Item1).CompareTo(globule_insertion_order.IndexOf(b.Item1)));
+
+                    foreach ((var globule_name, (var result, var dep_chain)) in sorted_insertion)
                     {
                         Program.Log(GetQuickBuildReasonString(config, $"Globule '{globule_name}.asm'", result, dep_chain), ConsoleColor.Yellow);
                         Program.Log($"\nAttempting to insert globule '{globule_name}.asm'...", ConsoleColor.Cyan);
-                        if (!Importer.ApplyGlobule(output_folder, config.TempPath, Path.Join(config.GlobulesPath, globule_name + ".asm")))
+                        if (!Importer.ApplyGlobule(output_folder, config.TempPath, Path.Join(config.GlobulesPath, globule_name + ".asm"), dependency_graph))
                         {
                             throw new CannotBuildException("At least one globule failed to insert, cannot build!");
                         }
@@ -524,7 +539,6 @@ namespace LunarHelper
 
             return insertion_order;
         }
-
 
         private static List<Insertable> GatherInsertables(Insertable insertable, List<Insertable> insertables)
         {

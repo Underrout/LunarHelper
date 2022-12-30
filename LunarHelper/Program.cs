@@ -411,6 +411,12 @@ namespace LunarHelper
             if (File.Exists(Config.OutputPath))
                 File.Copy(Config.OutputPath, Config.TempPath);
 
+
+            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                Importer.WriteCallGlobuleMacroFile(Path.GetDirectoryName(Config.OutputPath));
+            }
+
             Log("Building dependency graph...\n", ConsoleColor.Cyan);
             dependency_graph = new DependencyGraph(Config);
 
@@ -434,8 +440,9 @@ namespace LunarHelper
             {
                 (store_report_without_building , plan) = BuildPlan.PlanQuickBuild(Config, dependency_graph);
             }
-            catch (BuildPlan.CannotBuildException)
+            catch (BuildPlan.CannotBuildException e)
             {
+                Error(e.Message);
                 Log("Quick Build failed!\n", ConsoleColor.Red);
                 return false;
             }
@@ -449,6 +456,11 @@ namespace LunarHelper
                 Log(e.StackTrace);
                 return Build(volatile_resource_handling_preference, true);
             }
+
+            if (string.IsNullOrWhiteSpace(Config.GlobulesPath))
+            {
+                Importer.ClearGlobuleFolder(output_folder);
+            }
             
             if (plan.Count == 0 && !store_report_without_building)
             {
@@ -457,11 +469,6 @@ namespace LunarHelper
             }
 
             // Actually doing quick build below
-
-            if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
-            {
-                Importer.WriteCallGlobuleMacroFile(Path.GetDirectoryName(Config.OutputPath));
-            }
 
             // Lunar Monitor Loader required
             if (string.IsNullOrWhiteSpace(Config.LunarMonitorLoaderPath))
@@ -947,11 +954,18 @@ namespace LunarHelper
 
             if (!string.IsNullOrWhiteSpace(Config.GlobulesPath))
             {
-                var res = Importer.ApplyAllGlobules(output_folder, Config.TempPath, Config.GlobulesPath);
-                if (!res)
-                    return false;
-
                 Importer.WriteCallGlobuleMacroFile(Path.GetDirectoryName(Config.OutputPath));
+
+                try
+                {
+                    if (!Importer.ApplyAllGlobules(output_folder, Config.TempPath, Config.GlobulesPath, dependency_graph))
+                        return false;
+                }
+                catch (Exception e)
+                {
+                    Error(e.Message);
+                    return false;
+                }
             }
             else
             {
