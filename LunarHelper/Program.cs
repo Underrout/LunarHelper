@@ -438,7 +438,7 @@ namespace LunarHelper
 
             try 
             {
-                (store_report_without_building , plan) = BuildPlan.PlanQuickBuild(Config, dependency_graph);
+                (store_report_without_building, plan) = BuildPlan.PlanQuickBuild(Config, dependency_graph);
             }
             catch (BuildPlan.CannotBuildException e)
             {
@@ -876,7 +876,7 @@ namespace LunarHelper
 
         static private bool Build(char volatile_resource_handling_preference = ' ', bool skip_volatile_check = false)
         {
-            var output_folder = Path.GetDirectoryName(Config.OutputPath);
+            var output_folder = Path.GetDirectoryName(Path.GetFullPath(Config.OutputPath));
 
             if (profile_manager.current_profile != null)
                 profile_manager.WriteCurrentProfileToFile(output_folder);

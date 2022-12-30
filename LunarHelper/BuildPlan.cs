@@ -41,7 +41,7 @@ namespace LunarHelper
         {
             // check whether we need to rebuild completely
 
-            var output_folder = Path.GetDirectoryName(config.OutputPath);
+            var output_folder = Path.GetDirectoryName(Path.GetFullPath(config.OutputPath));
             var build_report_path = Path.Combine(output_folder, ".lunar_helper/build_report.json");
 
             Program.Log("Analyzing previous build result", ConsoleColor.Cyan);

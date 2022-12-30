@@ -935,7 +935,7 @@ namespace LunarHelper
 
             (var rom, var header) = GetRomHeaderAndData(config.TempPath);
 
-            var define_dict = GetStandardDefineDict(Path.GetDirectoryName(config.OutputPath));
+            var define_dict = GetStandardDefineDict(Path.GetDirectoryName(Path.GetFullPath(config.OutputPath)));
             var res = Asar.patch(Path.GetFullPath(patch_path), ref rom, null, true, define_dict);
 
             foreach (var print in Asar.getprints())
