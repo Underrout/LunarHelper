@@ -294,6 +294,11 @@ namespace LunarHelper
                 throw new Exception("'Patches' cannot be used in Quick Build triggers, please specify individual patches instead");
             }
 
+            if (!is_quickbuild && insertable_type == InsertableType.Rebuild)
+            {
+                throw new Exception("'Rebuild' cannot be used in build order list");
+            }
+
             if (success && insertable_type != InsertableType.SinglePatch && insertable_type != InsertableType.SingleLevel)
             {
                 return new Insertable(insertable_type);
@@ -317,7 +322,8 @@ namespace LunarHelper
             { InsertableType.GlobalData, VerifyGlobalData },
             { InsertableType.TitleMoves, VerifyTitleMoves },
             { InsertableType.Levels, VerifyLevels },
-            { InsertableType.Patches, VerifyPatches }
+            { InsertableType.Patches, VerifyPatches },
+            { InsertableType.Rebuild, NoVerify }
         };
 
         private static void VerifyInsertable(Config config, Insertable insertable)
@@ -354,13 +360,18 @@ namespace LunarHelper
 
             foreach ((var trigger, var insertable) in config.QuickBuildTriggers)
             {
+                if (trigger.type == InsertableType.Rebuild)
+                {
+                    throw new Exception("'Rebuild' cannot be used on the left side of a Quick Build trigger rule");
+                }
+
                 if (!config.BuildOrder.Contains(trigger))
                 {
                     if (trigger.type != InsertableType.SinglePatch || !config.BuildOrder.Any(i => i.type == InsertableType.Patches))
                         throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");
                 }
 
-                if (!config.BuildOrder.Contains(insertable))
+                if (!config.BuildOrder.Contains(insertable) && insertable.type != InsertableType.Rebuild)
                 {
                     if (insertable.type != InsertableType.SinglePatch || !config.BuildOrder.Any(i => i.type == InsertableType.Patches))
                         throw new Exception("Resources used in 'quick_build_triggers' must also be present in 'build_order'");

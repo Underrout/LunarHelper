@@ -491,6 +491,11 @@ namespace LunarHelper
                     // our vertex has no changes of its own but was triggered by some previous source
                     // vertex having had changes in its subtree, reinsert our vertex and also trigger
                     // reinsertion of our neighboring vertices
+                    if (source.type == InsertableType.Rebuild)
+                    {
+                        Program.Log($"ROM must be rebuilt due to Quick Build triggers specification", ConsoleColor.Yellow);
+                        throw new MustRebuildException();
+                    }
                     var as_string = source.type == InsertableType.SinglePatch ? $"Patch '{source.normalized_relative_path}'" :
                         source.type.ToString();
                     Program.Lognl(as_string, ConsoleColor.Cyan);

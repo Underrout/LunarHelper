@@ -22,7 +22,8 @@ namespace LunarHelper
         SingleLevel,  // a single level
         Levels,  // all levels
         SinglePatch,  // a single patch, specified by name
-        Patches  // refers to all not otherwise specified patches
+        Patches,  // refers to all not otherwise specified patches
+        Rebuild  // may only appear on right side of a rule, means whole ROM must be rebuilt
     }
 
     public class Insertable
