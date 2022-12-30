@@ -132,6 +132,7 @@ namespace LunarHelper.Resolvers
         private readonly IEnumerable<(string, string)> asm_directory_generated_files = new List<(string, string)>
         {
             ( "_ClusterPtr.bin", "cluster_ptr" ),
+            ( "_BouncePtr.bin", "bounce_ptr" ),
             ( "_ExtendedPtr.bin", "extended_ptr" ),
             ( "_ExtendedCapePtr.bin", "extended_cape_ptr" ),
             ( "_versionflag.bin", "version_flag" ),
@@ -142,6 +143,11 @@ namespace LunarHelper.Resolvers
             ( "_PerLevelT.bin", "per_level_t" ),
             ( "_PerLevelCustomPtrTable.bin", "per_level_custom_ptr_table" ),
             ( "_PerLevelSprPtrs.bin", "per_level_spr_ptrs" ),
+            ( "_cleanup.asm", "cleanup_asm"),
+            ( "_minorextendedptr.bin", "minor_extended_ptr" ),
+            ( "_scoreptr.bin", "score_ptr" ),
+            ( "_smokeptr.bin", "smoke_ptr" ),
+            ( "_spinningcoinptr.bin", "spinning_coin_ptr" ),
             ( "config.asm", "config" )
         };
 
