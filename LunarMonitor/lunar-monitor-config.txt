@@ -1,0 +1,9 @@
+level_directory: "Levels"
+flips_path: "Tools/FLIPS/flips.exe"
+map16_path: "Other/all.map16"
+clean_rom_path: "clean.smc"
+global_data_path: "Other/global_data.bps"
+shared_palettes_path: "Other/shared.pal"
+
+log_path: "Other/lunar-monitor-log.txt"
+log_level: Log

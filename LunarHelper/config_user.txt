@@ -1,0 +1,5 @@
+-- rom paths
+clean = clean.smc
+output = my_hack.smc
+temp = temp.smc
+package = my_hack.bps

@@ -1,0 +1,54 @@
+-- working directory
+dir = C:/Users/user/Documents/my_hack
+
+initial_patch = Other/initial_patch.bps
+
+patches
+[
+--  Patches/retry/retry.asm
+--  Patches/asarspritetiles.asm
+]
+
+-- tools
+lunar_monitor_loader_path = Tools/LunarMagic/LunarMonitorLoader.exe
+flips_path = Tools/FLIPS/flips.exe
+-- gps_path = Tools/GPS/gps.exe
+-- pixi_path = Tools/PIXI/pixi.exe
+-- pixi_options = -l Tools/PIXI/list.txt  -- NOTE: PIXI resolves the list path relative to the temporary ROM
+                                          --       so you may need to fiddle with this a bit if your 
+                                          --       temporary ROM is not in the project's root folder
+-- addmusick_path = Tools/AddMusicK/AddMusicK.exe
+-- uberasm_path = Tools/UberASMTool/UberASMTool.exe
+
+-- content
+levels = Levels
+shared_palette = Other/shared.pal
+map16 = Other/all.map16
+global_data = Other/global_data.bps
+-- title_moves = Other/title_moves.zst
+
+build_order
+[
+    Graphics                -- Insert standard GFX
+    ExGraphics              -- Insert ExGFX
+    Map16                   -- Insert Map16
+
+--  TitleMoves              -- Uncomment this if you're inserting title moves
+
+    SharedPalettes          -- Insert Shared Palettes 
+    GlobalData              -- Insert Overworld, Title Screen and Credits 
+
+--  Patches                 -- Insert all remaining patches from the patches list that 
+                            -- are not explicitly mentioned in this build order
+
+--  PIXI                    -- Insert custom sprites
+    Levels                  -- Insert all levels
+
+--  PIXI                    -- Uncomment this if you're using Lunar Magic 3.31 or higher
+
+--  AddMusicK               -- Insert custom music
+--  GPS                     -- Insert custom blocks
+--  UberASM                 -- Insert UberASM code
+
+--  Patches/some_patch.asm  -- Example of inserting a specific patch at a different time
+]
