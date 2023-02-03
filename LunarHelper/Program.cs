@@ -1227,12 +1227,7 @@ namespace LunarHelper
                 {
                     Log("Packaging Success!", ConsoleColor.Green);
 
-                    ProcessStartInfo start_info = new ProcessStartInfo(fullPackagePath)
-                    {
-                        UseShellExecute = true
-                    };
-
-                    Process.Start(start_info);
+                    Process.Start("explorer.exe", $"/select, \"{fullPackagePath}\"");
                 }
                 else
                 {
