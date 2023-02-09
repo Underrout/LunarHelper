@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <detours.h>
 #include <CommCtrl.h>
+#include <thread>
 #pragma comment (lib, "comctl32")
 
 #include <iostream>
@@ -758,7 +759,7 @@ BOOL SaveLevelFunction(DWORD x)
     BOOL succeeded = LMSaveLevelFunction(x);
 #endif
 
-    OnLevelSave::onLevelSave(succeeded, lm.getLevelEditor().getLevelNumberBeingSaved(), lm, config);
+    std::thread([&]() { OnLevelSave::onLevelSave(succeeded, lm.getLevelEditor().getLevelNumberBeingSaved(), lm, config); }).detach();
 
     return succeeded;
 }
@@ -767,13 +768,13 @@ BOOL SaveMap16Function()
 {
 #if  LM_VERSION >= 331
     __asm {
-        mov eax,ebx
+        mov eax, ebx
     }
 #else
     __asm {
         push ebp
-        mov ebp,edi
-        mov eax,edi
+        mov ebp, edi
+        mov eax, edi
     }
 #endif
 
@@ -785,7 +786,7 @@ BOOL SaveMap16Function()
     }
 #endif
 
-    OnMap16Save::onMap16Save(succeeded, lm, config);
+    std::thread([&]() { OnMap16Save::onMap16Save(succeeded, lm, config); }).detach();
 
     return succeeded;
 }
@@ -799,7 +800,7 @@ BOOL SaveOWFunction()
 #endif
     BOOL succeeded = LMSaveOWFunction();
 
-    OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config);
+    std::thread([&]() { OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config); }).detach();
 
     return succeeded;
 }
@@ -817,7 +818,7 @@ BOOL SaveTitlescreenFunction()
 #endif
     BOOL succeeded = LMSaveTitlescreenFunction();
 
-    OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config);
+    std::thread([&]() { OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config); }).detach();
 
     return succeeded;
 }
@@ -826,7 +827,7 @@ BOOL SaveCreditsFunction()
 {
     BOOL succeeded = LMSaveCreditsFunction();
 
-    OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config);
+    std::thread([&]() { OnGlobalDataSave::onGlobalDataSave(succeeded, lm, config); }).detach();
 
     return succeeded;
 }
@@ -851,7 +852,7 @@ BOOL SaveSharedPalettesFunction(BOOL x)
     }
 #endif
 
-    OnSharedPalettesSave::onSharedPalettesSave(succeeded, lm, config);
+    std::thread([&]() { OnSharedPalettesSave::onSharedPalettesSave(succeeded, lm, config); }).detach();
 
     return succeeded;
 }
