@@ -1063,16 +1063,17 @@ namespace LunarHelper
                 ProcessStartInfo psi = new ProcessStartInfo(Config.EmulatorPath,
                     $"{Config.EmulatorOptions} \"{fullRom}\"");
 
-                EmulatorProcess = Process.Start(psi);
+                try
+                {
+                    EmulatorProcess = Process.Start(psi);
+                }
+                catch (Exception e)
+                {
+                    Error($"Emulator launch failed:\n{e.Message}");
+                    return;
+                }
 
-                if (EmulatorProcess != null)
-                {
-                    Log("Emulator launched!", ConsoleColor.Green);
-                }
-                else
-                {
-                    Error("Emulator launch failed");
-                }
+                 Log("Emulator launched!", ConsoleColor.Green);
             }
             else
             {
