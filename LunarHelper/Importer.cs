@@ -761,7 +761,8 @@ namespace LunarHelper
         {
             File.WriteAllText(Path.Combine(output_directory, ".lunar_helper/call_globule.asm"),
                 "includeonce\n\nmacro call_globule(globule_label)\n\tPHB\n\t" +
-                "LDA.b #<globule_label>>>16\n\tPHA\n\tPLB\n\tJSL <globule_label>\n\tPLB\nendmacro\n"
+                "LDA.b #<globule_label>>>16\n\tPHA\n\tPLB\n\tJSL <globule_label>\n\tPLB\nendmacro\n" +
+                "\nmacro call(globule_label)\n\t%call_globule(<globule_label>)\nendmacro\n"
             );
         }
 
