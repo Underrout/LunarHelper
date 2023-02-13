@@ -895,6 +895,7 @@ namespace LunarHelper
 
             var temp_patch_stream = new StreamWriter(temp_patch_path);
             temp_patch_stream.WriteLine("warnings disable W1011");  // any freespace used in the globule is cleaned by LH anyway, no need to warn about "leaks"
+            temp_patch_stream.WriteLine("if read1($00ffd5) == $23\nsa1rom\nendif");
             temp_patch_stream.WriteLine("freecode cleaned");
             foreach (var import_path in imports)
                 temp_patch_stream.WriteLine($"incsrc \"{Path.GetFullPath(import_path).Replace('\\', '/')}\"");
