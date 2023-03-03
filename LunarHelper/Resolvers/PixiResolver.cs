@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.Json;
 using System.IO;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace LunarHelper.Resolvers
@@ -548,18 +545,18 @@ namespace LunarHelper.Resolvers
             seen.Add(vertex);
 
             string contents = File.ReadAllText(vertex.uri.LocalPath);
-            JsonNode node;
+            string relative_asm_path;
 
             try
             {
-                node = JsonNode.Parse(contents);
+                var doc = JsonDocument.Parse(contents);
+                relative_asm_path = doc.RootElement.GetProperty("AsmFile").ToString();
             }
             catch
             {
-                node = null;
+                relative_asm_path = null;
             }
 
-            var relative_asm_path = node != null && node["AsmFile"] != null ? node["AsmFile"].ToString() : "";
             var asm_file_path = Path.Combine(Path.GetDirectoryName(vertex.uri.LocalPath), relative_asm_path);
 
             Vertex asm_vertex = graph.GetOrCreateVertex(asm_file_path);
