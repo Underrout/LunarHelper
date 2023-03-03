@@ -981,15 +981,28 @@ namespace LunarHelper
 
             Importer.FinalizeGlobuleImprints(output_folder);
 
-            dependency_graph.ResolveNonGlobules();
+            var dependency_graph_exists = true;
+
+            try
+            {
+                dependency_graph.ResolveNonGlobules();
+            }
+            catch (Exception e)
+            {
+                dependency_graph_exists = false;
+                Log("WARNING: Failed to build dependency graph with exception\n" + e.Message + "\n", ConsoleColor.Yellow);
+            }
 
             if (!FinalizeOutputROM(Config.InvokedOnCommandLine))
             {
                 return false;
             }
 
-            Log("Writing build report...\n", ConsoleColor.Cyan);
-            WriteReport(output_folder);
+            if (dependency_graph_exists)
+            {
+                Log("Writing build report...\n", ConsoleColor.Cyan);
+                WriteReport(output_folder);
+            }
 
             Log($"ROM patched successfully to '{Config.OutputPath}'!", ConsoleColor.Green);
             Console.WriteLine();
