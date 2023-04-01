@@ -260,6 +260,8 @@ BOOL WINAPI InitFunction(HWND hWnd, int nCmdShow)
 
         AddStatusBarField();
 
+        SetConfig(lm.getPaths().getRomDir());
+
         AddExportAllButton(g_hModule);
     }
 
