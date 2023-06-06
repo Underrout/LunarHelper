@@ -728,7 +728,10 @@ namespace LunarHelper
             foreach (var label in labels)
             {
                 if (label.Name.StartsWith(':'))
-                    continue;
+                    continue;  // skip relative labels (+, -, ++, etc.)
+
+                if (label.Name.Contains('.'))
+                    continue;  // skip struct fields (these contain dots and count as labels, apparently)
 
                 if (label.Name.Contains('_') && imported_names.Contains(label.Name.Substring(0, label.Name.IndexOf('_'))))
                     continue;  // skip imported labels
@@ -896,6 +899,7 @@ namespace LunarHelper
 
             var temp_patch_stream = new StreamWriter(temp_patch_path);
             temp_patch_stream.WriteLine("warnings disable W1011");  // any freespace used in the globule is cleaned by LH anyway, no need to warn about "leaks"
+            temp_patch_stream.WriteLine("warnings disable W1008");  // disable warning about missing org or freespace
             temp_patch_stream.WriteLine("if read1($00ffd5) == $23\nsa1rom\nendif");
             temp_patch_stream.WriteLine("freecode cleaned");
             foreach (var import_path in imports)
