@@ -1,3 +1,5 @@
+# Lunar Helper is no longer actively maintained, please consider migrating to its successor [callisto](https://github.com/Underrout/callisto).
+
 # Lunar Helper
 
 A tool for building, rebuilding, porting and version-controlling (with [git](https://git-scm.com/)) Super Mario World projects.
